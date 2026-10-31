@@ -7,6 +7,7 @@
     "build": "pnpm prisma:generate && tsc -p tsconfig.build.json",
     "catalog:import": "node src/scripts/import-catalog.ts",
     "catalog:test": "node --test src/import/catalog-files.spec.ts",
+    "test": "node --import tsx --test src/import/catalog-files.spec.ts src/collection/schedule.spec.ts src/collection/collection-scheduler.service.spec.ts src/pricing/manual-price.spec.ts",
     "db:smoke": "node scripts/prisma-smoke.ts",
     "dev": "tsx watch src/main.ts",
     "prisma:validate": "prisma validate",

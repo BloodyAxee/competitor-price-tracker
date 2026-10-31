@@ -6,7 +6,10 @@ import { getDatabaseUrl } from "../config/database-url.ts";
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleDestroy {
   constructor() {
-    const adapter = new PrismaPg({ connectionString: getDatabaseUrl() });
+    const adapter = new PrismaPg({
+      connectionString: getDatabaseUrl(),
+      options: "-c timezone=UTC",
+    });
     super({ adapter });
   }
 
