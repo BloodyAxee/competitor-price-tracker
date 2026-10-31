@@ -1,0 +1,60 @@
+# База данных
+
+Первая версия использует PostgreSQL 18 одновременно как хранилище истории и
+простую очередь заданий. DDL создаётся только SQL-миграциями из
+`infra/db/migrations`; Prisma не управляет миграциями.
+
+## Конфигурация
+
+1. Скопировать `.env.example` в локальный `.env`.
+2. Заменить `POSTGRES_PASSWORD` криптографически случайным значением.
+3. Использовать один пароль в `POSTGRES_PASSWORD` и `DATABASE_URL`.
+
+Локальный `.env` игнорируется Git. Его содержимое нельзя выводить в логи или
+прикладывать к issue/скриншотам.
+
+## Запуск
+
+```powershell
+docker compose up -d db
+docker compose run --rm migrate
+```
+
+Повторный запуск `migrate` безопасен: применённая миграция пропускается, а
+изменение её checksum после применения завершает процесс ошибкой.
+
+## Проверка
+
+```powershell
+docker compose --profile test run --rm db-test
+docker compose --profile test run --rm python-db-test
+pnpm --dir apps/api run prisma:validate
+pnpm --dir apps/api run prisma:generate
+pnpm --dir apps/api run db:smoke
+```
+
+Smoke-тест проверяет:
+
+- наличие всех таблиц и представлений;
+- две строки истории при повторном наблюдении той же цены;
+- запрет `UPDATE`, `DELETE` и `TRUNCATE` для `price_observations`;
+- выбор последнего надёжного наблюдения;
+- допуск к сравнению только точного совпадения.
+
+Отдельные smoke-тесты подтверждают, что Python 3.13 и Prisma 7 подключаются к
+той же схеме PostgreSQL 18. Python-образ использует закреплённый Psycopg 3.3.6.
+
+Для полной проверки с пустого состояния используется отдельное имя Compose
+project и отдельный disposable volume, чтобы не затронуть рабочие данные.
+
+## Важные правила
+
+- `price_observations` — append-only таблица.
+- Неизвестные НДС, регион, доставка, монтаж и наличие остаются `NULL`.
+- РРЦ, розница, акция и цена по запросу хранятся как разные `price_type`.
+- Сомнительное наблюдение сохраняется с `exclusion_reason`, но не попадает в
+  `current_valid_prices`.
+- Комплект 4641N + VT-64 хранится через `product_components`; политика по
+  умолчанию — `same_seller_only`.
+- Ежедневное расписание хранится как `0 3 * * *` в зоне
+  `Europe/Moscow` и позже будет доступно через настройки приложения.

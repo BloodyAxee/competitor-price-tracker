@@ -1,0 +1,222 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  externalKey  String             @unique @map("external_key")
+  name         String
+  brand        String?
+  article      String?
+  ownUrl       String?            @map("own_url")
+  catalogScope String             @map("catalog_scope")
+  priority     Int                @default(100) @db.SmallInt
+  isActive     Boolean            @default(true) @map("is_active")
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+  specs        ProductSpec[]
+  offers       Offer[]
+  bundleParts  ProductComponent[] @relation("BundleProduct")
+  usedInBundle ProductComponent[] @relation("ComponentProduct")
+
+  @@map("products")
+}
+
+model ProductSpec {
+  id               BigInt   @id @default(autoincrement())
+  productId        String   @map("product_id") @db.Uuid
+  specKey          String   @map("spec_key")
+  rawValue         String?  @map("raw_value")
+  normalizedText   String?  @map("normalized_text")
+  normalizedNumber Decimal? @map("normalized_number")
+  unit             String?
+  isMaterial       Boolean  @default(true) @map("is_material")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([productId, specKey])
+  @@index([productId])
+  @@map("product_specs")
+}
+
+model ProductComponent {
+  bundleProductId    String   @map("bundle_product_id") @db.Uuid
+  componentProductId String   @map("component_product_id") @db.Uuid
+  quantity           Decimal  @default(1) @db.Decimal(12, 4)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  bundleProduct      Product  @relation("BundleProduct", fields: [bundleProductId], references: [id], onDelete: Restrict)
+  componentProduct   Product  @relation("ComponentProduct", fields: [componentProductId], references: [id], onDelete: Restrict)
+
+  @@id([bundleProductId, componentProductId])
+  @@index([componentProductId])
+  @@map("product_components")
+}
+
+model Seller {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  externalKey        String    @unique @map("external_key")
+  displayName        String    @map("display_name")
+  legalName          String?   @map("legal_name")
+  websiteUrl         String?   @map("website_url")
+  region             String?
+  officialStatus     String    @default("unknown") @map("official_status")
+  officialEvidenceUrl String?  @map("official_evidence_url")
+  officialVerifiedAt DateTime? @map("official_verified_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  sources            Source[]
+  offers             Offer[]
+
+  @@map("sellers")
+}
+
+model Source {
+  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sellerId              String?             @map("seller_id") @db.Uuid
+  externalKey           String              @unique @map("external_key")
+  name                  String
+  baseUrl               String?             @map("base_url")
+  domain                String?
+  sourceType            String              @map("source_type")
+  officialStatus        String              @default("unknown") @map("official_status")
+  officialEvidenceUrl   String?             @map("official_evidence_url")
+  collectionMethod      String              @default("http") @map("collection_method")
+  requestTimeoutSeconds Int                 @default(20) @map("request_timeout_seconds")
+  maxRetries            Int                 @default(3) @map("max_retries") @db.SmallInt
+  rateLimitPerHost      Decimal             @default(1) @map("rate_limit_per_host") @db.Decimal(8, 3)
+  isActive              Boolean             @default(true) @map("is_active")
+  createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime            @default(now()) @map("updated_at") @db.Timestamptz(6)
+  seller                Seller?             @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  offers                Offer[]
+  attempts              CollectionAttempt[]
+
+  @@index([sellerId])
+  @@map("sources")
+}
+
+model Offer {
+  id            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId     String             @map("product_id") @db.Uuid
+  sellerId      String             @map("seller_id") @db.Uuid
+  sourceId      String             @map("source_id") @db.Uuid
+  competitorUrl String             @map("competitor_url")
+  sellerArticle String?            @map("seller_article")
+  matchStatus   String             @default("review") @map("match_status")
+  matchReason   String?            @map("match_reason")
+  isActive      Boolean            @default(true) @map("is_active")
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+  product       Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
+  seller        Seller             @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  source        Source             @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  attempts      CollectionAttempt[]
+  observations  PriceObservation[]
+
+  @@unique([productId, sourceId, competitorUrl])
+  @@index([productId])
+  @@index([sellerId])
+  @@index([sourceId])
+  @@map("offers")
+}
+
+model CollectionJob {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobKey       String?             @unique @map("job_key")
+  triggerType  String              @map("trigger_type")
+  status       String              @default("pending")
+  scheduledFor DateTime?           @map("scheduled_for") @db.Timestamptz(6)
+  startedAt    DateTime?           @map("started_at") @db.Timestamptz(6)
+  finishedAt   DateTime?           @map("finished_at") @db.Timestamptz(6)
+  lockedAt     DateTime?           @map("locked_at") @db.Timestamptz(6)
+  lockedBy     String?             @map("locked_by")
+  summary      Json                @default("{}")
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  attempts     CollectionAttempt[]
+  observations PriceObservation[]
+
+  @@index([status, createdAt])
+  @@index([scheduledFor])
+  @@map("collection_jobs")
+}
+
+model CollectionAttempt {
+  id            BigInt             @id @default(autoincrement())
+  jobId         String             @map("job_id") @db.Uuid
+  sourceId      String             @map("source_id") @db.Uuid
+  offerId       String?            @map("offer_id") @db.Uuid
+  attemptNumber Int                @default(1) @map("attempt_number") @db.SmallInt
+  method        String
+  status        String             @default("pending")
+  httpStatus    Int?               @map("http_status")
+  startedAt     DateTime?          @map("started_at") @db.Timestamptz(6)
+  finishedAt    DateTime?          @map("finished_at") @db.Timestamptz(6)
+  errorCode     String?            @map("error_code")
+  errorMessage  String?            @map("error_message")
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  job           CollectionJob      @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  source        Source             @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  offer         Offer?             @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  observations  PriceObservation[]
+
+  @@unique([jobId, sourceId, offerId, attemptNumber])
+  @@index([jobId])
+  @@index([sourceId])
+  @@index([offerId])
+  @@map("collection_attempts")
+}
+
+model PriceObservation {
+  id                   BigInt            @id @default(autoincrement())
+  jobId                String            @map("job_id") @db.Uuid
+  attemptId            BigInt            @map("attempt_id")
+  offerId              String            @map("offer_id") @db.Uuid
+  rawPrice             Decimal?          @map("raw_price") @db.Decimal(14, 2)
+  normalizedPrice      Decimal?          @map("normalized_price") @db.Decimal(14, 2)
+  currency             String            @default("RUB") @db.Char(3)
+  sourceQuantity       Decimal?          @map("source_quantity") @db.Decimal(12, 4)
+  normalizedQuantity   Decimal?          @map("normalized_quantity") @db.Decimal(12, 4)
+  unit                 String?
+  priceType            String            @default("unknown") @map("price_type")
+  vatIncluded          Boolean?          @map("vat_included")
+  vatRate              Decimal?          @map("vat_rate") @db.Decimal(5, 2)
+  stockStatus          String?           @map("stock_status")
+  region               String?
+  deliveryIncluded     Boolean?          @map("delivery_included")
+  installationIncluded Boolean?          @map("installation_included")
+  observedAt           DateTime?         @map("observed_at") @db.Timestamptz(6)
+  receivedAt           DateTime          @default(now()) @map("received_at") @db.Timestamptz(6)
+  method               String
+  reliability          String
+  exclusionReason      String?           @map("exclusion_reason")
+  evidenceText         String?           @map("evidence_text")
+  evidenceJson         Json              @default("{}") @map("evidence_json")
+  collectorVersion     String?           @map("collector_version")
+  sourcePayloadHash    String?           @map("source_payload_hash")
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  job                  CollectionJob     @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  attempt              CollectionAttempt @relation(fields: [attemptId], references: [id], onDelete: Restrict)
+  offer                Offer             @relation(fields: [offerId], references: [id], onDelete: Restrict)
+
+  @@index([offerId, receivedAt, id])
+  @@index([observedAt])
+  @@index([jobId])
+  @@index([reliability, receivedAt])
+  @@map("price_observations")
+}
+
+model AppSetting {
+  key         String   @id
+  value       Json
+  description String?
+  isSecret    Boolean  @default(false) @map("is_secret")
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("app_settings")
+}

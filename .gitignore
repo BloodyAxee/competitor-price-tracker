@@ -161,6 +161,13 @@ ENV/
 env.bak/
 venv.bak/
 
+# Node / pnpm / generated Prisma client
+node_modules/
+.pnpm-store/
+dist/
+*.tsbuildinfo
+apps/api/src/generated/prisma/
+
 # Spyder project settings
 .spyderproject
 .spyproject
