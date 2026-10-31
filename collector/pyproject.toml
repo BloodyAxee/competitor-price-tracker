@@ -1,6 +1,19 @@
 [project]
-name = "competitor-price-domain"
+name = "competitor-price-collector"
 version = "0.1.0"
-description = "Source-independent matching and price reliability rules"
+description = "Resilient PostgreSQL-backed competitor price collector"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+  "playwright==1.64.1",
+  "psycopg[binary]==3.3.6",
+]
+
+[project.scripts]
+price-collector = "price_collector.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

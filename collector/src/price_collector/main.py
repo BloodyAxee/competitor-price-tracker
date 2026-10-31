@@ -1,0 +1,34 @@
+import logging
+import os
+import socket
+
+from .adapters import AdapterRegistry
+from .engine import CollectorEngine
+from .repository import PostgresCollectorRepository
+from .worker import CollectorWorker
+
+
+def main() -> None:
+    logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL is required")
+
+    repository = PostgresCollectorRepository(database_url)
+    try:
+        engine = CollectorEngine(repository, AdapterRegistry())
+        worker = CollectorWorker(
+            engine,
+            os.getenv("COLLECTOR_WORKER_ID", socket.gethostname()),
+            poll_seconds=float(os.getenv("COLLECTOR_POLL_SECONDS", "5")),
+        )
+        if os.getenv("COLLECTOR_RUN_ONCE", "false").casefold() == "true":
+            worker.run_once()
+        else:
+            worker.run_forever()
+    finally:
+        repository.close()
+
+
+if __name__ == "__main__":
+    main()
