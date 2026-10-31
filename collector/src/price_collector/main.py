@@ -6,7 +6,7 @@ from .adapters import AdapterRegistry
 from .engine import CollectorEngine
 from .http import HttpFetcher
 from .repository import PostgresCollectorRepository
-from .sources import SiToolsT300Adapter
+from .sources import CentrToT300Adapter, SiToolsT300Adapter
 from .worker import CollectorWorker
 
 
@@ -20,7 +20,13 @@ def main() -> None:
         "COLLECTOR_USER_AGENT",
         "CompetitorPriceTracker/0.1 (+price-monitoring-prototype)",
     )
-    adapters = AdapterRegistry((SiToolsT300Adapter(HttpFetcher(user_agent)),))
+    fetcher = HttpFetcher(user_agent)
+    adapters = AdapterRegistry(
+        (
+            CentrToT300Adapter(fetcher),
+            SiToolsT300Adapter(fetcher),
+        )
+    )
     repository = PostgresCollectorRepository(database_url)
     try:
         engine = CollectorEngine(repository, adapters)

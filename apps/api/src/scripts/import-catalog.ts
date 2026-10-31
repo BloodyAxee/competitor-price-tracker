@@ -10,6 +10,7 @@ import { createPrismaClient } from "../database/client.ts";
 
 interface ResearchModel {
   model: string;
+  own_url: string | null;
   primary_url: string | null;
   reserve_url: string | null;
   match_status: string;
@@ -25,9 +26,22 @@ interface SourceProfile {
   displayName: string;
   sourceType: "manufacturer" | "official_dealer" | "retailer" | "marketplace" | "manual";
   officialStatus: "unknown" | "self_claimed" | "verified_dealer" | "manufacturer";
+  requestTimeoutSeconds?: number;
+  maxRetries?: number;
+  rateLimitPerHost?: number;
 }
 
+const OWN_T300_MODEL = "Шиномонтажный станок Станкоимпорт T300, 380 В";
+
 const sourceProfiles: Record<string, SourceProfile> = {
+  "centr-to.ru": {
+    displayName: "ЦТО",
+    sourceType: "retailer",
+    officialStatus: "self_claimed",
+    requestTimeoutSeconds: 45,
+    maxRetries: 2,
+    rateLimitPerHost: 0.5,
+  },
   "nordberg.ru": {
     displayName: "NORDBERG",
     sourceType: "manufacturer",
@@ -194,10 +208,16 @@ try {
       const product = productByName.get(research.model);
       if (!product) throw new Error(`Research product not found in catalog: ${research.model}`);
 
-      const candidates = [
-        { kind: "primary", url: research.primary_url },
-        { kind: "reserve", url: research.reserve_url },
-      ].filter((candidate): candidate is { kind: string; url: string } => Boolean(candidate.url));
+      const candidates: Array<{ kind: "own" | "primary" | "reserve"; url: string }> = [];
+      if (research.model === OWN_T300_MODEL && research.own_url) {
+        candidates.push({ kind: "own", url: research.own_url });
+      }
+      if (research.primary_url) {
+        candidates.push({ kind: "primary", url: research.primary_url });
+      }
+      if (research.reserve_url) {
+        candidates.push({ kind: "reserve", url: research.reserve_url });
+      }
 
       for (const candidate of candidates) {
         const domain = baseDomain(candidate.url);
@@ -227,18 +247,34 @@ try {
             domain,
             sourceType: profile.sourceType,
             officialStatus: profile.officialStatus,
+            requestTimeoutSeconds: profile.requestTimeoutSeconds ?? 20,
+            maxRetries: profile.maxRetries ?? 3,
+            rateLimitPerHost: profile.rateLimitPerHost ?? 1,
           },
           update: {
             sellerId: seller.id,
             name: profile.displayName,
             sourceType: profile.sourceType,
             officialStatus: profile.officialStatus,
+            requestTimeoutSeconds: profile.requestTimeoutSeconds ?? 20,
+            maxRetries: profile.maxRetries ?? 3,
+            rateLimitPerHost: profile.rateLimitPerHost ?? 1,
             isActive: true,
             updatedAt: new Date(),
           },
         });
-        const isExactPrimary =
-          candidate.kind === "primary" && research.match_status === "точное совпадение";
+        const isExactOffer =
+          candidate.kind === "own" ||
+          (candidate.kind === "primary" && research.match_status === "точное совпадение");
+        const sourceLabel =
+          candidate.kind === "own"
+            ? "Собственная карточка"
+            : candidate.kind === "primary"
+              ? "Основной источник"
+              : "Резервный источник";
+        const matchReason = `${sourceLabel}. ${research.review_scope}. ${research.note}`;
+        const sellerArticle =
+          candidate.kind === "own" ? candidate.url.match(/\/good-(\d+)-/)?.[1] : undefined;
         await tx.offer.upsert({
           where: {
             productId_sourceId_competitorUrl: {
@@ -252,13 +288,15 @@ try {
             sellerId: seller.id,
             sourceId: source.id,
             competitorUrl: candidate.url,
-            matchStatus: isExactPrimary ? "exact" : "review",
-            matchReason: `${candidate.kind === "primary" ? "Основной" : "Резервный"} источник. ${research.review_scope}. ${research.note}`,
+            sellerArticle,
+            matchStatus: isExactOffer ? "exact" : "review",
+            matchReason,
           },
           update: {
             sellerId: seller.id,
-            matchStatus: isExactPrimary ? "exact" : "review",
-            matchReason: `${candidate.kind === "primary" ? "Основной" : "Резервный"} источник. ${research.review_scope}. ${research.note}`,
+            sellerArticle,
+            matchStatus: isExactOffer ? "exact" : "review",
+            matchReason,
             isActive: true,
             updatedAt: new Date(),
           },
