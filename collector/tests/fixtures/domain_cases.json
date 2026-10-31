@@ -1,0 +1,40 @@
+{
+  "matching": [
+    {
+      "name": "T300 exact configuration",
+      "required": {"brand": "Станкоимпорт", "model": "T300", "specs": {"voltage": "380", "clamp_inner": "12-24"}},
+      "observed": {"brand": "СТАНКОИМПОРТ", "model": "T300", "specs": {"voltage": "380", "clamp_inner": "12-24"}},
+      "expected": "exact"
+    },
+    {
+      "name": "ES-26D wheel weight conflict",
+      "required": {"brand": "ES", "model": "ES-26D", "specs": {"wheel_weight_kg": "1500"}},
+      "observed": {"brand": "ES", "model": "ES-26D", "specs": {"wheel_weight_kg": "500"}},
+      "expected": "unreliable"
+    },
+    {
+      "name": "4523PA1 generation range conflict",
+      "required": {"brand": "NORDBERG", "model": "4523PA1(B)", "specs": {"rim_range_in": "10-24"}},
+      "observed": {"brand": "NORDBERG", "model": "4523PA1(B)", "specs": {"rim_range_in": "10-28"}},
+      "expected": "unreliable"
+    },
+    {
+      "name": "VT-61 input type is missing",
+      "required": {"brand": "ROSSVIK", "model": "VT-61", "specs": {"voltage": "220", "parameter_input": "manual"}},
+      "observed": {"brand": "ROSSVIK", "model": "VT-61", "specs": {"voltage": "220"}},
+      "expected": "review"
+    },
+    {
+      "name": "GL10 wall thickness conflict",
+      "required": {"brand": "Guangli", "model": "GL10", "specs": {"wall_mm": "75"}},
+      "observed": {"brand": "Guangli", "model": "GL10", "specs": {"wall_mm": "50"}},
+      "expected": "unreliable"
+    },
+    {
+      "name": "4641 is not 4641N",
+      "required": {"brand": "NORDBERG", "model": "4641N", "specs": {}},
+      "observed": {"brand": "NORDBERG", "model": "4641", "specs": {}},
+      "expected": "unreliable"
+    }
+  ]
+}

@@ -34,6 +34,12 @@ docker compose stop
 docker compose ps
 ```
 
+Проверить правила сопоставления и надёжности цен в Python 3.13:
+
+```powershell
+docker run --rm -v "${PWD}/collector:/app" -w /app -e PYTHONPATH=/app/src python:3.13-slim python -m unittest discover -s tests -v
+```
+
 ## Что уже работает
 
 - forward-only миграции и схема PostgreSQL 18

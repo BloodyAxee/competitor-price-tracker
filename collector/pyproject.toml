@@ -1,0 +1,6 @@
+[project]
+name = "competitor-price-domain"
+version = "0.1.0"
+description = "Source-independent matching and price reliability rules"
+requires-python = ">=3.13"
+dependencies = []
