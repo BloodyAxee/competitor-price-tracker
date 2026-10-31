@@ -4,19 +4,32 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "pnpm prisma:generate && tsc -p tsconfig.build.json",
+    "catalog:import": "node src/scripts/import-catalog.ts",
+    "catalog:test": "node --test src/import/catalog-files.spec.ts",
     "db:smoke": "node scripts/prisma-smoke.ts",
+    "dev": "tsx watch src/main.ts",
     "prisma:validate": "prisma validate",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "start": "node dist/main.js"
   },
   "dependencies": {
+    "@nestjs/common": "12.3.2",
+    "@nestjs/core": "12.3.2",
+    "@nestjs/platform-express": "12.3.2",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
-    "pg": "8.23.1"
+    "csv-parse": "7.0.3",
+    "pg": "8.23.1",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "24.10.0",
     "dotenv": "18.0.9",
     "prisma": "7.10.1",
+    "tsx": "4.20.6",
     "typescript": "5.9.3"
   },
   "engines": {

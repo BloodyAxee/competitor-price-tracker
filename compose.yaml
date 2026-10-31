@@ -1,5 +1,10 @@
 name: competitor-price-tracker
 
+x-api-image: &api-image
+  image: competitor-price-tracker-api:local
+  build:
+    context: ./apps/api
+
 services:
   db:
     image: postgres:18
@@ -41,6 +46,69 @@ services:
       db:
         condition: service_healthy
     restart: "no"
+
+  catalog-import:
+    <<: *api-image
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_HOST_MODE: container
+      CATALOG_DATA_DIR: /data
+    volumes:
+      - ./data:/data:ro
+    command:
+      - node
+      - dist/scripts/import-catalog.js
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  api:
+    <<: *api-image
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_HOST_MODE: container
+      API_PORT: ${API_PORT:-3000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+    ports:
+      - "${API_PORT:-3000}:${API_PORT:-3000}"
+    depends_on:
+      catalog-import:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:${API_PORT:-3000}/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    image: competitor-price-tracker-web:local
+    build:
+      context: ./apps/web
+      args:
+        VITE_API_BASE_URL: http://localhost:${API_PORT:-3000}/api
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:5173').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
 
   db-test:
     image: postgres:18
