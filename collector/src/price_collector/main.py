@@ -4,7 +4,9 @@ import socket
 
 from .adapters import AdapterRegistry
 from .engine import CollectorEngine
+from .http import HttpFetcher
 from .repository import PostgresCollectorRepository
+from .sources import SiToolsT300Adapter
 from .worker import CollectorWorker
 
 
@@ -14,9 +16,14 @@ def main() -> None:
     if not database_url:
         raise RuntimeError("DATABASE_URL is required")
 
+    user_agent = os.getenv(
+        "COLLECTOR_USER_AGENT",
+        "CompetitorPriceTracker/0.1 (+price-monitoring-prototype)",
+    )
+    adapters = AdapterRegistry((SiToolsT300Adapter(HttpFetcher(user_agent)),))
     repository = PostgresCollectorRepository(database_url)
     try:
-        engine = CollectorEngine(repository, AdapterRegistry())
+        engine = CollectorEngine(repository, adapters)
         worker = CollectorWorker(
             engine,
             os.getenv("COLLECTOR_WORKER_ID", socket.gethostname()),

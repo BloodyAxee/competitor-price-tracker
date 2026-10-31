@@ -12,10 +12,13 @@ class BrowserDocument:
 
 class PlaywrightFetcher:
     _PROTECTION_MARKERS = (
-        "captcha",
-        "recaptcha",
         "verify you are human",
+        "confirm you are human",
+        "checking your browser",
+        "attention required! | cloudflare",
         "cloudflare challenge",
+        "подтвердите, что вы человек",
+        "проверка, что вы человек",
     )
 
     def __init__(self, user_agent: str) -> None:
