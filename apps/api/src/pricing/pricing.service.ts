@@ -7,6 +7,7 @@ import {
   exportReliability,
   type PriceExportRow,
 } from "./csv-export.ts";
+import { evaluateBundle } from "./bundle-price.ts";
 import { evaluateManualPrice, type ManualPriceType } from "./manual-price.ts";
 
 export interface ComparisonQuery {
@@ -148,6 +149,51 @@ export class PricingService {
             },
           },
         },
+        bundleParts: {
+          orderBy: { componentProduct: { name: "asc" } },
+          select: {
+            quantity: true,
+            componentProduct: {
+              select: {
+                id: true,
+                offers: {
+                  where: {
+                    isActive: true,
+                    matchStatus: "exact",
+                    source: { isActive: true },
+                  },
+                  select: {
+                    id: true,
+                    competitorUrl: true,
+                    sellerId: true,
+                    seller: { select: { displayName: true } },
+                    source: {
+                      select: {
+                        externalKey: true,
+                        name: true,
+                        domain: true,
+                        sourceType: true,
+                        officialStatus: true,
+                      },
+                    },
+                    observations: {
+                      where: { reliability: "valid" },
+                      orderBy: [{ receivedAt: "desc" }, { id: "desc" }],
+                      take: 1,
+                      select: {
+                        normalizedPrice: true,
+                        currency: true,
+                        priceType: true,
+                        method: true,
+                        receivedAt: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -178,6 +224,42 @@ export class PricingService {
             ]),
           });
         }
+      }
+      const bundle = evaluateBundle(
+        product.bundleParts.map((part) => ({
+          componentId: part.componentProduct.id,
+          quantity: part.quantity.toString(),
+          offers: part.componentProduct.offers.map((offer) => ({
+            offerId: offer.id,
+            sellerId: offer.sellerId,
+            sellerName: offer.seller.displayName,
+            url: offer.competitorUrl,
+            source: offer.source,
+            observation: offer.observations[0]
+              ? {
+                  normalizedPrice: offer.observations[0].normalizedPrice!.toString(),
+                  currency: offer.observations[0].currency.trim(),
+                  priceType: offer.observations[0].priceType,
+                  method: offer.observations[0].method,
+                  receivedAt: offer.observations[0].receivedAt,
+                }
+              : null,
+          })),
+        })),
+      );
+      for (const candidate of bundle.candidates) {
+        rows.push({
+          model: product.name,
+          nash_url: product.ownUrl ?? "",
+          konkurent: candidate.sellerName,
+          konkurent_url: candidate.url,
+          cena: candidate.totalPrice,
+          cena_za: "1 комплект",
+          data_sbora: candidate.receivedAt.toISOString(),
+          sposob: exportMethod(candidate.method),
+          nadezhnost: exportReliability("valid"),
+          kommentariy: "Сумма 4641N и VT-64 у одного продавца",
+        });
       }
     }
     return createPriceCsv(rows);
@@ -225,6 +307,52 @@ export class PricingService {
               },
             },
           },
+          bundleParts: {
+            orderBy: { componentProduct: { name: "asc" } },
+            select: {
+              quantity: true,
+              componentProduct: {
+                select: {
+                  id: true,
+                  offers: {
+                    where: {
+                      isActive: true,
+                      matchStatus: "exact",
+                      source: { isActive: true },
+                    },
+                    orderBy: [{ createdAt: "asc" }],
+                    select: {
+                      id: true,
+                      competitorUrl: true,
+                      sellerId: true,
+                      seller: { select: { displayName: true } },
+                      source: {
+                        select: {
+                          externalKey: true,
+                          name: true,
+                          domain: true,
+                          sourceType: true,
+                          officialStatus: true,
+                        },
+                      },
+                      observations: {
+                        where: { reliability: "valid" },
+                        orderBy: [{ receivedAt: "desc" }, { id: "desc" }],
+                        take: 1,
+                        select: {
+                          normalizedPrice: true,
+                          currency: true,
+                          priceType: true,
+                          method: true,
+                          receivedAt: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       }),
     ]);
@@ -240,12 +368,62 @@ export class PricingService {
       }));
       const own = offers.find((offer) => offer.isOwn) ?? null;
       const ownValue = own?.price?.normalizedPrice ?? null;
-      const competitors = offers
+      const directCompetitors = offers
         .filter((offer) => !offer.isOwn)
         .map((offer) => ({
           ...offer,
           difference: comparisonDelta(ownValue, offer.price?.normalizedPrice ?? null),
         }));
+      const bundle = evaluateBundle(
+        product.bundleParts.map((part) => ({
+          componentId: part.componentProduct.id,
+          quantity: part.quantity.toString(),
+          offers: part.componentProduct.offers.map((offer) => ({
+            offerId: offer.id,
+            sellerId: offer.sellerId,
+            sellerName: offer.seller.displayName,
+            url: offer.competitorUrl,
+            source: offer.source,
+            observation: offer.observations[0]
+              ? {
+                  normalizedPrice: offer.observations[0].normalizedPrice!.toString(),
+                  currency: offer.observations[0].currency.trim(),
+                  priceType: offer.observations[0].priceType,
+                  method: offer.observations[0].method,
+                  receivedAt: offer.observations[0].receivedAt,
+                }
+              : null,
+          })),
+        })),
+      );
+      const bundleCompetitors = bundle.candidates.map((candidate) => ({
+        offerId: `bundle:${product.id}:${candidate.sellerId}`,
+        url: candidate.url,
+        seller: candidate.sellerName,
+        source: candidate.source,
+        isOwn: false,
+        price: {
+          id: `bundle:${product.id}:${candidate.sellerId}`,
+          rawPrice: candidate.totalPrice,
+          normalizedPrice: candidate.totalPrice,
+          currency: candidate.currency,
+          unit: "set",
+          priceType: candidate.priceType,
+          vatIncluded: null,
+          stockStatus: null,
+          region: null,
+          deliveryIncluded: null,
+          installationIncluded: null,
+          observedAt: candidate.receivedAt,
+          receivedAt: candidate.receivedAt,
+          method: candidate.method,
+          reliability: "valid",
+          exclusionReason: null,
+          evidenceText: "Сумма цен 4641N и VT-64 у одного продавца",
+        },
+        difference: comparisonDelta(ownValue, candidate.totalPrice),
+      }));
+      const competitors = [...directCompetitors, ...bundleCompetitors];
       return {
         product: {
           id: product.id,
@@ -257,6 +435,13 @@ export class PricingService {
         },
         own,
         competitors,
+        bundleStatus:
+          product.bundleParts.length > 0
+            ? {
+                ready: bundle.candidates.length > 0,
+                exclusionReason: bundle.exclusionReason,
+              }
+            : null,
       };
     });
     return { total, items, limit: query.limit, offset: query.offset };

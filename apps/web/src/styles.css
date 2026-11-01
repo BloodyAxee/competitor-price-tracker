@@ -145,6 +145,8 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .section-heading p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
 .count-badge { background: var(--surface-soft); border: 1px solid var(--line); color: var(--muted); }
 .component, .offer-card { padding: 15px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); margin-bottom: 10px; }
+.component { width: 100%; color: var(--text); text-align: left; cursor: pointer; }
+.component:hover { border-color: var(--accent); }
 .component strong, .component span { display: block; }
 .component span { color: var(--muted); font-size: 12px; margin-top: 5px; }
 .offer-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; }

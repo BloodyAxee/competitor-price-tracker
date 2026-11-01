@@ -183,26 +183,92 @@ try {
 
     const bundle = productByName.get("Шиномонтажный комплект NORDBERG 4641N + VT-64");
     const components = [
-      additionalByArticle.get("4641N"),
-      additionalByArticle.get("VT-64.5005"),
+      { article: "4641N", product: additionalByArticle.get("4641N") },
+      { article: "VT-64.5005", product: additionalByArticle.get("VT-64.5005") },
     ];
-    if (!bundle || components.some((component) => !component)) {
+    if (!bundle || components.some((component) => !component.product)) {
       throw new Error("Bundle or one of its agreed components is missing");
     }
     for (const component of components) {
+      await tx.product.update({
+        where: { id: component.product!.id },
+        data: { catalogScope: "component", priority: 20, updatedAt: new Date() },
+      });
       await tx.productComponent.upsert({
         where: {
           bundleProductId_componentProductId: {
             bundleProductId: bundle.id,
-            componentProductId: component!.id,
+            componentProductId: component.product!.id,
           },
         },
         create: {
           bundleProductId: bundle.id,
-          componentProductId: component!.id,
+          componentProductId: component.product!.id,
           quantity: 1,
         },
         update: { quantity: 1 },
+      });
+    }
+
+    const manualBundleSeller = await tx.seller.upsert({
+      where: { externalKey: "seller:manual-bundle" },
+      create: {
+        externalKey: "seller:manual-bundle",
+        displayName: "Один проверенный продавец комплекта",
+        officialStatus: "unknown",
+      },
+      update: {
+        displayName: "Один проверенный продавец комплекта",
+        updatedAt: new Date(),
+      },
+    });
+    const manualBundleSource = await tx.source.upsert({
+      where: { externalKey: "source:manual-bundle" },
+      create: {
+        externalKey: "source:manual-bundle",
+        sellerId: manualBundleSeller.id,
+        name: "Ручная проверка компонентов комплекта",
+        domain: "manual.bundle",
+        sourceType: "manual",
+        collectionMethod: "manual",
+        officialStatus: "unknown",
+        isActive: true,
+      },
+      update: {
+        sellerId: manualBundleSeller.id,
+        name: "Ручная проверка компонентов комплекта",
+        collectionMethod: "manual",
+        isActive: true,
+        updatedAt: new Date(),
+      },
+    });
+    for (const component of components) {
+      const competitorUrl = `https://manual.local/bundle/${component.article.toLowerCase()}`;
+      await tx.offer.upsert({
+        where: {
+          productId_sourceId_competitorUrl: {
+            productId: component.product!.id,
+            sourceId: manualBundleSource.id,
+            competitorUrl,
+          },
+        },
+        create: {
+          productId: component.product!.id,
+          sellerId: manualBundleSeller.id,
+          sourceId: manualBundleSource.id,
+          competitorUrl,
+          sellerArticle: component.article,
+          matchStatus: "exact",
+          matchReason:
+            "Ручной ввод разрешён только для цены этого компонента у одного и того же проверенного продавца.",
+        },
+        update: {
+          sellerId: manualBundleSeller.id,
+          sellerArticle: component.article,
+          matchStatus: "exact",
+          isActive: true,
+          updatedAt: new Date(),
+        },
       });
     }
 
@@ -309,10 +375,18 @@ try {
     }
   });
 
-  const [requiredCount, additionalCount, ownUrlCount, componentCount, offerCount] =
+  const [
+    requiredCount,
+    additionalCount,
+    componentProductCount,
+    ownUrlCount,
+    componentLinkCount,
+    offerCount,
+  ] =
     await Promise.all([
       prisma.product.count({ where: { catalogScope: "required", isActive: true } }),
       prisma.product.count({ where: { catalogScope: "additional", isActive: true } }),
+      prisma.product.count({ where: { catalogScope: "component", isActive: true } }),
       prisma.product.count({
         where: { catalogScope: "required", isActive: true, ownUrl: { not: null } },
       }),
@@ -322,15 +396,16 @@ try {
 
   if (
     requiredCount !== 29 ||
-    additionalCount !== 238 ||
+    additionalCount !== 236 ||
+    componentProductCount !== 2 ||
     ownUrlCount !== 28 ||
-    componentCount < 2
+    componentLinkCount < 2
   ) {
     throw new Error("Imported catalog failed the acceptance counts");
   }
 
   console.log(
-    `Catalog import complete: ${requiredCount} required, ${additionalCount} additional, ${ownUrlCount} own URLs, ${componentCount} bundle components, ${offerCount} research offers.`,
+    `Catalog import complete: ${requiredCount} required, ${additionalCount} additional, ${componentProductCount} components, ${ownUrlCount} own URLs, ${componentLinkCount} bundle links, ${offerCount} research offers.`,
   );
 } finally {
   await prisma.$disconnect();

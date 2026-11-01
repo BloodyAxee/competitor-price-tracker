@@ -26,7 +26,7 @@ import {
   observationStatus,
 } from "./view-model";
 
-type ScopeFilter = "all" | "required" | "additional";
+type ScopeFilter = "all" | "required" | "additional" | "component";
 type DataFilter = "all" | "compared" | "partial" | "missing";
 type MatchFilter = "all" | "exact" | "review" | "without-offers";
 type SortKey = "priority" | "name" | "difference" | "freshness";
@@ -57,6 +57,14 @@ function scheduleLabel(schedule: CollectionSchedule | null) {
   if (!schedule) return "Расписание не получено";
   if (schedule.cron === "0 3 * * *") return `Ежедневно в 03:00 · ${schedule.timeZone}`;
   return `${schedule.cron} · ${schedule.timeZone}`;
+}
+
+function bundleStatusLabel(
+  reason: NonNullable<ComparisonItem["bundleStatus"]>["exclusionReason"],
+) {
+  if (reason === "mixed_sellers") return "Компоненты найдены у разных продавцов и не суммируются";
+  if (reason === "mixed_price_types") return "Типы цен компонентов различаются и не суммируются";
+  return "Для расчёта нужны две подтверждённые цены одного продавца";
 }
 
 function comparisonState(item: ComparisonItem | undefined) {
@@ -367,7 +375,7 @@ function App() {
 
           <div className="filters">
             <label className="search-field"><span>Поиск</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Модель или артикул" /></label>
-            <label><span>Часть каталога</span><select value={scope} onChange={(event) => setScope(event.target.value as ScopeFilter)}><option value="required">29 обязательных</option><option value="additional">Дополнительные</option><option value="all">Все товары</option></select></label>
+            <label><span>Часть каталога</span><select value={scope} onChange={(event) => setScope(event.target.value as ScopeFilter)}><option value="required">29 обязательных</option><option value="component">Компоненты комплекта</option><option value="additional">Дополнительные</option><option value="all">Все товары</option></select></label>
             <label><span>Данные</span><select value={dataFilter} onChange={(event) => setDataFilter(event.target.value as DataFilter)}><option value="all">Все состояния</option><option value="compared">Есть сравнение</option><option value="partial">Только одна цена</option><option value="missing">Нет цен</option></select></label>
             <label><span>Сопоставление</span><select value={matchFilter} onChange={(event) => setMatchFilter(event.target.value as MatchFilter)}><option value="all">Все источники</option><option value="exact">Точное</option><option value="review">Требует проверки</option><option value="without-offers">Без источников</option></select></label>
             <label><span>Сортировка</span><select value={sort} onChange={(event) => setSort(event.target.value as SortKey)}><option value="priority">По приоритету</option><option value="name">По названию</option><option value="difference">По разнице цен</option><option value="freshness">Сначала свежие</option></select></label>
@@ -395,7 +403,9 @@ function App() {
             <p className="drawer-article">{selected.article ?? "Артикул не указан"}</p>
             {selected.ownUrl ? <a className="external-link" href={selected.ownUrl} target="_blank" rel="noreferrer">Открыть карточку ЦТО</a> : <div className="notice">У комплекта нет отдельной карточки ЦТО. Это допустимо по условиям задания.</div>}
 
-            {selected.bundleParts.length > 0 && <section className="drawer-section"><h3>Состав комплекта</h3>{selected.bundleParts.map((part) => <div className="component" key={part.componentProduct.id}><strong>{part.componentProduct.name}</strong><span>{part.componentProduct.article ?? "Артикул не указан"} · {part.quantity} шт.</span></div>)}</section>}
+            {selected.bundleParts.length > 0 && <section className="drawer-section"><h3>Состав комплекта</h3><p className="muted">Откройте оба компонента и внесите цены из одного предложения продавца. После второй цены сумма появится у комплекта автоматически.</p>{selected.bundleParts.map((part) => <button type="button" className="component" key={part.componentProduct.id} onClick={() => { const component = products.find((product) => product.id === part.componentProduct.id); if (component) setSelected(component); }}><strong>{part.componentProduct.name}</strong><span>{part.componentProduct.article ?? "Артикул не указан"} · {part.quantity} шт.</span></button>)}{comparisonMap.get(selected.id)?.bundleStatus?.ready ? <div className="notice success">Комплект рассчитан по двум ценам одного продавца</div> : <div className="notice">{bundleStatusLabel(comparisonMap.get(selected.id)?.bundleStatus?.exclusionReason ?? "incomplete_bundle")}</div>}</section>}
+
+            {selected.catalogScope === "component" && <div className="notice">Укажите цену из одного и того же предложения продавца для обоих компонентов комплекта. Название продавца и ссылку сохраните в подтверждении цены.</div>}
 
             <section className="drawer-section">
               <div className="section-heading"><div><h3>История цен</h3><p>Каждый сбор сохраняется отдельной записью</p></div><span className="count-badge">{history?.total ?? 0}</span></div>
@@ -420,7 +430,7 @@ function App() {
 
             <section className="drawer-section">
               <div className="section-heading"><div><h3>Исследованные источники</h3><p>Карточки для автоматического и ручного сбора</p></div></div>
-              {selected.offers.length === 0 ? <p className="muted">Для этой позиции источники пока не исследованы.</p> : selected.offers.map((offer) => <article className="offer-card" key={offer.id}><div className="offer-title"><strong>{offer.seller.displayName}</strong><span className={`match-badge ${offer.matchStatus}`}>{matchLabel(offer.matchStatus)}</span></div><p>{offer.matchReason ?? "Пояснение не указано"}</p><a href={offer.competitorUrl} target="_blank" rel="noreferrer">Открыть источник</a></article>)}
+              {selected.offers.length === 0 ? <p className="muted">Для этой позиции источники пока не исследованы.</p> : selected.offers.map((offer) => <article className="offer-card" key={offer.id}><div className="offer-title"><strong>{offer.seller.displayName}</strong><span className={`match-badge ${offer.matchStatus}`}>{matchLabel(offer.matchStatus)}</span></div><p>{offer.matchReason ?? "Пояснение не указано"}</p>{offer.source.sourceType === "manual" ? <span className="muted">Источник заполняется вручную</span> : <a href={offer.competitorUrl} target="_blank" rel="noreferrer">Открыть источник</a>}</article>)}
             </section>
           </aside>
         </div>

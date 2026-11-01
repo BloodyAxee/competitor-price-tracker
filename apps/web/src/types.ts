@@ -83,6 +83,10 @@ export interface ComparisonItem {
   product: Pick<Product, "id" | "externalKey" | "name" | "article" | "ownUrl" | "catalogScope">;
   own: ComparisonOffer | null;
   competitors: CompetitorComparison[];
+  bundleStatus: {
+    ready: boolean;
+    exclusionReason: "incomplete_bundle" | "mixed_sellers" | "mixed_price_types" | null;
+  } | null;
 }
 
 export interface ComparisonResponse {
