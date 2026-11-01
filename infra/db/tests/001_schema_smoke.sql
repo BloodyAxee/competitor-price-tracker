@@ -149,7 +149,11 @@ FROM collection_jobs j
 CROSS JOIN sources src
 CROSS JOIN offers o
 WHERE j.job_key = 'test-job'
-  AND src.external_key = 'test-source';
+  AND src.external_key = 'test-source'
+  AND o.source_id = src.id
+  AND o.product_id = (
+      SELECT id FROM products WHERE external_key = 'test-t300-380'
+  );
 
 INSERT INTO price_observations (
     job_id,
@@ -203,26 +207,31 @@ INSERT INTO price_observations (
     evidence_text
 )
 SELECT
-    job_id,
-    attempt_id,
-    offer_id,
-    raw_price,
-    normalized_price,
-    source_quantity,
-    normalized_quantity,
-    unit,
-    price_type,
-    observed_at + interval '1 minute',
-    method,
-    reliability,
-    evidence_text
-FROM price_observations;
+    po.job_id,
+    po.attempt_id,
+    po.offer_id,
+    po.raw_price,
+    po.normalized_price,
+    po.source_quantity,
+    po.normalized_quantity,
+    po.unit,
+    po.price_type,
+    po.observed_at + interval '1 minute',
+    po.method,
+    po.reliability,
+    po.evidence_text
+FROM price_observations po
+JOIN collection_jobs j ON j.id = po.job_id
+WHERE j.job_key = 'test-job';
 
 DO $$
 DECLARE
     observation_count integer;
 BEGIN
-    SELECT count(*) INTO observation_count FROM price_observations;
+    SELECT count(*) INTO observation_count
+    FROM price_observations po
+    JOIN collection_jobs j ON j.id = po.job_id
+    WHERE j.job_key = 'test-job';
     IF observation_count <> 2 THEN
         RAISE EXCEPTION
             'Expected two append-only observations, got %',
@@ -235,7 +244,8 @@ DO $$
 BEGIN
     BEGIN
         UPDATE price_observations
-        SET normalized_price = 1;
+        SET normalized_price = 1
+        WHERE job_id = (SELECT id FROM collection_jobs WHERE job_key = 'test-job');
         RAISE EXCEPTION 'UPDATE unexpectedly succeeded';
     EXCEPTION
         WHEN SQLSTATE '55000' THEN
@@ -243,7 +253,8 @@ BEGIN
     END;
 
     BEGIN
-        DELETE FROM price_observations;
+        DELETE FROM price_observations
+        WHERE job_id = (SELECT id FROM collection_jobs WHERE job_key = 'test-job');
         RAISE EXCEPTION 'DELETE unexpectedly succeeded';
     EXCEPTION
         WHEN SQLSTATE '55000' THEN
@@ -265,8 +276,12 @@ DECLARE
     current_count integer;
     comparison_count integer;
 BEGIN
-    SELECT count(*) INTO current_count FROM current_valid_prices;
-    SELECT count(*) INTO comparison_count FROM comparison_candidates;
+    SELECT count(*) INTO current_count
+    FROM current_valid_prices
+    WHERE product_id = (SELECT id FROM products WHERE external_key = 'test-t300-380');
+    SELECT count(*) INTO comparison_count
+    FROM comparison_candidates
+    WHERE product_id = (SELECT id FROM products WHERE external_key = 'test-t300-380');
 
     IF current_count <> 1 OR comparison_count <> 1 THEN
         RAISE EXCEPTION
