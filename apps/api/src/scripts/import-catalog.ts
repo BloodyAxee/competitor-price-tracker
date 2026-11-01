@@ -77,6 +77,10 @@ const sourceProfiles: Record<string, SourceProfile> = {
   },
 };
 
+const DEFAULT_REQUEST_TIMEOUT_SECONDS = 12;
+const DEFAULT_MAX_RETRIES = 1;
+const DEFAULT_RATE_LIMIT_PER_HOST = 0.5;
+
 function baseDomain(rawUrl: string): string {
   const hostname = new URL(rawUrl).hostname.toLowerCase().replace(/^www\./, "");
   const labels = hostname.split(".");
@@ -245,18 +249,20 @@ try {
             domain,
             sourceType: profile.sourceType,
             officialStatus: profile.officialStatus,
-            requestTimeoutSeconds: profile.requestTimeoutSeconds ?? 20,
-            maxRetries: profile.maxRetries ?? 3,
-            rateLimitPerHost: profile.rateLimitPerHost ?? 1,
+            requestTimeoutSeconds:
+              profile.requestTimeoutSeconds ?? DEFAULT_REQUEST_TIMEOUT_SECONDS,
+            maxRetries: profile.maxRetries ?? DEFAULT_MAX_RETRIES,
+            rateLimitPerHost: profile.rateLimitPerHost ?? DEFAULT_RATE_LIMIT_PER_HOST,
           },
           update: {
             sellerId: seller.id,
             name: profile.displayName,
             sourceType: profile.sourceType,
             officialStatus: profile.officialStatus,
-            requestTimeoutSeconds: profile.requestTimeoutSeconds ?? 20,
-            maxRetries: profile.maxRetries ?? 3,
-            rateLimitPerHost: profile.rateLimitPerHost ?? 1,
+            requestTimeoutSeconds:
+              profile.requestTimeoutSeconds ?? DEFAULT_REQUEST_TIMEOUT_SECONDS,
+            maxRetries: profile.maxRetries ?? DEFAULT_MAX_RETRIES,
+            rateLimitPerHost: profile.rateLimitPerHost ?? DEFAULT_RATE_LIMIT_PER_HOST,
             isActive: true,
             updatedAt: new Date(),
           },

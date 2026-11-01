@@ -6,7 +6,12 @@ from .adapters import AdapterRegistry
 from .engine import CollectorEngine
 from .http import HttpFetcher
 from .repository import PostgresCollectorRepository
-from .sources import CentrToAdapter, SiToolsT300Adapter
+from .sources import (
+    STRUCTURED_SOURCE_KEYS,
+    CentrToAdapter,
+    SiToolsT300Adapter,
+    StructuredProductAdapter,
+)
 from .worker import CollectorWorker
 
 
@@ -25,6 +30,7 @@ def main() -> None:
         (
             CentrToAdapter(fetcher),
             SiToolsT300Adapter(fetcher),
+            *(StructuredProductAdapter(fetcher, key) for key in STRUCTURED_SOURCE_KEYS),
         )
     )
     repository = PostgresCollectorRepository(database_url)
