@@ -64,5 +64,41 @@
     "expected_name": "Шиномонтажный станок NORDBERG 46TRKE56(B), 14–56″",
     "expected_price": "708000",
     "html": "<html><head><title>Nordberg 46TRKE56(B)</title></head><body><h1>Шиномонтажный станок Nordberg 46TRKE56(B)</h1><div>Для грузовых, двухскоростной, диски 14-56, 380В</div><div>Подробности 708 000 ₽ В корзину</div><h2>Описание</h2></body></html>"
+  },
+  {
+    "source": "source:technosouz.ru",
+    "expected_name": "Балансировочный станок ES-950 с пневмоподъёмником",
+    "expected_price": "150950",
+    "html": "<html><head><title>ES-950 Балансировочный станок 380V</title></head><body><h1>ES-950 Балансировочный станок 380V</h1><div>Диски 12-24, ширина 1,5-20, колесо до 1200 мм и 150 кг, диаметр вала 40 мм</div><div>Ручной ввод параметров, встроенный пневмоподъёмник</div><div>Цена с НДС 150950 руб. Купить</div></body></html>"
+  },
+  {
+    "source": "source:topmaster-shop.ru",
+    "expected_name": "Грузовой шиномонтажный станок ROSSVIK V-26",
+    "expected_price": "442462",
+    "html": "<html><head><title>ROSSVIK V-26</title></head><body><h1>Станок шиномонтажный для грузовых автошин ROSSVIK V-26</h1><div>380 В, диски 14-26, максимальный диаметр колеса 1500 мм, ширина 760 мм, максимальный вес колеса 1500 кг</div><div>442 462 ₽</div><h2>Похожие товары</h2><div>633 000 ₽</div></body></html>"
+  },
+  {
+    "source": "source:optima-trade.ru",
+    "expected_name": "Балансировочный станок NORDBERG 4523C, 220 В",
+    "expected_price": "68900",
+    "html": "<html><head><title>Nordberg 4523C 220 В</title></head><body><h1>Балансировочный станок Nordberg 4523C, синий, ручной ввод параметров, для дисков 10-24, вал 40 мм</h1><div>220 В, ширина дисков 1,5-20, максимальный вес колеса 65 кг, диаметр вала 40 мм</div><div>68 900 р уб. с НДС</div><h2>Описание</h2></body></html>"
+  },
+  {
+    "source": "source:topmaster-shop.ru",
+    "expected_name": "Шиномонтажный полуавтомат ROSSVIK V-524, 380 В",
+    "expected_price": "102116",
+    "html": "<html><head><title>ROSSVIK V-524 V524.380.5005</title></head><body><h1>Полуавтоматический шиномонтажный стенд ROSSVIK V-524 арт. V524.380.5005</h1><div>380 В, синий RAL5005, наружный зажим 10-20, внутренний 12-24, максимальный диаметр колеса 980 мм</div><div>102 116 ₽</div><h2>Похожие товары</h2><div>135 500 ₽</div></body></html>"
+  },
+  {
+    "source": "source:autoservice2.ru",
+    "expected_name": "Балансировочный станок ROSSVIK VT-61, 220 В",
+    "expected_price": "75200",
+    "html": "<html><head><title>ROSSVIK VT-61 220В RAL5005</title></head><body><h1>ROSSVIK VT-61 Станок балансировочный, 220В RAL5005 СИНИЙ</h1><div>Артикул VT-61_5005, ширина 1,5-20, колесо 1000 мм и 65 кг, вал 40 мм</div><div>Автоматический ввод двух параметров электронной линейкой, ширина вручную</div><div>Ваша цена: 75 200 руб.</div><h2>Оригинальные запчасти для</h2><div>12 314 руб.</div></body></html>"
+  },
+  {
+    "source": "source:vsedlyasto.ru",
+    "expected_name": "Окрасочно-сушильная камера Guangli GL3",
+    "expected_price": "1745640",
+    "html": "<html><head><title>Окрасочно-сушильная камера Guangli GL3</title></head><body><h1>Окрасочно-сушильная камера Guangli GL3</h1><div>Основание 30 см, стены из сэндвич-панелей 50 мм</div><div>Верхний свет 40 ламп, нижний свет 16 ламп</div><div>Приточный блок 7,5 кВт, экстрактор 5,5 кВт, воздухообмен 22000 м3/час</div><div>Дизельная горелка Riello G20 мощностью 202 кВт, потребление 15 кВт</div><div>1 745 640 руб. за 1 В наличии много</div><h2>Похожие товары</h2><div>2 100 000 руб.</div></body></html>"
   }
 ]

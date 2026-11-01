@@ -60,6 +60,10 @@ VISIBLE_SOURCE_PROFILES = {
         price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*₽",),
         stop_markers=("С этим товаром покупают", "Похожие товары"),
     ),
+    "source:technosouz.ru": VisibleProductProfile(
+        price_patterns=(rf"Цена\s+с\s+НДС\s*(?P<price>{_PRICE_NUMBER})\s*руб\.?\s*Купить",),
+        stop_markers=("Похожие товары", "С этим товаром покупают"),
+    ),
     "source:optima-trade.ru": VisibleProductProfile(
         price_patterns=(rf"(?P<price>{_HIGH_VALUE_PRICE_NUMBER})\s*р\s*уб\.?\s*с НДС",),
         stop_markers=("Похожие товары", "С этим товаром покупают"),
@@ -67,6 +71,10 @@ VISIBLE_SOURCE_PROFILES = {
     "source:carmod.ru": VisibleProductProfile(
         price_patterns=(rf"Подробности\s*(?P<price>{_PRICE_NUMBER})\s*₽\s*В корзину",),
         stop_markers=("Похожие товары", "Рекомендуем"),
+    ),
+    "source:vsedlyasto.ru": VisibleProductProfile(
+        price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*руб\.?\s*за\s*1\s*В наличии",),
+        stop_markers=("С этим товаром покупают", "Похожие товары", "Рекомендуем"),
     ),
 }
 
@@ -115,6 +123,57 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
     ),
     ("4641n",): ((r"\b380\s*[вv]\b", "380 V"), (r"(?:двухскорост|2\s*скорост)", "two speeds")),
     ("vt64", "220в", "ral5005"): ((r"\b220\s*[вv]\b", "220 V"), (r"ral\s*5005", "RAL5005")),
+    ("es950",): (
+        (r"\b380\s*[вv]\b", "380 V"),
+        (r"12\s*-\s*24", "12-24"),
+        (r"1[,.]5\s*[\"″]?\s*-\s*20", "1.5-20"),
+        (r"1200\s*мм", "1200 mm wheel diameter"),
+        (r"150\s*кг", "150 kg wheel mass"),
+        (r"(?:вал|диаметр вала)[^\n]{0,30}40\s*мм", "40 mm shaft"),
+        (r"пневм\w*\s*подъ[её]мник", "pneumatic lift"),
+    ),
+    ("v26",): (
+        (r"\b380\s*[вv]\b", "380 V"),
+        (r"14\s*-\s*26", "14-26"),
+        (r"1500\s*мм", "1500 mm wheel diameter"),
+        (r"760\s*мм", "760 mm wheel width"),
+        (r"(?:вес|масса)[^\n]{0,40}(?:1500\s*кг|кг[^\n]{0,10}1500)", "1500 kg wheel mass"),
+    ),
+    ("4523c",): (
+        (r"\b220\s*[вv]\b", "220 V"),
+        (r"10\s*-\s*24", "10-24"),
+        (r"1[,.]5\s*[\"″]?\s*-\s*20", "1.5-20"),
+        (r"(?:вал|диаметр вала)[^\n]{0,30}40\s*мм", "40 mm shaft"),
+        (r"65\s*кг", "65 kg wheel mass"),
+        (r"ручн\w*\s+ввод", "manual input"),
+    ),
+    ("v524",): (
+        (r"v\s*-?\s*524[.\s-]*380[.\s-]*5005", "V524.380.5005 article"),
+        (r"\b380\s*[вv]\b", "380 V"),
+        (r"10\s*-\s*20", "10-20 outside clamping"),
+        (r"12\s*-\s*24", "12-24 inside clamping"),
+        (r"980\s*мм", "980 mm wheel diameter"),
+    ),
+    ("vt61",): (
+        (r"vt\s*-?\s*61[_\s-]*5005", "VT-61_5005 article"),
+        (r"\b220\s*[вv]\b", "220 V"),
+        (r"ral\s*5005", "RAL5005"),
+        (r"1[,.]5\s*[\"″]?\s*-\s*20", "1.5-20"),
+        (r"1000\s*мм", "1000 mm wheel diameter"),
+        (r"65\s*кг", "65 kg wheel mass"),
+        (r"(?:вал|диаметр вала)[^\n]{0,30}40\s*мм", "40 mm shaft"),
+        (r"(?:автоматическ\w* ввод\w* (?:двух|2)[^\n]{0,30}параметр|электронн\w* линейк)", "two-parameter input"),
+    ),
+    ("gl3",): (
+        (r"(?:стен|сэндвич-панел)[^\n]{0,80}50\s*мм", "50 mm walls"),
+        (r"(?:основан|цокол)[^\n]{0,80}(?:300\s*мм|30\s*см)", "300 mm base"),
+        (r"40[^\n]{0,40}(?:ламп|светильник)[^\n]{0,80}16[^\n]{0,40}(?:ламп|светильник)", "40+16 lights"),
+        (r"(?:приточн\w* блок)[^\n]{0,40}7[,.]5\s*квт", "7.5 kW inlet fan"),
+        (r"(?:экстрактор|вытяжн\w* блок)[^\n]{0,40}5[,.]5\s*квт", "5.5 kW exhaust fan"),
+        (r"22000\s*м", "22000 m3/h airflow"),
+        (r"riello\s*g20[^\n]{0,80}202\s*квт", "Riello G20 202 kW burner"),
+        (r"потреблен[^\n]{0,40}15\s*квт", "15 kW electric power"),
+    ),
 }
 
 

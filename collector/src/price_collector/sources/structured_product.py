@@ -28,8 +28,10 @@ STRUCTURED_SOURCE_KEYS = (
     "source:rossvik.moscow",
     "source:rustehnika.ru",
     "source:technovector.ru",
+    "source:technosouz.ru",
     "source:topmaster-shop.ru",
     "source:tmktools.ru",
+    "source:vsedlyasto.ru",
 )
 
 

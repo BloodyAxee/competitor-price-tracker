@@ -12,6 +12,8 @@ interface ResearchModel {
   verified_exact_urls?: string[];
   match_status: string;
   review_scope: string;
+  current_price_verified: boolean;
+  automated_collection_verified: boolean;
 }
 
 interface BundleOffer {
@@ -27,14 +29,25 @@ test("required source registry keeps exact matches separate from unresolved conf
     bundle_offers: BundleOffer[];
   };
   const exact = registry.models.filter((model) => model.match_status === "точное совпадение");
-  const unresolvedIds = new Set([2, 3, 10, 13, 15, 18, 20, 21, 24, 25, 26, 27]);
+  const unresolvedIds = new Set([2, 15, 18, 24, 26, 27]);
+  const newlyVerifiedIds = new Set([3, 10, 13, 20, 21, 25]);
 
   assert.equal(registry.models.length, 29);
   assert.equal(registry.models.filter((model) => model.own_url).length, 28);
-  assert.equal(exact.length, 17);
+  assert.equal(exact.length, 23);
   assert.ok(exact.every((model) => model.primary_url));
   assert.ok(exact.every((model) => !model.review_scope.includes("полное совпадение не подтверждено")));
   assert.ok(registry.models.filter((model) => unresolvedIds.has(model.id)).every((model) => model.match_status !== "точное совпадение"));
+  assert.ok(
+    registry.models
+      .filter((model) => newlyVerifiedIds.has(model.id))
+      .every(
+        (model) =>
+          model.match_status === "точное совпадение" &&
+          model.current_price_verified &&
+          model.automated_collection_verified,
+      ),
+  );
   assert.ok(
     registry.models.every((model) =>
       (model.verified_exact_urls ?? []).every(

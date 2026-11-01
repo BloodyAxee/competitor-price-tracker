@@ -88,6 +88,26 @@ const sourceProfiles: Record<string, SourceProfile> = {
     sourceType: "retailer",
     officialStatus: "unknown",
   },
+  "technosouz.ru": {
+    displayName: "Техносоюз",
+    sourceType: "official_dealer",
+    officialStatus: "verified_dealer",
+  },
+  "autoservice2.ru": {
+    displayName: "АВТОСЕРВИС2",
+    sourceType: "official_dealer",
+    officialStatus: "self_claimed",
+  },
+  "optima-trade.ru": {
+    displayName: "Оптима-Трейд",
+    sourceType: "retailer",
+    officialStatus: "unknown",
+  },
+  "vsedlyasto.ru": {
+    displayName: "Всё для СТО",
+    sourceType: "retailer",
+    officialStatus: "unknown",
+  },
 };
 
 const DEFAULT_REQUEST_TIMEOUT_SECONDS = 12;
