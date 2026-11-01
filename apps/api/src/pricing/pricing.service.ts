@@ -9,6 +9,7 @@ import {
 } from "./csv-export.ts";
 import { evaluateBundle } from "./bundle-price.ts";
 import { evaluateManualPrice, type ManualPriceType } from "./manual-price.ts";
+import { calculatePriceMovement } from "./price-movement.ts";
 
 export interface ComparisonQuery {
   limit: number;
@@ -357,12 +358,11 @@ export class PricingService {
     ]);
 
     const directOfferIds = products.flatMap((product) => product.offers.map((offer) => offer.id));
-    const [latestObservations, latestValidObservations] = directOfferIds.length
+    const [recentObservations, latestValidObservations] = directOfferIds.length
       ? await Promise.all([
           this.prisma.priceObservation.findMany({
             where: { offerId: { in: directOfferIds } },
             orderBy: [{ offerId: "asc" }, { receivedAt: "desc" }, { id: "desc" }],
-            distinct: ["offerId"],
           }),
           this.prisma.priceObservation.findMany({
             where: { offerId: { in: directOfferIds }, reliability: "valid" },
@@ -371,8 +371,23 @@ export class PricingService {
           }),
         ])
       : [[], []];
+    const recentObservationsByOffer = new Map<string, typeof recentObservations>();
+    for (const observation of recentObservations) {
+      const offerObservations = recentObservationsByOffer.get(observation.offerId) ?? [];
+      if (offerObservations.length < 2) {
+        offerObservations.push(observation);
+        recentObservationsByOffer.set(observation.offerId, offerObservations);
+      }
+    }
     const latestObservationByOffer = new Map(
-      latestObservations.map((observation) => [observation.offerId, observation]),
+      [...recentObservationsByOffer].flatMap(([offerId, observations]) =>
+        observations[0] ? [[offerId, observations[0]] as const] : [],
+      ),
+    );
+    const previousObservationByOffer = new Map(
+      [...recentObservationsByOffer].flatMap(([offerId, observations]) =>
+        observations[1] ? [[offerId, observations[1]] as const] : [],
+      ),
     );
     const latestValidObservationByOffer = new Map(
       latestValidObservations.map((observation) => [observation.offerId, observation]),
@@ -381,6 +396,7 @@ export class PricingService {
     const items = products.map((product) => {
       const offers = product.offers.map((offer) => {
         const latestObservation = latestObservationByOffer.get(offer.id);
+        const previousObservation = previousObservationByOffer.get(offer.id);
         const latestValidObservation = latestValidObservationByOffer.get(offer.id);
         return {
           offerId: offer.id,
@@ -391,6 +407,10 @@ export class PricingService {
           matchReason: offer.matchReason,
           isOwn: offer.source.domain === "centr-to.ru" || offer.competitorUrl === product.ownUrl,
           price: latestObservation ? priceDto(latestObservation) : null,
+          priceChange: calculatePriceMovement(
+            latestObservation?.normalizedPrice?.toString() ?? null,
+            previousObservation?.normalizedPrice?.toString() ?? null,
+          ),
           comparisonPrice:
             offer.matchStatus === "exact" && latestValidObservation
               ? priceDto(latestValidObservation)
@@ -473,6 +493,7 @@ export class PricingService {
           exclusionReason: null,
           evidenceText: "Сумма цен 4641N и VT-64 у одного продавца",
         },
+        priceChange: null,
         difference: comparisonDelta(ownValue, candidate.totalPrice),
       }));
       const competitors = [...directCompetitors, ...bundleCompetitors];

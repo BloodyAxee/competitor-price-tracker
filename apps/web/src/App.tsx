@@ -18,14 +18,14 @@ import type {
   Product,
 } from "./types";
 import {
+  attentionCompetitor,
   bestCompetitor,
   collectionMethodLabel,
-  competitorCountLabel,
-  confirmedPriceCountLabel,
   differenceTone,
   formatDate,
   formatDifference,
   formatPrice,
+  formatPriceMovement,
   jobLabel,
   observationStatus,
   offerStatusLabel,
@@ -37,7 +37,6 @@ type ScopeFilter = "all" | "required" | "additional" | "component";
 type DataFilter = "all" | "compared" | "partial" | "missing";
 type MatchFilter = "all" | "exact" | "review" | "without-offers";
 type SortKey = "priority" | "name" | "own-price" | "competitor-price" | "difference" | "freshness";
-type ColumnKey = "own" | "competitor" | "difference" | "status";
 
 const initialSummary: CatalogSummary = {
   total: 0,
@@ -100,17 +99,12 @@ function App() {
   const [selected, setSelected] = useState<Product | null>(null);
   const [history, setHistory] = useState<HistoryResponse | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<ScopeFilter>("required");
   const [dataFilter, setDataFilter] = useState<DataFilter>("all");
   const [matchFilter, setMatchFilter] = useState<MatchFilter>("all");
   const [sort, setSort] = useState<SortKey>("priority");
-  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({
-    own: true,
-    competitor: true,
-    difference: true,
-    status: true,
-  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [job, setJob] = useState<CollectionJobDetails | null>(null);
@@ -164,6 +158,7 @@ function App() {
     }
     let cancelled = false;
     setHistoryLoading(true);
+    setHistoryExpanded(false);
     setHistory(null);
     setManualMessage(null);
     setManual({
@@ -324,49 +319,46 @@ function App() {
   const jobActive = job ? ["pending", "running"].includes(job.status) : false;
   const failedAttempts = job?.attempts.filter((attempt) => attempt.status === "failed") ?? [];
 
-  const competitorOfferCard = (
-    competitor: CompetitorComparison,
-    index: number,
-    showReason = false,
-  ) => {
+  const competitorDetail = (competitor: CompetitorComparison, index: number) => {
     const tone = offerStatusTone(competitor);
     const currentPrice = competitor.price;
-    const confirmedPrice = competitor.comparisonPrice;
     const reason = currentPrice?.exclusionReason ?? competitor.matchReason;
-    const showConfirmedDifference = tone === "valid" && columns.difference;
+    const movement = formatPriceMovement(competitor.priceChange);
     return (
-      <article className={`market-offer ${tone}`} key={competitor.offerId}>
-        <div className="market-offer-heading">
-          <span>Конкурент {index + 1}</span>
+      <details className={`competitor-detail ${tone}`} key={competitor.offerId}>
+        <summary>
+          <span className="competitor-summary-main">
+            {tone === "warning" && <span className="attention-icon" aria-label="Требует проверки">!</span>}
+            <span>
+              <strong>{competitor.seller}</strong>
+              <small>Конкурент {index + 1}</small>
+            </span>
+          </span>
+          <span className="competitor-summary-price">
+            <strong>{formatPrice(currentPrice?.normalizedPrice)}</strong>
+            {movement && <small className={`price-movement ${competitor.priceChange?.direction}`}>{movement}</small>}
+          </span>
           <span className={`trust-badge ${tone}`}>{offerStatusLabel(competitor)}</span>
-        </div>
-        <a
-          className="competitor-link"
-          href={competitor.url}
-          target="_blank"
-          rel="noreferrer"
-          onClick={(event) => event.stopPropagation()}
-        >
-          {competitor.seller}
-        </a>
-        <div className="market-price-row">
-          <strong>{formatPrice(currentPrice?.normalizedPrice)}</strong>
-          {showConfirmedDifference && (
+        </summary>
+        <div className="competitor-detail-body">
+          <div>
+            <a className="competitor-link" href={competitor.url} target="_blank" rel="noreferrer">
+              Открыть карточку продавца
+            </a>
+            <small>
+              {collectionMethodLabel(currentPrice)}
+              {currentPrice ? ` · ${formatDate(currentPrice.observedAt ?? currentPrice.receivedAt)}` : ""}
+            </small>
+          </div>
+          {tone === "valid" && competitor.difference.amount != null && (
             <span className={`market-delta ${differenceTone(competitor.difference.amount)}`}>
               {formatDifference(competitor.difference.amount, competitor.difference.percent)}
             </span>
           )}
-          {tone === "warning" && <span className="excluded-label">Не входит в итог</span>}
+          {tone === "warning" && <span className="excluded-label">Цена не входит в итоговое сравнение</span>}
+          {reason && <p>{reason}</p>}
         </div>
-        <small>
-          {collectionMethodLabel(currentPrice)}
-          {currentPrice ? ` · ${formatDate(currentPrice.observedAt ?? currentPrice.receivedAt)}` : ""}
-        </small>
-        {tone === "warning" && confirmedPrice?.normalizedPrice && (
-          <small>Последняя подтверждённая · {formatPrice(confirmedPrice.normalizedPrice)}</small>
-        )}
-        {(showReason || tone === "warning") && reason && <p>{reason}</p>}
-      </article>
+      </details>
     );
   };
 
@@ -376,25 +368,49 @@ function App() {
     const confirmedCompetitors = competitors.filter(
       (competitor) => competitor.comparisonPrice?.normalizedPrice != null,
     );
+    const confirmed = bestCompetitor(item ?? ({ competitors: [] } as unknown as ComparisonItem));
+    const attention = attentionCompetitor(item ?? ({ competitors: [] } as unknown as ComparisonItem));
+    const reviewCandidate = attention;
     const ownPrice = item?.own?.price;
     const modelCell = <div className="model-data"><strong>{product.name}</strong><span>{product.article ?? "Артикул не указан"}</span></div>;
     const ownCell = <div className="price-data own-price" data-label="Наша цена"><strong>{formatPrice(ownPrice?.normalizedPrice)}</strong>{item?.own?.url ? <a href={item.own.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>ЦТО</a> : <span>Карточка ЦТО не указана</span>}<small>{collectionMethodLabel(ownPrice)}{ownPrice ? ` · ${formatDate(ownPrice.observedAt ?? ownPrice.receivedAt)}` : ""}</small></div>;
-    const competitorCell = (
-      <div className="competitor-stack" data-label="Конкуренты">
-        {competitors.length === 0 && <div className="market-offer missing"><strong>Конкуренты пока не найдены</strong><small>Добавьте или проверьте карточки продавцов</small></div>}
-        {competitors.map((competitor, index) => competitorOfferCard(competitor, index))}
+    const confirmedCell = (
+      <div className="price-data competitor-result" data-label="Подтверждённая цена">
+        <strong>{formatPrice(confirmed?.comparisonPrice?.normalizedPrice)}</strong>
+        {confirmed ? <a href={confirmed.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{confirmed.seller}</a> : <span>Нет цены для итога</span>}
+        {confirmed?.priceChange && confirmed.price?.reliability === "valid" && (
+          <span className={`price-movement ${confirmed.priceChange.direction}`}>{formatPriceMovement(confirmed.priceChange)}</span>
+        )}
+        {confirmed?.difference.amount != null && Number(confirmed.difference.amount) !== 0 && <small className={`result-difference ${differenceTone(confirmed.difference.amount)}`}>{formatDifference(confirmed.difference.amount, confirmed.difference.percent)}</small>}
+        {confirmed?.difference.amount != null && Number(confirmed.difference.amount) === 0 && <small>Цена совпадает с нашей</small>}
+        {confirmed && <small>{formatDate(confirmed.comparisonPrice?.observedAt ?? confirmed.comparisonPrice?.receivedAt)}</small>}
+        {confirmedCompetitors.length > 1 && <small>Ещё подтверждённых цен · {confirmedCompetitors.length - 1}</small>}
       </div>
     );
-    const statusCell = <div className="status-data" data-label="Охват"><span className={`data-badge ${comparisonState(item)}`}>{comparisonState(item) === "compared" ? "Есть сравнение" : comparisonState(item) === "partial" ? "Данных недостаточно" : "Нет цен"}</span><small>{competitorCountLabel(competitors.length)}</small><small>{confirmedPriceCountLabel(confirmedCompetitors.length)}</small><small>Обновлено · {formatDate(latestComparisonDate(item) ? new Date(latestComparisonDate(item)).toISOString() : null)}</small></div>;
+    const attentionCell = (
+      <div className={`attention-price ${reviewCandidate ? "active" : "quiet"}`} data-label="Требует проверки">
+        {reviewCandidate ? (
+          <>
+            <span className="attention-icon" aria-label="Требует проверки">!</span>
+            <div>
+              <strong>{formatPrice(reviewCandidate.price?.normalizedPrice)}</strong>
+              <a href={reviewCandidate.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{reviewCandidate.seller}</a>
+              {reviewCandidate.priceChange && <span className={`price-movement ${reviewCandidate.priceChange.direction}`}>{formatPriceMovement(reviewCandidate.priceChange)}</span>}
+              <small>Не входит в итог</small>
+            </div>
+          </>
+        ) : <span>Нет сигналов</span>}
+      </div>
+    );
     if (mobile) {
-      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{competitorCell}{statusCell}</article>;
+      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{attentionCell}</article>;
     }
     return (
       <tr key={product.id} onClick={() => setSelected(product)} tabIndex={0} onKeyDown={(event) => event.key === "Enter" && setSelected(product)}>
         <td>{modelCell}</td>
-        {columns.own && <td>{ownCell}</td>}
-        {columns.competitor && <td>{competitorCell}</td>}
-        {columns.status && <td>{statusCell}</td>}
+        <td>{ownCell}</td>
+        <td>{confirmedCell}</td>
+        <td>{attentionCell}</td>
       </tr>
     );
   };
@@ -403,6 +419,9 @@ function App() {
   const selectedCompetitors = selectedComparison
     ? sortedCompetitors(selectedComparison)
     : [];
+  const selectedConfirmed = selectedComparison ? bestCompetitor(selectedComparison) : null;
+  const selectedAttention = selectedComparison ? attentionCompetitor(selectedComparison) : null;
+  const visibleHistory = historyExpanded ? history?.items : history?.items.slice(0, 3);
 
   return (
     <div className="app-shell">
@@ -449,10 +468,9 @@ function App() {
 
         <section className="catalog-panel">
           <div className="panel-heading">
-            <div><h2>Мониторинг по моделям</h2><p>Показано {visibleProducts.length} позиций · в каждой карточке перечислены отдельные конкуренты</p></div>
+            <div><h2>Мониторинг по моделям</h2><p>Показано {visibleProducts.length} позиций · итоговая цена отделена от сигналов, требующих проверки</p></div>
             <div className="panel-actions">
               <a className="export-button" href={priceExportUrl}>Скачать CSV</a>
-              <details className="column-picker"><summary>Столбцы</summary><div>{([['own', 'Наша цена'], ['competitor', 'Предложения конкурентов'], ['difference', 'Разница в предложениях'], ['status', 'Охват источников']] as Array<[ColumnKey, string]>).map(([key, label]) => <label key={key}><input type="checkbox" checked={columns[key]} onChange={() => setColumns((value) => ({ ...value, [key]: !value[key] }))} />{label}</label>)}</div></details>
               <button className="refresh-button" onClick={() => void refresh()} disabled={loading}>{loading ? "Обновление" : "Обновить"}</button>
             </div>
           </div>
@@ -471,7 +489,7 @@ function App() {
 
           {!loading && !error && visibleProducts.length > 0 && (
             <>
-              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th>{columns.own && <th>Наша цена</th>}{columns.competitor && <th>Предложения конкурентов</th>}{columns.status && <th>Охват</th>}</tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
+              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th><span className="warning-heading"><span className="attention-icon small" aria-hidden="true">!</span>Цена требует проверки</span></th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
               <div className="mobile-list">{visibleProducts.map((product) => productRow(product, true))}</div>
             </>
           )}
@@ -487,25 +505,34 @@ function App() {
             <p className="drawer-article">{selected.article ?? "Артикул не указан"}</p>
             {selected.ownUrl ? <a className="external-link" href={selected.ownUrl} target="_blank" rel="noreferrer">Открыть карточку ЦТО</a> : <div className="notice">У комплекта нет отдельной карточки ЦТО. Это допустимо по условиям задания.</div>}
 
+            <section className="price-snapshot" aria-label="Краткое сравнение цен">
+              <article><span>Наша цена</span><strong>{formatPrice(selectedComparison?.own?.price?.normalizedPrice)}</strong></article>
+              <article><span>Итог конкурента</span><strong>{formatPrice(selectedConfirmed?.comparisonPrice?.normalizedPrice)}</strong><small>{selectedConfirmed?.seller ?? "Нет подтверждённой цены"}</small></article>
+              <article><span>Разница</span><strong className={differenceTone(selectedConfirmed?.difference.amount)}>{formatDifference(selectedConfirmed?.difference.amount, selectedConfirmed?.difference.percent)}</strong></article>
+              {selectedAttention && <article className="attention"><span><span className="attention-icon small" aria-hidden="true">!</span>Проверить</span><strong>{formatPrice(selectedAttention.price?.normalizedPrice)}</strong><small>{selectedAttention.seller} · не входит в итог</small></article>}
+            </section>
+
             {selected.bundleParts.length > 0 && <section className="drawer-section"><h3>Состав комплекта</h3><p className="muted">Откройте оба компонента и внесите цены из одного предложения продавца. После второй цены сумма появится у комплекта автоматически.</p>{selected.bundleParts.map((part) => <button type="button" className="component" key={part.componentProduct.id} onClick={() => { const component = products.find((product) => product.id === part.componentProduct.id); if (component) setSelected(component); }}><strong>{part.componentProduct.name}</strong><span>{part.componentProduct.article ?? "Артикул не указан"} · {part.quantity} шт.</span></button>)}{comparisonMap.get(selected.id)?.bundleStatus?.ready ? <div className="notice success">Комплект рассчитан по двум ценам одного продавца</div> : <div className="notice">{bundleStatusLabel(comparisonMap.get(selected.id)?.bundleStatus?.exclusionReason ?? "incomplete_bundle")}</div>}</section>}
 
             {selected.catalogScope === "component" && <div className="notice">Укажите цену из одного и того же предложения продавца для обоих компонентов комплекта. Название продавца и ссылку сохраните в подтверждении цены.</div>}
 
             <section className="drawer-section competitor-overview">
-              <div className="section-heading"><div><h3>Конкуренты по этой модели</h3><p>Каждая карточка ниже — отдельный продавец или кандидат на проверку</p></div><span className="count-badge">{selectedCompetitors.length}</span></div>
-              {selectedCompetitors.length === 0 ? <p className="muted">Конкурентные предложения для этой модели пока не найдены.</p> : <div className="drawer-competitors">{selectedCompetitors.map((competitor, index) => competitorOfferCard(competitor, index, true))}</div>}
-              <p className="comparison-note">В расчёт разницы попадают только предложения с пометкой «Подтверждено». Сомнительные цены остаются видимыми для ручной проверки.</p>
+              <div className="section-heading"><div><h3>Источники конкурентов</h3><p>Нажмите на строку, чтобы увидеть доказательства и причину статуса</p></div><span className="count-badge">{selectedCompetitors.length}</span></div>
+              {selectedCompetitors.length === 0 ? <p className="muted">Конкурентные предложения для этой модели пока не найдены.</p> : <div className="drawer-competitors">{selectedCompetitors.map((competitor, index) => competitorDetail(competitor, index))}</div>}
+              <p className="comparison-note">Итоговая разница рассчитывается только по подтверждённым ценам. Красный знак привлекает внимание, но такая цена не меняет итог до проверки.</p>
             </section>
 
             <section className="drawer-section">
-              <div className="section-heading"><div><h3>История цен</h3><p>Каждый сбор сохраняется отдельной записью</p></div><span className="count-badge">{history?.total ?? 0}</span></div>
+              <div className="section-heading"><div><h3>История цен</h3><p>{historyExpanded ? "Показаны все сохранённые наблюдения" : "Три последних наблюдения"}</p></div><span className="count-badge">{history?.total ?? 0}</span></div>
               {historyLoading && <div className="inline-loading"><div className="spinner"></div>Загружаем историю</div>}
               {!historyLoading && history?.items.length === 0 && <p className="muted">Истории пока нет. Запустите сбор или внесите цену вручную.</p>}
-              <div className="history-list">{history?.items.map((entry) => <article className={`history-item ${entry.reliability}`} key={entry.id}><div><strong>{formatPrice(entry.normalizedPrice ?? entry.rawPrice)}</strong><a href={entry.offer.competitorUrl} target="_blank" rel="noreferrer">{entry.offer.source.domain === "centr-to.ru" ? "Наша цена · ЦТО" : `Конкурент · ${entry.offer.seller.displayName}`}</a><span>{formatDate(entry.receivedAt)}</span></div><div className="history-status"><span className={`method-badge ${entry.method}`}>{entry.method === "manual" ? "Вручную" : "Автоматически"}</span><small>{observationStatus(entry)}</small></div>{entry.exclusionReason && <p>Причина исключения · {entry.exclusionReason}</p>}</article>)}</div>
+              <div className="history-list">{visibleHistory?.map((entry) => <article className={`history-item ${entry.reliability}`} key={entry.id}><div><strong>{formatPrice(entry.normalizedPrice ?? entry.rawPrice)}</strong><a href={entry.offer.competitorUrl} target="_blank" rel="noreferrer">{entry.offer.source.domain === "centr-to.ru" ? "Наша цена · ЦТО" : `Конкурент · ${entry.offer.seller.displayName}`}</a><span>{formatDate(entry.receivedAt)}</span></div><div className="history-status"><span className={`method-badge ${entry.method}`}>{entry.method === "manual" ? "Вручную" : "Автоматически"}</span><small>{observationStatus(entry)}</small></div>{entry.exclusionReason && <p>Причина исключения · {entry.exclusionReason}</p>}</article>)}</div>
+              {(history?.items.length ?? 0) > 3 && <button type="button" className="history-toggle" onClick={() => setHistoryExpanded((value) => !value)}>{historyExpanded ? "Свернуть до трёх последних" : `Показать всю историю · ${history?.total ?? history?.items.length}`}</button>}
             </section>
 
-            <section className="drawer-section manual-section">
-              <div className="section-heading"><div><h3>Внести цену вручную</h3><p>Запись будет явно отмечена и пройдёт те же проверки надёжности</p></div></div>
+            <details className="drawer-section manual-section">
+              <summary><span><strong>Внести цену вручную</strong><small>Дополнительное действие</small></span></summary>
+              <div className="manual-content">
               {selected.bundleParts.length > 0 ? <div className="notice">Цена комплекта напрямую не вводится. Внесите отдельно цены двух компонентов из предложения одного продавца.</div> : selected.offers.length === 0 ? <div className="notice">Для ручного ввода сначала нужен источник товара.</div> : (
                 <form className="manual-form" onSubmit={(event) => void handleManualSubmit(event)}>
                   <label><span>Источник</span><select value={manual.offerId} onChange={(event) => setManual((value) => ({ ...value, offerId: event.target.value }))}>{selected.offers.map((offer) => <option value={offer.id} key={offer.id}>{offer.seller.displayName} · {matchLabel(offer.matchStatus)}</option>)}</select></label>
@@ -516,7 +543,8 @@ function App() {
                   <button className="primary-button" type="submit" disabled={manualSaving}>{manualSaving ? "Сохраняем" : "Сохранить цену"}</button>
                 </form>
               )}
-            </section>
+              </div>
+            </details>
 
           </aside>
         </div>

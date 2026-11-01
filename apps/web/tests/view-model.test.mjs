@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   bestCompetitor,
+  attentionCompetitor,
   collectionMethodLabel,
   competitorCountLabel,
   confirmedPriceCountLabel,
   differenceTone,
   formatDifference,
   formatPrice,
+  formatPriceMovement,
   observationStatus,
   offerStatusLabel,
   offerStatusTone,
@@ -30,6 +32,36 @@ test("the cheapest priced competitor is selected", () => {
     ],
   };
   assert.equal(bestCompetitor(item).comparisonPrice.normalizedPrice, "95000");
+});
+
+test("the result price ignores a cheaper unverified offer", () => {
+  const item = {
+    competitors: [
+      {
+        seller: "Проверить",
+        matchStatus: "review",
+        price: { normalizedPrice: "80000", reliability: "unreliable" },
+        comparisonPrice: null,
+      },
+      {
+        seller: "Подтверждено",
+        matchStatus: "exact",
+        price: { normalizedPrice: "100000", reliability: "valid" },
+        comparisonPrice: { normalizedPrice: "100000" },
+      },
+    ],
+  };
+
+  assert.equal(bestCompetitor(item).seller, "Подтверждено");
+  assert.equal(attentionCompetitor(item).seller, "Проверить");
+});
+
+test("price movement is formatted as a separate market signal", () => {
+  assert.equal(
+    formatPriceMovement({ amount: "-10000", percent: "-10", direction: "down" }),
+    "Снизилась на 10 000 ₽ · 10.0%",
+  );
+  assert.equal(formatPriceMovement(null), null);
 });
 
 test("all competitors are kept and priced offers are ordered before unavailable ones", () => {

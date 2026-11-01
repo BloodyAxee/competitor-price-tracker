@@ -30,7 +30,16 @@ export function formatDate(value: string | null | undefined, includeTime = true)
 }
 
 export function bestCompetitor(item: ComparisonItem): CompetitorComparison | null {
-  return sortedCompetitors(item)[0] ?? null;
+  return sortedCompetitors(item).find((offer) => offer.comparisonPrice?.normalizedPrice != null) ?? null;
+}
+
+export function attentionCompetitor(item: ComparisonItem): CompetitorComparison | null {
+  return sortedCompetitors(item)
+    .filter(
+      (offer) =>
+        offer.price?.normalizedPrice != null &&
+        (offer.matchStatus === "review" || offer.price.reliability !== "valid"),
+    )[0] ?? null;
 }
 
 export function sortedCompetitors(item: ComparisonItem): CompetitorComparison[] {
@@ -57,6 +66,17 @@ export function formatDifference(amount: string | null | undefined, percent: str
   if (!Number.isFinite(numericAmount) || !Number.isFinite(numericPercent)) return "Нет сравнения";
   const sign = numericAmount > 0 ? "+" : "";
   return `${sign}${moneyFormatter.format(numericAmount)} · ${sign}${numericPercent.toFixed(1)}%`;
+}
+
+export function formatPriceMovement(
+  change: ComparisonOffer["priceChange"] | null | undefined,
+) {
+  if (!change) return null;
+  const amount = Math.abs(Number(change.amount));
+  const percent = Math.abs(Number(change.percent));
+  if (!Number.isFinite(amount) || !Number.isFinite(percent)) return null;
+  const direction = change.direction === "up" ? "Выросла" : "Снизилась";
+  return `${direction} на ${moneyFormatter.format(amount)} · ${percent.toFixed(1)}%`;
 }
 
 export function observationStatus(price: PriceObservation | null | undefined) {

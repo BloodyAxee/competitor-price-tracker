@@ -101,8 +101,11 @@ main { width: min(1460px, 92vw); margin: 0 auto; padding: 36px 0 70px; }
 .filters input:focus, .filters select:focus, .manual-form input:focus, .manual-form select:focus, .manual-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
 
 .table-wrap { overflow: auto; border-top: 1px solid var(--line); }
-table { width: 100%; border-collapse: collapse; min-width: 1180px; }
+table { width: 100%; border-collapse: collapse; min-width: 1050px; }
 th { padding: 12px 18px; text-align: left; background: var(--surface-soft); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .055em; position: sticky; top: 0; }
+th:first-child { width: 34%; }
+th:nth-child(2), th:nth-child(3) { width: 21%; }
+th:nth-child(4) { width: 24%; }
 td { padding: 16px 18px; border-top: 1px solid var(--line); vertical-align: middle; font-size: 13px; }
 tbody tr { cursor: pointer; transition: background .15s ease; }
 tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); outline: none; }
@@ -113,6 +116,22 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .price-data strong { font-size: 15px; white-space: nowrap; }
 .price-data a { display: inline-block; margin-top: 5px; font-size: 12px; font-weight: 750; text-underline-offset: 2px; }
 .price-data small { line-height: 1.35; }
+.competitor-result .result-difference { margin-top: 7px; font-weight: 800; }
+.result-difference.positive { color: var(--success); }
+.result-difference.negative { color: var(--danger); }
+.price-movement { display: inline-flex !important; width: fit-content; margin-top: 6px !important; padding: 4px 7px; border-radius: 7px; font-size: 10px !important; font-weight: 800; line-height: 1.25; }
+.price-movement.up { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
+.price-movement.down { color: var(--success); background: color-mix(in srgb, var(--success) 12%, var(--surface)); }
+.warning-heading { display: inline-flex; align-items: center; gap: 7px; }
+.attention-icon { width: 25px; height: 25px; flex: 0 0 25px; display: inline-grid; place-items: center; border: 2px solid var(--danger); border-radius: 50%; color: var(--danger); font-size: 15px; font-weight: 950; line-height: 1; }
+.attention-icon.small { width: 19px; height: 19px; flex-basis: 19px; font-size: 12px; }
+.attention-price { min-height: 66px; display: flex; align-items: flex-start; gap: 10px; }
+.attention-price.active { padding: 10px 11px; border: 1px solid color-mix(in srgb, var(--danger) 42%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--danger) 5%, var(--surface)); }
+.attention-price strong, .attention-price a, .attention-price small { display: block; }
+.attention-price strong { font-size: 15px; white-space: nowrap; }
+.attention-price a { margin-top: 4px; font-size: 12px; font-weight: 750; }
+.attention-price small { margin-top: 5px; color: var(--danger); font-size: 10px; font-weight: 750; }
+.attention-price.quiet { min-height: auto; color: var(--muted); font-size: 12px; }
 .competitor-stack { min-width: 390px; display: grid; gap: 9px; }
 .market-offer { padding: 12px 13px; border: 1px solid var(--line); border-left: 3px solid var(--success); border-radius: 11px; background: var(--surface-soft); }
 .market-offer.warning { border-left-color: var(--warning); background: color-mix(in srgb, var(--warning) 6%, var(--surface-soft)); }
@@ -179,8 +198,18 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .offer-card a { font-weight: 700; font-size: 12px; }
 .muted { color: var(--muted); }
 .inline-loading { min-height: 90px; color: var(--muted); display: grid; place-content: center; gap: 9px; text-align: center; font-size: 12px; }
-.history-list { display: grid; gap: 9px; }
-.history-item { padding: 14px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 11px; background: var(--surface-soft); display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+.price-snapshot { margin-top: 22px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.price-snapshot article { min-height: 92px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
+.price-snapshot article.attention { border-color: color-mix(in srgb, var(--danger) 42%, var(--line)); background: color-mix(in srgb, var(--danger) 5%, var(--surface)); }
+.price-snapshot span, .price-snapshot strong, .price-snapshot small { display: block; }
+.price-snapshot span { color: var(--muted); font-size: 10px; font-weight: 750; }
+.price-snapshot article.attention > span { display: flex; align-items: center; gap: 6px; color: var(--danger); }
+.price-snapshot strong { margin-top: 12px; font-size: 16px; line-height: 1.25; }
+.price-snapshot strong.positive { color: var(--success); }
+.price-snapshot strong.negative { color: var(--danger); }
+.price-snapshot small { margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.3; }
+.history-list { display: grid; gap: 7px; }
+.history-item { padding: 11px 12px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 9px; background: var(--surface-soft); display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .history-item.unreliable { border-left-color: var(--warning); }
 .history-item strong, .history-item span, .history-item small { display: block; }
 .history-item > div:first-child a { display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 750; }
@@ -190,7 +219,13 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .method-badge.manual { color: #5e557b; background: #ebe8f5; }
 .method-badge.automatic { color: #11603f; background: #d9f1e4; }
 .history-item p { grid-column: 1 / -1; margin: 0; color: var(--warning); font-size: 11px; }
-.manual-section { padding: 20px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface-soft); }
+.history-toggle { width: 100%; margin-top: 9px; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--accent); font-size: 12px; font-weight: 750; }
+.manual-section { padding: 0; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-soft); }
+.manual-section > summary { padding: 14px 16px; cursor: pointer; }
+.manual-section > summary > span { display: inline-flex; flex-direction: column; gap: 3px; }
+.manual-section > summary strong { font-size: 13px; }
+.manual-section > summary small { color: var(--muted); font-size: 10px; font-weight: 500; }
+.manual-content { padding: 4px 16px 16px; }
 .manual-form { display: grid; gap: 12px; }
 .manual-form textarea { min-height: 78px; resize: vertical; padding-top: 10px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -199,9 +234,22 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .form-message.success { color: #11603f; background: #d9f1e4; }
 .form-message.warning { color: #744818; background: #fff3df; }
 .form-message.error { color: #8d3029; background: #fbe2df; }
-.drawer-competitors { display: grid; gap: 10px; }
-.drawer-competitors .market-offer { padding: 15px; }
-.drawer-competitors .market-offer p { display: block; overflow: visible; font-size: 11px; -webkit-line-clamp: unset; }
+.drawer-competitors { display: grid; gap: 7px; }
+.competitor-detail { border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); overflow: hidden; }
+.competitor-detail.warning { border-left: 3px solid var(--danger); }
+.competitor-detail.valid { border-left: 3px solid var(--success); }
+.competitor-detail > summary { min-height: 66px; padding: 11px 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; cursor: pointer; list-style: none; }
+.competitor-detail > summary::-webkit-details-marker { display: none; }
+.competitor-summary-main { min-width: 0; display: flex; align-items: center; gap: 9px; }
+.competitor-summary-main strong, .competitor-summary-main small, .competitor-summary-price strong, .competitor-summary-price small { display: block; }
+.competitor-summary-main strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.competitor-summary-main small, .competitor-detail-body small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.competitor-summary-price { text-align: right; }
+.competitor-summary-price strong { font-size: 14px; white-space: nowrap; }
+.competitor-summary-price .price-movement { margin-left: auto; }
+.competitor-detail-body { padding: 11px 12px 13px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; gap: 9px 12px; }
+.competitor-detail-body p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.competitor-detail.warning .competitor-detail-body p { color: var(--danger); }
 .comparison-note { margin: 12px 0 0; padding: 11px 13px; border-radius: 9px; background: color-mix(in srgb, var(--accent) 8%, var(--surface)); color: var(--muted); font-size: 11px; line-height: 1.5; }
 
 @media (max-width: 1080px) {
@@ -237,10 +285,12 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
   .product-card .model-data { grid-column: 1 / -1; }
   .product-card .model-data strong { font-size: 14px; }
   .product-card [data-label]::before { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; content: attr(data-label); }
-  .product-card .competitor-stack { grid-column: 1 / -1; min-width: 0; }
-  .product-card .market-offer { min-height: 0; }
+  .product-card .attention-price { min-height: 0; }
   .drawer { width: 100%; max-width: 100%; padding: 24px 18px; }
   .drawer h2 { font-size: 24px; }
+  .price-snapshot { grid-template-columns: 1fr 1fr; }
+  .competitor-detail > summary { grid-template-columns: minmax(0, 1fr) auto; }
+  .competitor-detail > summary .trust-badge { grid-column: 1 / -1; width: fit-content; }
   .form-row { grid-template-columns: 1fr; }
 }
 
@@ -248,6 +298,7 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
   .metrics { grid-template-columns: 1fr 1fr; gap: 8px; }
   .product-card { grid-template-columns: 1fr; }
   .product-card .model-data { grid-column: auto; }
+  .price-snapshot { grid-template-columns: 1fr; }
   .history-item { grid-template-columns: 1fr; }
   .history-status { text-align: left; }
   .method-badge { margin-left: 0; width: fit-content; }

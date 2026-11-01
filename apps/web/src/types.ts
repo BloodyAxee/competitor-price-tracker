@@ -75,6 +75,12 @@ export interface ComparisonOffer {
   matchReason: string | null;
   isOwn: boolean;
   price: PriceObservation | null;
+  priceChange: {
+    previousPrice: string;
+    amount: string;
+    percent: string;
+    direction: "up" | "down";
+  } | null;
   comparisonPrice: PriceObservation | null;
 }
 
