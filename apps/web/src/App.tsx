@@ -18,18 +18,21 @@ import type {
 } from "./types";
 import {
   bestCompetitor,
+  competitorPriceCountLabel,
   differenceTone,
   formatDate,
   formatDifference,
   formatPrice,
   jobLabel,
   observationStatus,
+  reliabilityLabel,
+  sortedCompetitors,
 } from "./view-model";
 
 type ScopeFilter = "all" | "required" | "additional" | "component";
 type DataFilter = "all" | "compared" | "partial" | "missing";
 type MatchFilter = "all" | "exact" | "review" | "without-offers";
-type SortKey = "priority" | "name" | "difference" | "freshness";
+type SortKey = "priority" | "name" | "own-price" | "competitor-price" | "difference" | "freshness";
 type ColumnKey = "own" | "competitor" | "difference" | "status";
 
 const initialSummary: CatalogSummary = {
@@ -74,6 +77,15 @@ function comparisonState(item: ComparisonItem | undefined) {
   if (ownPrice && competitorPrice) return "compared";
   if (ownPrice || competitorPrice) return "partial";
   return "missing";
+}
+
+function latestComparisonDate(item: ComparisonItem | undefined) {
+  if (!item) return 0;
+  const dates = [item.own?.price?.receivedAt, ...item.competitors.map((offer) => offer.price?.receivedAt)]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => Date.parse(value))
+    .filter(Number.isFinite);
+  return dates.length > 0 ? Math.max(...dates) : 0;
 }
 
 function App() {
@@ -223,14 +235,24 @@ function App() {
       })
       .sort((left, right) => {
         if (sort === "name") return left.name.localeCompare(right.name, "ru");
+        if (sort === "own-price") {
+          const leftPrice = Number(comparisonMap.get(left.id)?.own?.price?.normalizedPrice ?? Infinity);
+          const rightPrice = Number(comparisonMap.get(right.id)?.own?.price?.normalizedPrice ?? Infinity);
+          return leftPrice - rightPrice;
+        }
+        if (sort === "competitor-price") {
+          const leftPrice = Number(bestCompetitor(comparisonMap.get(left.id) ?? ({ competitors: [] } as unknown as ComparisonItem))?.price?.normalizedPrice ?? Infinity);
+          const rightPrice = Number(bestCompetitor(comparisonMap.get(right.id) ?? ({ competitors: [] } as unknown as ComparisonItem))?.price?.normalizedPrice ?? Infinity);
+          return leftPrice - rightPrice;
+        }
         if (sort === "difference") {
           const leftDelta = Number(bestCompetitor(comparisonMap.get(left.id) ?? ({ competitors: [] } as unknown as ComparisonItem))?.difference.amount ?? -Infinity);
           const rightDelta = Number(bestCompetitor(comparisonMap.get(right.id) ?? ({ competitors: [] } as unknown as ComparisonItem))?.difference.amount ?? -Infinity);
           return rightDelta - leftDelta;
         }
         if (sort === "freshness") {
-          const leftDate = Date.parse(comparisonMap.get(left.id)?.own?.price?.receivedAt ?? "") || 0;
-          const rightDate = Date.parse(comparisonMap.get(right.id)?.own?.price?.receivedAt ?? "") || 0;
+          const leftDate = latestComparisonDate(comparisonMap.get(left.id));
+          const rightDate = latestComparisonDate(comparisonMap.get(right.id));
           return rightDate - leftDate;
         }
         return left.priority - right.priority || left.name.localeCompare(right.name, "ru");
@@ -297,17 +319,36 @@ function App() {
 
   const productRow = (product: Product, mobile = false) => {
     const item = comparisonMap.get(product.id);
-    const competitor = bestCompetitor(item ?? ({ competitors: [] } as unknown as ComparisonItem));
+    const competitors = sortedCompetitors(item ?? ({ competitors: [] } as unknown as ComparisonItem));
+    const pricedCompetitors = competitors.filter((competitor) => competitor.price?.normalizedPrice != null);
     const ownPrice = item?.own?.price;
-    const competitorPrice = competitor?.price;
-    const delta = competitor?.difference;
     const modelCell = <div className="model-data"><strong>{product.name}</strong><span>{product.article ?? "Артикул не указан"}</span></div>;
-    const ownCell = <div className="price-data"><strong>{formatPrice(ownPrice?.normalizedPrice)}</strong><span>{item?.own?.source.name ?? "Свой источник не указан"}</span></div>;
-    const competitorCell = <div className="price-data"><strong>{formatPrice(competitorPrice?.normalizedPrice)}</strong><span>{competitor?.seller ?? "Конкурент не указан"}</span></div>;
-    const differenceCell = <div className={`delta-data ${differenceTone(delta?.amount)}`}><strong>{formatDifference(delta?.amount, delta?.percent)}</strong><span>{delta?.amount == null ? "Нужны обе цены" : Number(delta.amount) > 0 ? "Наша цена ниже" : Number(delta.amount) < 0 ? "Наша цена выше" : "Цены равны"}</span></div>;
-    const statusCell = <div className="status-data"><span className={`data-badge ${comparisonState(item)}`}>{comparisonState(item) === "compared" ? "Сравнено" : comparisonState(item) === "partial" ? "Одна цена" : "Нет цен"}</span><small>{formatDate(ownPrice?.receivedAt ?? competitorPrice?.receivedAt)}</small></div>;
+    const ownCell = <div className="price-data" data-label="Наша цена"><strong>{formatPrice(ownPrice?.normalizedPrice)}</strong><span>{item?.own?.source.name ?? "Свой источник не указан"}</span><small>{reliabilityLabel(ownPrice)} · {formatDate(ownPrice?.observedAt ?? ownPrice?.receivedAt)}</small></div>;
+    const competitorCell = (
+      <div className="competitor-stack" data-label="Конкуренты">
+        {competitors.length === 0 && <div className="competitor-offer empty"><strong>Не собрано</strong><span>Точных источников с ценой пока нет</span></div>}
+        {competitors.map((competitor, index) => (
+          <div className="competitor-offer" key={competitor.offerId}>
+            <div className="competitor-price-line"><strong>{formatPrice(competitor.price?.normalizedPrice)}</strong>{pricedCompetitors.length > 1 && index === 0 && <span className="best-price-badge">Минимальная</span>}</div>
+            <a href={competitor.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{competitor.seller}</a>
+            <span>{competitor.source.name} · {formatDate(competitor.price?.observedAt ?? competitor.price?.receivedAt)}</span>
+            <small>{reliabilityLabel(competitor.price)}</small>
+          </div>
+        ))}
+      </div>
+    );
+    const differenceCell = (
+      <div className="difference-stack" data-label="Разница">
+        {competitors.length === 0 && <div className="delta-data neutral"><strong>Нет сравнения</strong><span>Нужны обе цены</span></div>}
+        {competitors.map((competitor) => {
+          const delta = competitor.difference;
+          return <div className={`delta-data ${differenceTone(delta.amount)}`} key={competitor.offerId}><strong>{formatDifference(delta.amount, delta.percent)}</strong><span>{competitor.seller} · {delta.amount == null ? "нужны обе цены" : Number(delta.amount) > 0 ? "наша цена ниже" : Number(delta.amount) < 0 ? "наша цена выше" : "цены равны"}</span></div>;
+        })}
+      </div>
+    );
+    const statusCell = <div className="status-data" data-label="Состояние"><span className={`data-badge ${comparisonState(item)}`}>{comparisonState(item) === "compared" ? "Сравнено" : comparisonState(item) === "partial" ? "Одна цена" : "Нет цен"}</span><small>{pricedCompetitors.length > 0 ? competitorPriceCountLabel(pricedCompetitors.length) : "Нет цены конкурента"}</small><small>{formatDate(latestComparisonDate(item) ? new Date(latestComparisonDate(item)).toISOString() : null)}</small></div>;
     if (mobile) {
-      return <button className="product-card" key={product.id} onClick={() => setSelected(product)}>{modelCell}{ownCell}{competitorCell}{differenceCell}{statusCell}</button>;
+      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{competitorCell}{differenceCell}{statusCell}</article>;
     }
     return (
       <tr key={product.id} onClick={() => setSelected(product)} tabIndex={0} onKeyDown={(event) => event.key === "Enter" && setSelected(product)}>
@@ -378,7 +419,7 @@ function App() {
             <label><span>Часть каталога</span><select value={scope} onChange={(event) => setScope(event.target.value as ScopeFilter)}><option value="required">29 обязательных</option><option value="component">Компоненты комплекта</option><option value="additional">Дополнительные</option><option value="all">Все товары</option></select></label>
             <label><span>Данные</span><select value={dataFilter} onChange={(event) => setDataFilter(event.target.value as DataFilter)}><option value="all">Все состояния</option><option value="compared">Есть сравнение</option><option value="partial">Только одна цена</option><option value="missing">Нет цен</option></select></label>
             <label><span>Сопоставление</span><select value={matchFilter} onChange={(event) => setMatchFilter(event.target.value as MatchFilter)}><option value="all">Все источники</option><option value="exact">Точное</option><option value="review">Требует проверки</option><option value="without-offers">Без источников</option></select></label>
-            <label><span>Сортировка</span><select value={sort} onChange={(event) => setSort(event.target.value as SortKey)}><option value="priority">По приоритету</option><option value="name">По названию</option><option value="difference">По разнице цен</option><option value="freshness">Сначала свежие</option></select></label>
+            <label><span>Сортировка</span><select value={sort} onChange={(event) => setSort(event.target.value as SortKey)}><option value="priority">По приоритету</option><option value="name">По названию</option><option value="own-price">По нашей цене</option><option value="competitor-price">По цене конкурента</option><option value="difference">По разнице цен</option><option value="freshness">Сначала свежие</option></select></label>
           </div>
 
           {error && <div className="error-state"><strong>Ошибка подключения</strong><p>{error}</p><button className="secondary-button" onClick={() => void refresh()}>Попробовать снова</button></div>}
@@ -387,7 +428,7 @@ function App() {
 
           {!loading && !error && visibleProducts.length > 0 && (
             <>
-              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th>{columns.own && <th>Наша цена</th>}{columns.competitor && <th>Конкурент</th>}{columns.difference && <th>Разница</th>}{columns.status && <th>Состояние</th>}</tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
+              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th>{columns.own && <th>Наша цена</th>}{columns.competitor && <th>Все конкуренты</th>}{columns.difference && <th>Разница по каждому</th>}{columns.status && <th>Состояние</th>}</tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
               <div className="mobile-list">{visibleProducts.map((product) => productRow(product, true))}</div>
             </>
           )}

@@ -101,16 +101,27 @@ main { width: min(1460px, 92vw); margin: 0 auto; padding: 36px 0 70px; }
 .filters input:focus, .filters select:focus, .manual-form input:focus, .manual-form select:focus, .manual-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
 
 .table-wrap { overflow: auto; border-top: 1px solid var(--line); }
-table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+table { width: 100%; border-collapse: collapse; min-width: 1280px; }
 th { padding: 12px 18px; text-align: left; background: var(--surface-soft); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .055em; position: sticky; top: 0; }
 td { padding: 16px 18px; border-top: 1px solid var(--line); vertical-align: middle; font-size: 13px; }
 tbody tr { cursor: pointer; transition: background .15s ease; }
 tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); outline: none; }
 .model-data { max-width: 390px; }
-.model-data strong, .model-data span, .price-data strong, .price-data span, .delta-data strong, .delta-data span, .status-data small { display: block; }
+.model-data strong, .model-data span, .price-data strong, .price-data span, .price-data small, .delta-data strong, .delta-data span, .status-data small { display: block; }
 .model-data strong { line-height: 1.35; }
-.model-data span, .price-data span, .delta-data span, .status-data small { color: var(--muted); margin-top: 4px; font-size: 11px; }
+.model-data span, .price-data span, .price-data small, .delta-data span, .status-data small { color: var(--muted); margin-top: 4px; font-size: 11px; }
 .price-data strong { font-size: 15px; white-space: nowrap; }
+.price-data small { line-height: 1.35; }
+.competitor-stack, .difference-stack { min-width: 245px; display: grid; gap: 10px; }
+.competitor-offer, .delta-data { min-height: 58px; }
+.competitor-offer:not(:last-child), .difference-stack .delta-data:not(:last-child) { padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.competitor-offer strong { font-size: 15px; white-space: nowrap; }
+.competitor-offer a { display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 750; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.competitor-offer > span, .competitor-offer > small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.35; }
+.competitor-offer.empty { color: var(--muted); }
+.competitor-price-line { display: flex; align-items: center; gap: 8px; }
+.best-price-badge { border-radius: 999px; padding: 3px 6px; background: #d9f1e4; color: #11603f; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .035em; }
+:root[data-theme="dark"] .best-price-badge { background: #21433b; color: #91dcc4; }
 .delta-data strong { white-space: nowrap; }
 .delta-data.positive strong { color: var(--success); }
 .delta-data.negative strong { color: var(--danger); }
@@ -202,15 +213,13 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
   .column-picker { display: none; }
   .desktop-table { display: none; }
   .mobile-list { display: grid; border-top: 1px solid var(--line); }
-  .product-card { appearance: none; text-align: left; color: var(--text); border: 0; border-bottom: 1px solid var(--line); background: var(--surface); padding: 17px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px 12px; }
+  .product-card { text-align: left; color: var(--text); border: 0; border-bottom: 1px solid var(--line); background: var(--surface); padding: 17px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px 12px; cursor: pointer; }
   .product-card:last-child { border-bottom: 0; }
   .product-card .model-data { grid-column: 1 / -1; }
   .product-card .model-data strong { font-size: 14px; }
-  .product-card .price-data::before, .product-card .delta-data::before, .product-card .status-data::before { display: block; margin-bottom: 5px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
-  .product-card .price-data:nth-child(2)::before { content: "Наша цена"; }
-  .product-card .price-data:nth-child(3)::before { content: "Конкурент"; }
-  .product-card .delta-data::before { content: "Разница"; }
-  .product-card .status-data::before { content: "Состояние"; }
+  .product-card [data-label]::before { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; content: attr(data-label); }
+  .product-card .competitor-stack, .product-card .difference-stack { grid-column: 1 / -1; }
+  .product-card .competitor-offer, .product-card .delta-data { min-height: 0; }
   .drawer { width: 100%; max-width: 100%; padding: 24px 18px; }
   .drawer h2 { font-size: 24px; }
   .form-row { grid-template-columns: 1fr; }

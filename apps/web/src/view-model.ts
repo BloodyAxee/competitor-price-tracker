@@ -24,11 +24,18 @@ export function formatDate(value: string | null | undefined, includeTime = true)
 }
 
 export function bestCompetitor(item: ComparisonItem): CompetitorComparison | null {
-  const priced = item.competitors.filter((offer) => offer.price?.normalizedPrice != null);
-  if (priced.length === 0) return item.competitors[0] ?? null;
-  return [...priced].sort(
-    (left, right) => Number(left.price?.normalizedPrice) - Number(right.price?.normalizedPrice),
-  )[0];
+  return sortedCompetitors(item)[0] ?? null;
+}
+
+export function sortedCompetitors(item: ComparisonItem): CompetitorComparison[] {
+  return [...item.competitors].sort((left, right) => {
+    const leftPrice = left.price?.normalizedPrice;
+    const rightPrice = right.price?.normalizedPrice;
+    if (leftPrice != null && rightPrice != null) return Number(leftPrice) - Number(rightPrice);
+    if (leftPrice != null) return -1;
+    if (rightPrice != null) return 1;
+    return left.seller.localeCompare(right.seller, "ru");
+  });
 }
 
 export function differenceTone(value: string | null | undefined) {
@@ -51,6 +58,18 @@ export function observationStatus(price: PriceObservation | null | undefined) {
   if (price.reliability !== "valid") return "Не участвует в сравнении";
   if (price.method === "manual") return "Внесено вручную";
   return "Собрано автоматически";
+}
+
+export function reliabilityLabel(price: PriceObservation | null | undefined) {
+  if (!price) return "Нет подтверждённой цены";
+  if (price.reliability !== "valid") return "Сомнительный источник";
+  return price.method === "manual" ? "Надёжно · вручную" : "Надёжно · автоматически";
+}
+
+export function competitorPriceCountLabel(count: number) {
+  if (count === 1) return "1 цена конкурента";
+  if (count >= 2 && count <= 4) return `${count} цены конкурентов`;
+  return `${count} цен конкурентов`;
 }
 
 export function jobLabel(job: Pick<CollectionJob, "status"> | null) {
