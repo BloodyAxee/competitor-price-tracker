@@ -107,7 +107,10 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
         ),
     ),
     ("vt63",): (
+        (r"vt\s*[-_.]?\s*63\s*[-_.]?\s*5005", "VT-63.5005 article"),
         (r"\b220\s*[вv]\b", "220 V"),
+        (r"(?:ral\s*5005|синий)", "blue RAL5005"),
+        (r"(?:lcd|жк)", "LCD display"),
         (r"(?:лазер|laser)", "laser"),
         (r"(?:уз|sonar|ультразвук)", "ultrasonic sensor"),
     ),

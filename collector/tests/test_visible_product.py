@@ -82,6 +82,7 @@ class VisibleProductParserTest(unittest.TestCase):
     def test_new_exact_sources_reject_a_missing_material_qualifier(self) -> None:
         cases = json.loads((FIXTURES / "visible_source_cases.json").read_text(encoding="utf-8"))
         mutations = {
+            "Балансировочный станок ROSSVIK VT-63 с автовводом": ("VT-63.5005", "VT-63.7016"),
             "Балансировочный станок ES-950 с пневмоподъёмником": ("встроенный пневмоподъёмник", "подъёмник приобретается отдельно"),
             "Грузовой шиномонтажный станок ROSSVIK V-26": ("максимальный вес колеса 1500 кг", "максимальный вес колеса 500 кг"),
             "Балансировочный станок NORDBERG 4523C, 220 В": ("40 мм", "36 мм"),
