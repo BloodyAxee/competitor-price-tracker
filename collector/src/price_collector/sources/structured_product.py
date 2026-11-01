@@ -10,6 +10,7 @@ from ..errors import PermanentCollectionError
 from ..models import CollectedObservation, SourceTask
 from .fallback import BrowserPageFetcher, HttpPageFetcher, ProductParser, extract_product
 from .structured_data import identity_tokens, parse_json_ld_product, stock_status
+from .visible_product import VISIBLE_SOURCE_PROFILES, parse_visible_product
 
 
 STRUCTURED_SOURCE_KEYS = (
@@ -57,15 +58,28 @@ class StructuredProductAdapter:
                 code="unsupported_offer",
             )
 
+        parsers = [
+            ProductParser(
+                "schema.org JSON-LD",
+                lambda html: parse_json_ld_product(html, task.expected_product_name or ""),
+            ),
+        ]
+        visible_profile = VISIBLE_SOURCE_PROFILES.get(self.key)
+        if visible_profile is not None:
+            parsers.append(
+                ProductParser(
+                    "visible product card",
+                    lambda html: parse_visible_product(
+                        html,
+                        task.expected_product_name or "",
+                        visible_profile,
+                    ),
+                )
+            )
         extraction = extract_product(
             task,
             self._fetcher,
-            (
-                ProductParser(
-                    "schema.org JSON-LD",
-                    lambda html: parse_json_ld_product(html, task.expected_product_name or ""),
-                ),
-            ),
+            tuple(parsers),
             browser_fetcher=self._browser_fetcher,
         )
         product = extraction.product
