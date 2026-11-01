@@ -5,6 +5,7 @@ from pathlib import Path
 
 from price_monitor_domain import Reliability
 from price_collector.errors import ManualFallbackRequired, PermanentCollectionError
+from price_collector.browser import BrowserDocument
 from price_collector.http import HttpResponse
 from price_collector.models import SourceTask
 from price_collector.sources.structured_data import identity_tokens
@@ -20,6 +21,16 @@ class StaticFetcher:
 
     def fetch(self, url: str, *, timeout: float, rate_limit_per_host: float) -> HttpResponse:
         return HttpResponse(200, self.html, {"Content-Type": "text/html"})
+
+
+class StaticBrowserFetcher:
+    def __init__(self, html: str) -> None:
+        self.html = html
+        self.calls = 0
+
+    def fetch(self, url: str, *, timeout: float) -> BrowserDocument:
+        self.calls += 1
+        return BrowserDocument(url, self.html, 200)
 
 
 def _task(url: str = "https://www.nordberg.ru/catalog/nordberg-4523/") -> SourceTask:
@@ -79,6 +90,33 @@ class StructuredProductAdapterTest(unittest.TestCase):
 
         with self.assertRaises(ManualFallbackRequired):
             adapter.collect(_task())
+
+    def test_browser_retries_extraction_after_http_document_is_incomplete(self) -> None:
+        browser = StaticBrowserFetcher(FIXTURE.read_text(encoding="utf-8"))
+        adapter = StructuredProductAdapter(
+            StaticFetcher("<html><h1>Loading</h1></html>"),
+            "source:nordberg.ru",
+            browser_fetcher=browser,
+        )
+
+        observation = adapter.collect(_task())
+
+        self.assertEqual(observation.price.raw_price, Decimal("189000.00"))
+        self.assertEqual(observation.evidence["transport"], "browser")
+        self.assertEqual(browser.calls, 1)
+
+    def test_browser_is_not_started_when_http_document_is_complete(self) -> None:
+        browser = StaticBrowserFetcher("unused")
+        adapter = StructuredProductAdapter(
+            StaticFetcher(FIXTURE.read_text(encoding="utf-8")),
+            "source:nordberg.ru",
+            browser_fetcher=browser,
+        )
+
+        observation = adapter.collect(_task())
+
+        self.assertEqual(observation.evidence["transport"], "http")
+        self.assertEqual(browser.calls, 0)
 
 
 if __name__ == "__main__":

@@ -2,15 +2,13 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from decimal import Decimal
 from hashlib import sha256
-from typing import Protocol
 from urllib.parse import urlsplit
 
 from price_monitor_domain import MatchStatus, PriceInput, PriceType, evaluate_price
 
-from ..browser import PlaywrightFetcher
 from ..errors import PermanentCollectionError
-from ..http import HttpResponse
 from ..models import CollectedObservation, SourceTask
+from .fallback import BrowserPageFetcher, HttpPageFetcher, ProductParser, extract_product
 from .structured_data import identity_tokens, parse_json_ld_product, stock_status
 
 
@@ -27,18 +25,15 @@ STRUCTURED_SOURCE_KEYS = (
 )
 
 
-class PageFetcher(Protocol):
-    def fetch(self, url: str, *, timeout: float, rate_limit_per_host: float) -> HttpResponse: ...
-
-
 class StructuredProductAdapter:
     method = "http"
 
     def __init__(
         self,
-        fetcher: PageFetcher,
+        fetcher: HttpPageFetcher,
         source_key: str,
         *,
+        browser_fetcher: BrowserPageFetcher | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         if source_key not in STRUCTURED_SOURCE_KEYS:
@@ -46,6 +41,7 @@ class StructuredProductAdapter:
         self.key = source_key
         self._expected_domain = source_key.removeprefix("source:")
         self._fetcher = fetcher
+        self._browser_fetcher = browser_fetcher
         self._clock = clock or (lambda: datetime.now(UTC))
 
     def collect(self, task: SourceTask) -> CollectedObservation:
@@ -61,16 +57,18 @@ class StructuredProductAdapter:
                 code="unsupported_offer",
             )
 
-        response = self._fetcher.fetch(
-            task.url,
-            timeout=task.timeout_seconds,
-            rate_limit_per_host=task.rate_limit_per_host,
+        extraction = extract_product(
+            task,
+            self._fetcher,
+            (
+                ProductParser(
+                    "schema.org JSON-LD",
+                    lambda html: parse_json_ld_product(html, task.expected_product_name or ""),
+                ),
+            ),
+            browser_fetcher=self._browser_fetcher,
         )
-        try:
-            product = parse_json_ld_product(response.text, task.expected_product_name)
-        except PermanentCollectionError:
-            PlaywrightFetcher.assert_not_protected(response.text)
-            raise
+        product = extraction.product
 
         current_stock = stock_status(product.availability)
         decision = evaluate_price(
@@ -100,8 +98,9 @@ class StructuredProductAdapter:
                 "price": str(product.price),
                 "currency": product.currency,
                 "availability": product.availability,
-                "source_url": task.url,
-                "structured_data": "schema.org JSON-LD",
+                "source_url": extraction.final_url,
+                "structured_data": extraction.parser,
+                "transport": extraction.transport,
             },
-            source_payload_hash=sha256(response.text.encode("utf-8")).hexdigest(),
+            source_payload_hash=sha256(extraction.html.encode("utf-8")).hexdigest(),
         )

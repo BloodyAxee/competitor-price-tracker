@@ -3,6 +3,7 @@ import os
 import socket
 
 from .adapters import AdapterRegistry
+from .browser import PlaywrightFetcher
 from .engine import CollectorEngine
 from .http import HttpFetcher
 from .repository import PostgresCollectorRepository
@@ -26,11 +27,15 @@ def main() -> None:
         "CompetitorPriceTracker/0.1 (+price-monitoring-prototype)",
     )
     fetcher = HttpFetcher(user_agent)
+    browser_fetcher = PlaywrightFetcher(user_agent)
     adapters = AdapterRegistry(
         (
-            CentrToAdapter(fetcher),
-            SiToolsT300Adapter(fetcher),
-            *(StructuredProductAdapter(fetcher, key) for key in STRUCTURED_SOURCE_KEYS),
+            CentrToAdapter(fetcher, browser_fetcher=browser_fetcher),
+            SiToolsT300Adapter(fetcher, browser_fetcher=browser_fetcher),
+            *(
+                StructuredProductAdapter(fetcher, key, browser_fetcher=browser_fetcher)
+                for key in STRUCTURED_SOURCE_KEYS
+            ),
         )
     )
     repository = PostgresCollectorRepository(database_url)

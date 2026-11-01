@@ -3,15 +3,13 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from decimal import Decimal
 from hashlib import sha256
-from typing import Protocol
 from urllib.parse import urlsplit
 
 from price_monitor_domain import MatchStatus, PriceInput, PriceType, evaluate_price
 
-from ..browser import PlaywrightFetcher
 from ..errors import PermanentCollectionError
-from ..http import HttpResponse
 from ..models import CollectedObservation, SourceTask
+from .fallback import BrowserPageFetcher, HttpPageFetcher, ProductParser, extract_product
 from .structured_data import (
     StructuredProduct,
     identity_tokens,
@@ -29,10 +27,6 @@ T300_EXPECTED_SPECS = {
     "максимальный диаметр шины, мм": "1140",
     "ширина колеса, мм": "355",
 }
-
-
-class PageFetcher(Protocol):
-    def fetch(self, url: str, *, timeout: float, rate_limit_per_host: float) -> HttpResponse: ...
 
 
 CentrToProduct = StructuredProduct
@@ -65,11 +59,13 @@ class CentrToAdapter:
 
     def __init__(
         self,
-        fetcher: PageFetcher,
+        fetcher: HttpPageFetcher,
         *,
+        browser_fetcher: BrowserPageFetcher | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         self._fetcher = fetcher
+        self._browser_fetcher = browser_fetcher
         self._clock = clock or (lambda: datetime.now(UTC))
 
     def collect(self, task: SourceTask) -> CollectedObservation:
@@ -92,21 +88,23 @@ class CentrToAdapter:
                 "The imported offer has no expected product name",
                 code="unsupported_offer",
             )
-        response = self._fetcher.fetch(
-            task.url,
-            timeout=task.timeout_seconds,
-            rate_limit_per_host=task.rate_limit_per_host,
+        required_specs = T300_EXPECTED_SPECS if product_id == T300_PRODUCT_ID else None
+        extraction = extract_product(
+            task,
+            self._fetcher,
+            (
+                ProductParser(
+                    "schema.org JSON-LD",
+                    lambda html: parse_centr_to_product(
+                        html,
+                        task.expected_product_name or "",
+                        required_specs=required_specs,
+                    ),
+                ),
+            ),
+            browser_fetcher=self._browser_fetcher,
         )
-        try:
-            required_specs = T300_EXPECTED_SPECS if product_id == T300_PRODUCT_ID else None
-            product = parse_centr_to_product(
-                response.text,
-                task.expected_product_name,
-                required_specs=required_specs,
-            )
-        except PermanentCollectionError:
-            PlaywrightFetcher.assert_not_protected(response.text)
-            raise
+        product = extraction.product
 
         current_stock = stock_status(product.availability)
         decision = evaluate_price(
@@ -128,8 +126,9 @@ class CentrToAdapter:
             "currency": product.currency,
             "availability": product.availability,
             "specifications": product.specifications,
-            "source_url": task.url,
-            "structured_data": "schema.org JSON-LD",
+            "source_url": extraction.final_url,
+            "structured_data": extraction.parser,
+            "transport": extraction.transport,
         }
         return CollectedObservation(
             price=decision,
@@ -142,7 +141,7 @@ class CentrToAdapter:
                 f"{current_stock or 'stock unknown'}"
             ),
             evidence=evidence,
-            source_payload_hash=sha256(response.text.encode("utf-8")).hexdigest(),
+            source_payload_hash=sha256(extraction.html.encode("utf-8")).hexdigest(),
         )
 
 

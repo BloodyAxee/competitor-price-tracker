@@ -6,23 +6,17 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from hashlib import sha256
 from html.parser import HTMLParser
-from typing import Protocol
 
 from price_monitor_domain import MatchStatus, PriceInput, PriceType, evaluate_price, parse_money
 
-from ..browser import PlaywrightFetcher
 from ..errors import PermanentCollectionError
-from ..http import HttpResponse
 from ..models import CollectedObservation, SourceTask
+from .fallback import BrowserPageFetcher, HttpPageFetcher, ProductParser, extract_product
 
 
 EXPECTED_SKU = "T300 380V"
 SOURCE_KEY = "source:si-tools.ru"
 _VOID_ELEMENTS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
-
-
-class PageFetcher(Protocol):
-    def fetch(self, url: str, *, timeout: float, rate_limit_per_host: float) -> HttpResponse: ...
 
 
 @dataclass(frozen=True)
@@ -178,24 +172,23 @@ class SiToolsT300Adapter:
 
     def __init__(
         self,
-        fetcher: PageFetcher,
+        fetcher: HttpPageFetcher,
         *,
+        browser_fetcher: BrowserPageFetcher | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         self._fetcher = fetcher
+        self._browser_fetcher = browser_fetcher
         self._clock = clock or (lambda: datetime.now(UTC))
 
     def collect(self, task: SourceTask) -> CollectedObservation:
-        response = self._fetcher.fetch(
-            task.url,
-            timeout=task.timeout_seconds,
-            rate_limit_per_host=task.rate_limit_per_host,
+        extraction = extract_product(
+            task,
+            self._fetcher,
+            (ProductParser("schema.org microdata", parse_si_tools_t300),),
+            browser_fetcher=self._browser_fetcher,
         )
-        try:
-            product = parse_si_tools_t300(response.text)
-        except PermanentCollectionError:
-            PlaywrightFetcher.assert_not_protected(response.text)
-            raise
+        product = extraction.product
         stock_status = _stock_status(product.availability)
         decision = evaluate_price(
             PriceInput(
@@ -213,8 +206,9 @@ class SiToolsT300Adapter:
             "price": str(product.price),
             "currency": product.currency,
             "availability": product.availability,
-            "source_url": task.url,
-            "structured_data": "schema.org microdata",
+            "source_url": extraction.final_url,
+            "structured_data": extraction.parser,
+            "transport": extraction.transport,
         }
         return CollectedObservation(
             price=decision,
@@ -224,5 +218,5 @@ class SiToolsT300Adapter:
             observed_at=self._clock(),
             evidence_text=f"{product.sku}; {product.price} {product.currency}; {stock_status or 'stock unknown'}",
             evidence=evidence,
-            source_payload_hash=sha256(response.text.encode("utf-8")).hexdigest(),
+            source_payload_hash=sha256(extraction.html.encode("utf-8")).hexdigest(),
         )
