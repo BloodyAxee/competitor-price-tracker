@@ -46,6 +46,77 @@ class _JsonLdParser(HTMLParser):
             self._buffer = None
 
 
+class _MicrodataParser(HTMLParser):
+    _VOID_TAGS = {
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr",
+    }
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.products: list[dict[str, list[str]]] = []
+        self._frames: list[tuple[str, dict[str, list[str]] | None]] = []
+        self._captures: list[tuple[int, dict[str, list[str]], tuple[str, ...], list[str]]] = []
+
+    def _start(self, tag: str, attrs: list[tuple[str, str | None]], *, push: bool) -> None:
+        attributes = {key.casefold(): value for key, value in attrs}
+        current = self._frames[-1][1] if self._frames else None
+        item_type = normalized_text(attributes.get("itemtype") or "")
+        if "itemscope" in attributes and item_type.rstrip("/").endswith("/product"):
+            current = {}
+            self.products.append(current)
+
+        raw_properties = attributes.get("itemprop") or ""
+        properties = tuple(part.casefold() for part in raw_properties.split() if part)
+        if current is not None and properties:
+            value = attributes.get("content") or attributes.get("href")
+            if value:
+                for prop in properties:
+                    current.setdefault(prop, []).append(value.strip())
+            elif push:
+                self._captures.append((len(self._frames), current, properties, []))
+
+        if push:
+            self._frames.append((tag, current))
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.casefold()
+        self._start(tag, attrs, push=tag not in self._VOID_TAGS)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._start(tag.casefold(), attrs, push=False)
+
+    def handle_data(self, data: str) -> None:
+        for _, _, _, parts in self._captures:
+            parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if not self._frames:
+            return
+        depth = len(self._frames) - 1
+        matching = [capture for capture in self._captures if capture[0] == depth]
+        for capture in matching:
+            _, product, properties, parts = capture
+            value = " ".join("".join(parts).split())
+            if value:
+                for prop in properties:
+                    product.setdefault(prop, []).append(value)
+            self._captures.remove(capture)
+        self._frames.pop()
+
+
 def _walk_products(value: Any) -> Iterator[dict[str, Any]]:
     if isinstance(value, dict):
         item_type = value.get("@type")
@@ -230,6 +301,47 @@ def parse_json_ld_product(
         ) from error
     availability = str(offer["availability"]) if offer.get("availability") else None
     return StructuredProduct(name, price, "RUB", availability, specs)
+
+
+def parse_microdata_product(html: str, expected_name: str) -> StructuredProduct:
+    parser = _MicrodataParser()
+    parser.feed(html)
+    matches: list[tuple[dict[str, list[str]], str]] = []
+    identity_errors: list[PermanentCollectionError] = []
+    for product in parser.products:
+        candidates = product.get("name", []) + product.get("model", []) + product.get("sku", [])
+        for candidate in dict.fromkeys(candidates):
+            try:
+                matches.append((product, validate_product_name(candidate, expected_name)))
+                break
+            except PermanentCollectionError as error:
+                identity_errors.append(error)
+    if not matches:
+        if identity_errors:
+            raise identity_errors[0]
+        raise PermanentCollectionError("Exact microdata product was not found", code="product_mismatch")
+    if len(matches) > 1:
+        raise PermanentCollectionError("Exact microdata product is ambiguous", code="ambiguous_product")
+
+    product, name = matches[0]
+    raw_prices = list(dict.fromkeys(product.get("price", [])))
+    if not raw_prices:
+        raise PermanentCollectionError("Published price is missing", code="missing_price")
+    if len(raw_prices) > 1:
+        raise PermanentCollectionError("Published price is ambiguous", code="ambiguous_price")
+    try:
+        price = parse_money(raw_prices[0])
+    except ValueError as error:
+        raise PermanentCollectionError(
+            "Published price has an unsupported format",
+            code="invalid_price",
+        ) from error
+
+    currencies = {value.upper() for value in product.get("pricecurrency", [])}
+    if currencies and not currencies.issubset({"RUB", "RUR"}):
+        raise PermanentCollectionError("Unsupported microdata currency", code="unsupported_currency")
+    availability = next(iter(product.get("availability", [])), None)
+    return StructuredProduct(name, price, "RUB", availability, {})
 
 
 def stock_status(availability: str | None) -> str | None:

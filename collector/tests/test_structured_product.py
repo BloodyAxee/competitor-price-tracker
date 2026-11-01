@@ -8,11 +8,12 @@ from price_collector.errors import ManualFallbackRequired, PermanentCollectionEr
 from price_collector.browser import BrowserDocument
 from price_collector.http import HttpResponse
 from price_collector.models import SourceTask
-from price_collector.sources.structured_data import identity_tokens
+from price_collector.sources.structured_data import identity_tokens, parse_microdata_product
 from price_collector.sources.structured_product import StructuredProductAdapter
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "structured_competitor_products.html"
+MICRODATA_FIXTURE = Path(__file__).parent / "fixtures" / "topmaster_microdata.html"
 
 
 class StaticFetcher:
@@ -49,6 +50,17 @@ def _task(url: str = "https://www.nordberg.ru/catalog/nordberg-4523/") -> Source
 
 
 class StructuredProductAdapterTest(unittest.TestCase):
+    def test_microdata_selects_exact_product_and_ignores_recommendation(self) -> None:
+        product = parse_microdata_product(
+            MICRODATA_FIXTURE.read_text(encoding="utf-8"),
+            "Станок шиномонтажный автомат, двухскоростной, 380 В, синий NORDBERG 4641N",
+        )
+
+        self.assertEqual(product.name, "Станок шиномонтажный автомат Nordberg 4641N")
+        self.assertEqual(product.price, Decimal("212100"))
+        self.assertEqual(product.currency, "RUB")
+        self.assertEqual(product.availability, "https://schema.org/InStock")
+
     def test_identity_tokens_keep_model_suffixes_and_ignore_numeric_ranges(self) -> None:
         self.assertEqual(identity_tokens("NORDBERG 45TRK(B), 14–26"), ("45trkb",))
         self.assertEqual(identity_tokens("Грузовой ES-26D, 14–26"), ("es26d",))

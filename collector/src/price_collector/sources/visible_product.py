@@ -53,6 +53,10 @@ VISIBLE_SOURCE_PROFILES = {
         price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*[р₽]\s*(?:Оставить заявку|Авторизуйтесь)",),
         stop_markers=("Описание", "Сервис и запчасти"),
     ),
+    "source:topmaster-shop.ru": VisibleProductProfile(
+        price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*₽",),
+        stop_markers=("С этим товаром покупают", "Похожие товары"),
+    ),
 }
 
 
@@ -78,6 +82,8 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
         (r"14\s*-\s*56", "14-56"),
         (r"(?:двухскорост|2\s*скорост)", "two speeds"),
     ),
+    ("4641n",): ((r"\b380\s*в\b", "380 V"), (r"(?:двухскорост|2\s*скорост)", "two speeds")),
+    ("vt64", "220в", "ral5005"): ((r"\b220\s*в\b", "220 V"), (r"ral\s*5005", "RAL5005")),
 }
 
 

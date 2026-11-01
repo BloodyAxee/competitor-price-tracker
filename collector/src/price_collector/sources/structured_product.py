@@ -9,7 +9,7 @@ from price_monitor_domain import MatchStatus, PriceInput, PriceType, evaluate_pr
 from ..errors import PermanentCollectionError
 from ..models import CollectedObservation, SourceTask
 from .fallback import BrowserPageFetcher, HttpPageFetcher, ProductParser, extract_product
-from .structured_data import identity_tokens, parse_json_ld_product, stock_status
+from .structured_data import identity_tokens, parse_json_ld_product, parse_microdata_product, stock_status
 from .visible_product import (
     VISIBLE_SOURCE_PROFILES,
     parse_visible_product,
@@ -26,6 +26,7 @@ STRUCTURED_SOURCE_KEYS = (
     "source:rossvik.moscow",
     "source:rustehnika.ru",
     "source:technovector.ru",
+    "source:topmaster-shop.ru",
     "source:tmktools.ru",
 )
 
@@ -66,6 +67,10 @@ class StructuredProductAdapter:
             ProductParser(
                 "schema.org JSON-LD",
                 lambda html: parse_json_ld_product(html, task.expected_product_name or ""),
+            ),
+            ProductParser(
+                "schema.org microdata",
+                lambda html: parse_microdata_product(html, task.expected_product_name or ""),
             ),
         ]
         visible_profile = VISIBLE_SOURCE_PROFILES.get(self.key)

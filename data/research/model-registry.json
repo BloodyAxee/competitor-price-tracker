@@ -2,6 +2,26 @@
   "date": "2026-10-30",
   "region_assumption": "Москва; доставка по России учитывается отдельно",
   "price_comparisons": [],
+  "bundle_offers": [
+    {
+      "bundle_model": "Шиномонтажный комплект NORDBERG 4641N + VT-64",
+      "seller_domain": "topmaster-shop.ru",
+      "seller_name": "Топ Мастер",
+      "verified_on": "2026-11-01",
+      "components": [
+        {
+          "article": "4641N",
+          "url": "https://topmaster-shop.ru/catalog/legkovoj-shinomontazh/shinomontazhnye-stanki/a2e6422da1-95302.html",
+          "match_reason": "Точная модель 4641N, автомат, две скорости и напряжение 380 В подтверждены в карточке продавца"
+        },
+        {
+          "article": "VT-64.5005",
+          "url": "https://topmaster-shop.ru/catalog/legkovoj-shinomontazh/balansirovochnye-stanki/c54c55e29a-84297.html",
+          "match_reason": "Точная модель VT-64.5005, напряжение 220 В и цвет RAL5005 подтверждены в карточке продавца"
+        }
+      ]
+    }
+  ],
   "models": [
     {
       "id": 1,

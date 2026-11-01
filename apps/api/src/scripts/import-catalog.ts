@@ -20,6 +20,13 @@ interface ResearchModel {
 
 interface ResearchRegistry {
   models: ResearchModel[];
+  bundle_offers: Array<{
+    bundle_model: string;
+    seller_domain: string;
+    seller_name: string;
+    verified_on: string;
+    components: Array<{ article: string; url: string; match_reason: string }>;
+  }>;
 }
 
 interface SourceProfile {
@@ -74,6 +81,11 @@ const sourceProfiles: Record<string, SourceProfile> = {
     displayName: "Автомастер",
     sourceType: "official_dealer",
     officialStatus: "verified_dealer",
+  },
+  "topmaster-shop.ru": {
+    displayName: "Топ Мастер",
+    sourceType: "retailer",
+    officialStatus: "unknown",
   },
 };
 
@@ -210,66 +222,97 @@ try {
       });
     }
 
-    const manualBundleSeller = await tx.seller.upsert({
-      where: { externalKey: "seller:manual-bundle" },
-      create: {
-        externalKey: "seller:manual-bundle",
-        displayName: "Один проверенный продавец комплекта",
-        officialStatus: "unknown",
-      },
-      update: {
-        displayName: "Один проверенный продавец комплекта",
-        updatedAt: new Date(),
-      },
-    });
-    const manualBundleSource = await tx.source.upsert({
+    const legacyManualSource = await tx.source.findUnique({
       where: { externalKey: "source:manual-bundle" },
-      create: {
-        externalKey: "source:manual-bundle",
-        sellerId: manualBundleSeller.id,
-        name: "Ручная проверка компонентов комплекта",
-        domain: "manual.bundle",
-        sourceType: "manual",
-        collectionMethod: "manual",
-        officialStatus: "unknown",
-        isActive: true,
-      },
-      update: {
-        sellerId: manualBundleSeller.id,
-        name: "Ручная проверка компонентов комплекта",
-        collectionMethod: "manual",
-        isActive: true,
-        updatedAt: new Date(),
-      },
+      select: { id: true },
     });
-    for (const component of components) {
-      const competitorUrl = `https://manual.local/bundle/${component.article.toLowerCase()}`;
-      await tx.offer.upsert({
-        where: {
-          productId_sourceId_competitorUrl: {
-            productId: component.product!.id,
-            sourceId: manualBundleSource.id,
-            competitorUrl,
-          },
-        },
+    if (legacyManualSource) {
+      await tx.offer.updateMany({
+        where: { sourceId: legacyManualSource.id },
+        data: { isActive: false, updatedAt: new Date() },
+      });
+      await tx.source.update({
+        where: { id: legacyManualSource.id },
+        data: { isActive: false, updatedAt: new Date() },
+      });
+    }
+
+    for (const bundleOffer of registry.bundle_offers) {
+      if (bundleOffer.bundle_model !== "Шиномонтажный комплект NORDBERG 4641N + VT-64") {
+        throw new Error(`Unsupported researched bundle: ${bundleOffer.bundle_model}`);
+      }
+      if (bundleOffer.components.length !== components.length) {
+        throw new Error("A researched bundle offer must contain every agreed component");
+      }
+      const profile = sourceProfile(bundleOffer.seller_domain);
+      const seller = await tx.seller.upsert({
+        where: { externalKey: `seller:${bundleOffer.seller_domain}` },
         create: {
-          productId: component.product!.id,
-          sellerId: manualBundleSeller.id,
-          sourceId: manualBundleSource.id,
-          competitorUrl,
-          sellerArticle: component.article,
-          matchStatus: "exact",
-          matchReason:
-            "Ручной ввод разрешён только для цены этого компонента у одного и того же проверенного продавца.",
+          externalKey: `seller:${bundleOffer.seller_domain}`,
+          displayName: bundleOffer.seller_name,
+          websiteUrl: `https://${bundleOffer.seller_domain}`,
+          officialStatus: profile.officialStatus,
         },
         update: {
-          sellerId: manualBundleSeller.id,
-          sellerArticle: component.article,
-          matchStatus: "exact",
+          displayName: bundleOffer.seller_name,
+          websiteUrl: `https://${bundleOffer.seller_domain}`,
+          officialStatus: profile.officialStatus,
+          updatedAt: new Date(),
+        },
+      });
+      const source = await tx.source.upsert({
+        where: { externalKey: `source:${bundleOffer.seller_domain}` },
+        create: {
+          externalKey: `source:${bundleOffer.seller_domain}`,
+          sellerId: seller.id,
+          name: bundleOffer.seller_name,
+          baseUrl: `https://${bundleOffer.seller_domain}`,
+          domain: bundleOffer.seller_domain,
+          sourceType: profile.sourceType,
+          officialStatus: profile.officialStatus,
+          requestTimeoutSeconds: DEFAULT_REQUEST_TIMEOUT_SECONDS,
+          maxRetries: DEFAULT_MAX_RETRIES,
+          rateLimitPerHost: DEFAULT_RATE_LIMIT_PER_HOST,
+        },
+        update: {
+          sellerId: seller.id,
+          name: bundleOffer.seller_name,
           isActive: true,
           updatedAt: new Date(),
         },
       });
+      for (const researchedComponent of bundleOffer.components) {
+        const component = components.find((candidate) => candidate.article === researchedComponent.article);
+        if (!component?.product || baseDomain(researchedComponent.url) !== bundleOffer.seller_domain) {
+          throw new Error(`Invalid researched bundle component: ${researchedComponent.article}`);
+        }
+        await tx.offer.upsert({
+          where: {
+            productId_sourceId_competitorUrl: {
+              productId: component.product.id,
+              sourceId: source.id,
+              competitorUrl: researchedComponent.url,
+            },
+          },
+          create: {
+            productId: component.product.id,
+            sellerId: seller.id,
+            sourceId: source.id,
+            competitorUrl: researchedComponent.url,
+            sellerArticle: researchedComponent.article,
+            matchStatus: "exact",
+            matchReason: `${researchedComponent.match_reason}. Проверено ${bundleOffer.verified_on}.`,
+          },
+          update: {
+            sellerId: seller.id,
+            sellerArticle: researchedComponent.article,
+            matchStatus: "exact",
+            matchReason: `${researchedComponent.match_reason}. Проверено ${bundleOffer.verified_on}.`,
+            isActive: true,
+            updatedAt: new Date(),
+          },
+        });
+      }
     }
 
     for (const research of registry.models) {
