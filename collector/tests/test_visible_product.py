@@ -1,3 +1,4 @@
+import json
 import unittest
 from decimal import Decimal
 from pathlib import Path
@@ -40,6 +41,17 @@ class VisibleProductParserTest(unittest.TestCase):
                 "Шиномонтажный станок NORDBERG 46TRKE42(B), 14–42″",
                 VISIBLE_SOURCE_PROFILES["source:autoservice2.ru"],
             )
+
+    def test_supported_source_profiles_ignore_accessory_prices(self) -> None:
+        cases = json.loads((FIXTURES / "visible_source_cases.json").read_text(encoding="utf-8"))
+        for case in cases:
+            with self.subTest(source=case["source"]):
+                product = parse_visible_product(
+                    case["html"],
+                    case["expected_name"],
+                    VISIBLE_SOURCE_PROFILES[case["source"]],
+                )
+                self.assertEqual(product.price, Decimal(case["expected_price"]))
 
 
 if __name__ == "__main__":

@@ -19,14 +19,39 @@ class VisibleProductProfile:
     )
 
 
+_PRICE_NUMBER = r"(?<![\d.])(?:\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d{4,9})(?!\d)"
+
+
 VISIBLE_SOURCE_PROFILES = {
     "source:aet-auto.ru": VisibleProductProfile(
-        price_patterns=(r"(?P<price>\d[\d\s]{2,})\s*₽\s*В наличии",),
+        price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*₽\s*В наличии",),
         stop_markers=("С этим товаром покупают", "Похожие товары"),
     ),
     "source:autoservice2.ru": VisibleProductProfile(
-        price_patterns=(r"Ваша цена:\s*(?P<price>\d[\d\s]{2,})\s*руб\.?",),
+        price_patterns=(rf"Ваша цена:\s*(?P<price>{_PRICE_NUMBER})\s*руб\.?",),
         stop_markers=("Рекомендуем также", "Оригинальные запчасти для"),
+    ),
+    "source:master-instrument.ru": VisibleProductProfile(
+        price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*a\s*(?:В корзину|О товаре)",),
+        stop_markers=("Запчасти", "Опции и запчасти"),
+    ),
+    "source:rossvik.moscow": VisibleProductProfile(
+        price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*₽\s*(?:В корзину|Сравнить|Гарантия|Наличие)",),
+        stop_markers=("Рекомендуем купить",),
+    ),
+    "source:rustehnika.ru": VisibleProductProfile(
+        price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*₽\s*(?:В кредит|Купить в 1 клик|Описание)",),
+        stop_markers=("Описание", "Похожие товары"),
+    ),
+    "source:technovector.ru": VisibleProductProfile(
+        price_patterns=(
+            rf"Артикул:\s*[^₽]{{0,100}}?(?P<price>{_PRICE_NUMBER})\s*₽\s*Срок поставки",
+        ),
+        stop_markers=("C этим товаром покупают", "С этим товаром покупают"),
+    ),
+    "source:tmktools.ru": VisibleProductProfile(
+        price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*[р₽]\s*(?:Оставить заявку|Авторизуйтесь)",),
+        stop_markers=("Описание", "Сервис и запчасти"),
     ),
 }
 
