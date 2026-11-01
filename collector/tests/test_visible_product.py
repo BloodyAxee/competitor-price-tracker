@@ -53,6 +53,18 @@ class VisibleProductParserTest(unittest.TestCase):
                 )
                 self.assertEqual(product.price, Decimal(case["expected_price"]))
 
+    def test_required_voltage_is_checked_automatically(self) -> None:
+        html = (FIXTURES / "aet_auto_visible.html").read_text(encoding="utf-8").replace(
+            "380В", "220В"
+        ).replace("380 В", "220 В")
+
+        with self.assertRaisesRegex(PermanentCollectionError, "380 V"):
+            parse_visible_product(
+                html,
+                "Грузовой шиномонтажный станок AE&T MT-290",
+                VISIBLE_SOURCE_PROFILES["source:aet-auto.ru"],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

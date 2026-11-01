@@ -10,7 +10,11 @@ from ..errors import PermanentCollectionError
 from ..models import CollectedObservation, SourceTask
 from .fallback import BrowserPageFetcher, HttpPageFetcher, ProductParser, extract_product
 from .structured_data import identity_tokens, parse_json_ld_product, stock_status
-from .visible_product import VISIBLE_SOURCE_PROFILES, parse_visible_product
+from .visible_product import (
+    VISIBLE_SOURCE_PROFILES,
+    parse_visible_product,
+    validate_visible_product_qualifiers,
+)
 
 
 STRUCTURED_SOURCE_KEYS = (
@@ -82,6 +86,12 @@ class StructuredProductAdapter:
             tuple(parsers),
             browser_fetcher=self._browser_fetcher,
         )
+        if visible_profile is not None:
+            validate_visible_product_qualifiers(
+                extraction.html,
+                task.expected_product_name or "",
+                visible_profile,
+            )
         product = extraction.product
 
         current_stock = stock_status(product.availability)

@@ -3,30 +3,30 @@
     "source": "source:master-instrument.ru",
     "expected_name": "Балансировочный станок 45TRK(B): колёса до 200 кг",
     "expected_price": "217500",
-    "html": "<html><head><title>Станок балансировочный 380V NORDBERG 45TRK(B)</title></head><body><h1>Станок балансировочный для грузовых машин 45TRK(B)</h1><div>Артикул: 45TRK(B)</div><div>217 500 a В корзину</div><h2>Запчасти</h2><div>19 550 a В корзину</div></body></html>"
+    "html": "<html><head><title>Станок балансировочный 380V NORDBERG 45TRK(B)</title></head><body><h1>Станок балансировочный для грузовых машин 45TRK(B)</h1><div>Артикул: 45TRK(B)</div><div>Напряжение 380 В, масса колеса до 200 кг</div><div>217 500 a В корзину</div><h2>Запчасти</h2><div>19 550 a В корзину</div></body></html>"
   },
   {
     "source": "source:rossvik.moscow",
     "expected_name": "Балансировочный станок ROSSVIK VT-63 с автовводом",
     "expected_price": "149000",
-    "html": "<html><head><title>ROSSVIK VT-63.5005</title></head><body><h1>Станок балансировочный ROSSVIK VT-63, 220В RAL5005</h1><div>149 000 ₽</div><div>В корзину</div><div>Артикул VT-63.5005</div><h2>Рекомендуем купить</h2><div>2 150 ₽ В корзину</div></body></html>"
+    "html": "<html><head><title>ROSSVIK VT-63.5005</title></head><body><h1>Станок балансировочный ROSSVIK VT-63, 220В RAL5005</h1><div>LCD, лазер, ультразвуковой Sonar</div><div>149 000 ₽</div><div>В корзину</div><div>Артикул VT-63.5005</div><h2>Рекомендуем купить</h2><div>2 150 ₽ В корзину</div></body></html>"
   },
   {
     "source": "source:rustehnika.ru",
     "expected_name": "Шиномонтажный станок NORDBERG 4638N(B), 220 В",
     "expected_price": "105900",
-    "html": "<html><head><title>NORDBERG 4638N(B) 220</title></head><body><h1>Станок шиномонтажный NORDBERG 4638N(B) 220</h1><div>В наличии</div><div>105 900 ₽</div><div>В кредит от 4 166 руб/мес</div><h2>Описание</h2></body></html>"
+    "html": "<html><head><title>NORDBERG 4638N(B) 220</title></head><body><h1>Станок шиномонтажный NORDBERG 4638N(B) 220</h1><div>Односкоростной, напряжение 220 В</div><div>В наличии</div><div>105 900 ₽</div><div>В кредит от 4 166 руб/мес</div><h2>Описание</h2></body></html>"
   },
   {
     "source": "source:technovector.ru",
     "expected_name": "Грузовой сход-развал ТехноВектор P7204 HT MC4",
     "expected_price": "1434000",
-    "html": "<html><head><title>ТехноВектор P 7204 HT MC4</title></head><body><h1>Мобильный стенд ТехноВектор P 7204 HT MC4</h1><div>Артикул: P 7204 HT MC4</div><div>1 434 000 ₽</div><div>Срок поставки от 2 до 30 дней</div><h2>С этим товаром покупают</h2><div>104 440 ₽</div></body></html>"
+    "html": "<html><head><title>ТехноВектор P 7204 HT MC4</title></head><body><h1>Мобильный стенд ТехноВектор P 7204 HT MC4</h1><div>Артикул: P 7204 HT MC4</div><div>Четыре промышленные камеры</div><div>1 434 000 ₽</div><div>Срок поставки от 2 до 30 дней</div><h2>С этим товаром покупают</h2><div>104 440 ₽</div></body></html>"
   },
   {
     "source": "source:tmktools.ru",
     "expected_name": "Шиномонтажный станок NORDBERG 46TRKE56(B), 14–56″",
     "expected_price": "784000",
-    "html": "<html><head><title>NORDBERG 46TRKE56(B) 14-56 380V</title></head><body><h1>Станок шиномонтажный 380V 14-56 NORDBERG 46TRKE56(B)</h1><div>784 000р</div><button>Оставить заявку</button><h2>Описание</h2></body></html>"
+    "html": "<html><head><title>NORDBERG 46TRKE56(B) 14-56 380V</title></head><body><h1>Станок шиномонтажный 380V 14-56 NORDBERG 46TRKE56(B)</h1><div>Напряжение 380 В, 14-56, 2 скорости</div><div>784 000р</div><button>Оставить заявку</button><h2>Описание</h2></body></html>"
   }
 ]

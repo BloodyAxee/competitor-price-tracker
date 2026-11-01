@@ -5,7 +5,7 @@ from html.parser import HTMLParser
 from price_monitor_domain import parse_money
 
 from ..errors import PermanentCollectionError
-from .structured_data import StructuredProduct, validate_product_name
+from .structured_data import StructuredProduct, identity_tokens, normalized_text, validate_product_name
 
 
 @dataclass(frozen=True)
@@ -52,6 +52,31 @@ VISIBLE_SOURCE_PROFILES = {
     "source:tmktools.ru": VisibleProductProfile(
         price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*[р₽]\s*(?:Оставить заявку|Авторизуйтесь)",),
         stop_markers=("Описание", "Сервис и запчасти"),
+    ),
+}
+
+
+_EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
+    ("mt290",): ((r"\b380\s*в\b", "380 V"), (r"14\s*-\s*26", "14-26")),
+    ("46trke42b",): ((r"\b380\s*в\b", "380 V"), (r"14\s*-\s*42", "14-42")),
+    ("45trkb",): ((r"\b380\s*в\b", "380 V"), (r"200\s*кг", "200 kg")),
+    ("4641",): ((r"\b380\s*в\b", "380 V"), (r"(?:двухскорост|2\s*скорост)", "two speeds")),
+    ("vt63",): (
+        (r"\b220\s*в\b", "220 V"),
+        (r"(?:лазер|laser)", "laser"),
+        (r"(?:уз|sonar|ультразвук)", "ultrasonic sensor"),
+    ),
+    ("4523n1b",): ((r"\b220\s*в\b", "220 V"), (r"(?:лазер|laser)", "laser")),
+    ("45trke",): ((r"\b220\s*в\b", "220 V"),),
+    ("4638nb",): (
+        (r"\b220\s*в\b", "220 V"),
+        (r"(?:односкорост|количество скоростей[^0-9]{0,20}1)", "one speed"),
+    ),
+    ("p7204", "mc4"): ((r"(?:четыре|4)[^\n]{0,40}камер", "four cameras"),),
+    ("46trke56b",): (
+        (r"\b380\s*в\b", "380 V"),
+        (r"14\s*-\s*56", "14-56"),
+        (r"(?:двухскорост|2\s*скорост)", "two speeds"),
     ),
 }
 
@@ -120,6 +145,33 @@ class _VisibleTextParser(HTMLParser):
             self.text.append("\n")
 
 
+def _scoped_visible_text(parser: _VisibleTextParser, profile: VisibleProductProfile) -> str:
+    visible_text = " ".join(" ".join(parser.text).split())
+    lowered = visible_text.casefold()
+    stop_indexes = [lowered.find(marker.casefold()) for marker in profile.stop_markers]
+    stop_indexes = [index for index in stop_indexes if index >= 0]
+    return visible_text[: min(stop_indexes)] if stop_indexes else visible_text
+
+
+def validate_visible_product_qualifiers(
+    html: str,
+    expected_name: str,
+    profile: VisibleProductProfile,
+) -> None:
+    requirements = _EXACT_QUALIFIER_RULES.get(identity_tokens(expected_name), ())
+    if not requirements:
+        return
+    parser = _VisibleTextParser()
+    parser.feed(html)
+    evidence = normalized_text(_scoped_visible_text(parser, profile))
+    for pattern, label in requirements:
+        if re.search(pattern, evidence, re.IGNORECASE) is None:
+            raise PermanentCollectionError(
+                f"Required exact product qualifier is missing: {label}",
+                code="missing_product_specification",
+            )
+
+
 def parse_visible_product(
     html: str,
     expected_name: str,
@@ -142,12 +194,8 @@ def parse_visible_product(
     if name is None:
         raise identity_errors[0]
 
-    visible_text = " ".join(" ".join(parser.text).split())
-    lowered = visible_text.casefold()
-    stop_indexes = [lowered.find(marker.casefold()) for marker in profile.stop_markers]
-    stop_indexes = [index for index in stop_indexes if index >= 0]
-    if stop_indexes:
-        visible_text = visible_text[: min(stop_indexes)]
+    visible_text = _scoped_visible_text(parser, profile)
+    validate_visible_product_qualifiers(html, expected_name, profile)
 
     prices = []
     for pattern in profile.price_patterns:
