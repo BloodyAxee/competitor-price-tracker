@@ -16,7 +16,13 @@ class HttpPageFetcher(Protocol):
 
 
 class BrowserPageFetcher(Protocol):
-    def fetch(self, url: str, *, timeout: float) -> BrowserDocument: ...
+    def fetch(
+        self,
+        url: str,
+        *,
+        timeout: float,
+        rate_limit_per_host: float,
+    ) -> BrowserDocument: ...
 
 
 @dataclass(frozen=True)
@@ -70,7 +76,11 @@ def extract_product(
     except RetryableCollectionError as error:
         if browser_fetcher is None or error.code != "network_error":
             raise
-        document = browser_fetcher.fetch(task.url, timeout=task.timeout_seconds)
+        document = browser_fetcher.fetch(
+            task.url,
+            timeout=task.timeout_seconds,
+            rate_limit_per_host=task.rate_limit_per_host,
+        )
         PlaywrightFetcher.assert_not_protected(document.html)
         product, parser = _parse_document(document.html, parsers)
         return ProductExtraction(product, document.html, parser, "browser", document.url)
@@ -82,7 +92,11 @@ def extract_product(
         if browser_fetcher is None:
             raise
 
-    document = browser_fetcher.fetch(task.url, timeout=task.timeout_seconds)
+    document = browser_fetcher.fetch(
+        task.url,
+        timeout=task.timeout_seconds,
+        rate_limit_per_host=task.rate_limit_per_host,
+    )
     PlaywrightFetcher.assert_not_protected(document.html)
     product, parser = _parse_document(document.html, parsers)
     return ProductExtraction(product, document.html, parser, "browser", document.url)

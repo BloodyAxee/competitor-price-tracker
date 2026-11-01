@@ -33,7 +33,13 @@ class StaticBrowserFetcher:
         self.html = html
         self.calls = 0
 
-    def fetch(self, url: str, *, timeout: float) -> BrowserDocument:
+    def fetch(
+        self,
+        url: str,
+        *,
+        timeout: float,
+        rate_limit_per_host: float,
+    ) -> BrowserDocument:
         self.calls += 1
         return BrowserDocument(url, self.html, 200)
 

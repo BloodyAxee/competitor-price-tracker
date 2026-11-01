@@ -42,6 +42,12 @@ docker compose ps
 docker run --rm -v "${PWD}/collector:/app" -w /app -e PYTHONPATH=/app/src python:3.13-slim python -m unittest discover -s tests -v
 ```
 
+Проверить реальный Chromium и получение данных после выполнения JavaScript:
+
+```powershell
+docker compose run --rm collector python -m price_collector.playwright_smoke
+```
+
 ## API сбора
 
 - `POST /api/collection-jobs` — поставить ручной сбор в очередь
@@ -65,7 +71,7 @@ docker run --rm -v "${PWD}/collector:/app" -w /app -e PYTHONPATH=/app/src python
 - адаптивный веб-интерфейс с поиском, фильтрами, сортировкой и карточкой товара
 - каркас Python-сборщика с очередью PostgreSQL, ограниченными повторами и изоляцией ошибок источников
 - HTTP- и браузерные адаптеры с проверкой точной модели, критичных характеристик и видимой цены
-- безопасный браузерный повтор при сетевой ошибке без обхода CAPTCHA и ограничений сайта
+- безопасный браузерный повтор при сетевой ошибке без обхода CAPTCHA и ограничений сайта, с общим для HTTP и Playwright лимитом запросов к домену
 - API заданий, текущего сравнения, append-only истории и проверенного ручного ввода
 - CSV-выгрузка с точными столбцами задания, ручным методом и пометкой надёжности
 - ежедневное задание по `COLLECTION_CRON` в часовом поясе `APP_TIMEZONE` без дублей за день

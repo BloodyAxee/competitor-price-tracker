@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from .errors import ManualFallbackRequired, PermanentCollectionError, RetryableCollectionError
+from .http import HostRateLimiter
 
 
 @dataclass(frozen=True)
@@ -22,10 +23,20 @@ class PlaywrightFetcher:
         "user verification",
     )
 
-    def __init__(self, user_agent: str) -> None:
+    def __init__(
+        self,
+        user_agent: str,
+        *,
+        limiter: HostRateLimiter | None = None,
+        settle_ms: int = 300,
+    ) -> None:
         if not user_agent.strip():
             raise ValueError("An identifiable User-Agent is required")
+        if settle_ms < 0:
+            raise ValueError("settle_ms must not be negative")
         self._user_agent = user_agent
+        self._limiter = limiter or HostRateLimiter()
+        self._settle_ms = settle_ms
 
     @classmethod
     def assert_not_protected(cls, html: str) -> None:
@@ -36,7 +47,17 @@ class PlaywrightFetcher:
                 code="human_verification_required",
             )
 
-    def fetch(self, url: str, *, timeout: float) -> BrowserDocument:
+    def fetch(
+        self,
+        url: str,
+        *,
+        timeout: float,
+        rate_limit_per_host: float,
+    ) -> BrowserDocument:
+        self._limiter.wait(url, rate_limit_per_host)
+        return self._fetch_document(url, timeout=timeout)
+
+    def _fetch_document(self, url: str, *, timeout: float) -> BrowserDocument:
         from playwright.sync_api import Error as PlaywrightError
         from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
         from playwright.sync_api import sync_playwright
@@ -47,6 +68,9 @@ class PlaywrightFetcher:
                 try:
                     page = browser.new_page(user_agent=self._user_agent)
                     response = page.goto(url, wait_until="domcontentloaded", timeout=int(timeout * 1000))
+                    settle_ms = min(self._settle_ms, max(0, int(timeout * 250)))
+                    if settle_ms:
+                        page.wait_for_timeout(settle_ms)
                     html = page.content()
                     self.assert_not_protected(html)
                     status = response.status if response else None

@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from price_monitor_domain import MatchStatus, PriceInput, PriceType, evaluate_price
 from price_collector.adapters import AdapterRegistry
-from price_collector.browser import PlaywrightFetcher
+from price_collector.browser import BrowserDocument, PlaywrightFetcher
 from price_collector.engine import CollectorEngine
 from price_collector.errors import (
     ManualFallbackRequired,
@@ -54,6 +54,19 @@ def _observation(*, unreliable: bool = False) -> CollectedObservation:
         evidence_text="123 000 ₽",
         evidence={"selector": "fixture"},
     )
+
+
+class RecordingLimiter:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, float]] = []
+
+    def wait(self, url: str, requests_per_second: float) -> None:
+        self.calls.append((url, requests_per_second))
+
+
+class StubPlaywrightFetcher(PlaywrightFetcher):
+    def _fetch_document(self, url: str, *, timeout: float) -> BrowserDocument:
+        return BrowserDocument(url, "<html>rendered</html>", 200)
 
 
 class FakeRepository:
@@ -274,6 +287,19 @@ class FetcherTest(unittest.TestCase):
     def test_playwright_never_bypasses_human_verification(self) -> None:
         with self.assertRaises(ManualFallbackRequired):
             PlaywrightFetcher.assert_not_protected("<title>Verify you are human</title>")
+
+    def test_playwright_uses_the_same_per_host_rate_limit_contract(self) -> None:
+        limiter = RecordingLimiter()
+        fetcher = StubPlaywrightFetcher("CompetitorPriceTracker/0.1", limiter=limiter)
+
+        document = fetcher.fetch(
+            "https://example.com/product",
+            timeout=2,
+            rate_limit_per_host=0.5,
+        )
+
+        self.assertEqual(document.status_code, 200)
+        self.assertEqual(limiter.calls, [("https://example.com/product", 0.5)])
 
     def test_job_claim_uses_skip_locked(self) -> None:
         normalized_sql = " ".join(CLAIM_JOB_SQL.split()).upper()

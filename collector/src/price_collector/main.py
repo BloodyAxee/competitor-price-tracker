@@ -5,7 +5,7 @@ import socket
 from .adapters import AdapterRegistry
 from .browser import PlaywrightFetcher
 from .engine import CollectorEngine
-from .http import HttpFetcher
+from .http import HostRateLimiter, HttpFetcher
 from .repository import PostgresCollectorRepository
 from .sources import (
     STRUCTURED_SOURCE_KEYS,
@@ -26,8 +26,13 @@ def main() -> None:
         "COLLECTOR_USER_AGENT",
         "CompetitorPriceTracker/0.1 (+price-monitoring-prototype)",
     )
-    fetcher = HttpFetcher(user_agent)
-    browser_fetcher = PlaywrightFetcher(user_agent)
+    limiter = HostRateLimiter()
+    fetcher = HttpFetcher(user_agent, limiter=limiter)
+    browser_fetcher = PlaywrightFetcher(
+        user_agent,
+        limiter=limiter,
+        settle_ms=int(os.getenv("COLLECTOR_BROWSER_SETTLE_MS", "300")),
+    )
     adapters = AdapterRegistry(
         (
             CentrToAdapter(fetcher, browser_fetcher=browser_fetcher),
