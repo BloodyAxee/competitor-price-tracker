@@ -9,6 +9,7 @@ from price_collector.http import HttpResponse
 from price_collector.models import SourceTask
 from price_collector.sources.centr_to import (
     CentrToAdapter,
+    parse_centr_to_embedded_product,
     parse_centr_to_product,
     parse_centr_to_t300,
 )
@@ -16,6 +17,7 @@ from price_collector.sources.centr_to import (
 
 FIXTURE = Path(__file__).parent / "fixtures" / "centr_to_t300.html"
 SECOND_FIXTURE = Path(__file__).parent / "fixtures" / "centr_to_4523.html"
+EMBEDDED_FIXTURE = Path(__file__).parent / "fixtures" / "centr_to_embedded.html"
 
 
 def _task(
@@ -91,6 +93,24 @@ class CentrToParserTest(unittest.TestCase):
                 "Балансировочный станок NORDBERG 4524C(B)",
             )
 
+    def test_embedded_product_uses_exact_card_id_and_ignores_other_prices(self) -> None:
+        product = parse_centr_to_embedded_product(
+            EMBEDDED_FIXTURE.read_text(encoding="utf-8"),
+            "Балансировочный станок 4523PA1(B) с автовводом",
+            "21885",
+        )
+
+        self.assertEqual(product.name, "Станок балансировочный автомат с дисплеем, синий 4523PA1(B)")
+        self.assertEqual(product.price, Decimal("222000"))
+
+    def test_embedded_product_rejects_another_card_id(self) -> None:
+        with self.assertRaisesRegex(PermanentCollectionError, "was not found"):
+            parse_centr_to_embedded_product(
+                EMBEDDED_FIXTURE.read_text(encoding="utf-8"),
+                "Балансировочный станок 4523PA1(B) с автовводом",
+                "99999",
+            )
+
 
 class CentrToAdapterTest(unittest.TestCase):
     @classmethod
@@ -135,6 +155,20 @@ class CentrToAdapterTest(unittest.TestCase):
 
         self.assertEqual(observation.price.normalized_price, Decimal("189000"))
         self.assertEqual(observation.evidence["seller_article"], "12941")
+
+    def test_adapter_falls_back_to_embedded_exact_product(self) -> None:
+        adapter = CentrToAdapter(StaticFetcher(EMBEDDED_FIXTURE.read_text(encoding="utf-8")))
+
+        observation = adapter.collect(
+            _task(
+                "https://centr-to.ru/good-21885-stanok-balansirovochnyy-4523pa1-b",
+                expected_product_name="Балансировочный станок 4523PA1(B) с автовводом",
+                seller_article="21885",
+            )
+        )
+
+        self.assertEqual(observation.price.normalized_price, Decimal("222000"))
+        self.assertEqual(observation.evidence["structured_data"], "centr-to embedded product")
 
     def test_challenge_page_requests_manual_fallback(self) -> None:
         adapter = CentrToAdapter(StaticFetcher("<title>Verify you are human</title>"))

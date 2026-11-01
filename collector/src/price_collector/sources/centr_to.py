@@ -1,3 +1,4 @@
+import json
 import re
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -15,6 +16,7 @@ from .structured_data import (
     identity_tokens,
     parse_json_ld_product,
     stock_status,
+    validate_product_name,
 )
 
 
@@ -51,6 +53,50 @@ def parse_centr_to_t300(html: str) -> StructuredProduct:
         "Шиномонтажный станок Станкоимпорт T300, 380 В",
         required_specs=T300_EXPECTED_SPECS,
     )
+
+
+_EMBEDDED_PRODUCT_PATTERN = re.compile(
+    r'"name":"(?P<name>(?:\\.|[^"\\])*)",'
+    r'"id":(?P<id>\d+),'
+    r'"price":(?P<price>null|-?\d+(?:\.\d+)?),'
+    r'"defaultPrice":(?P<default_price>null|-?\d+(?:\.\d+)?),'
+    r'"discountPrice":(?P<discount_price>null|-?\d+(?:\.\d+)?)',
+)
+
+
+def parse_centr_to_embedded_product(
+    html: str,
+    expected_name: str,
+    product_id: str,
+) -> StructuredProduct:
+    matches = [match for match in _EMBEDDED_PRODUCT_PATTERN.finditer(html) if match["id"] == product_id]
+    if not matches:
+        raise PermanentCollectionError(
+            f"Embedded product {product_id} was not found",
+            code="missing_embedded_product",
+        )
+
+    candidates: list[StructuredProduct] = []
+    for match in matches:
+        name = json.loads(f'"{match["name"]}"')
+        validate_product_name(name, expected_name)
+        raw_price = match["discount_price"] if match["discount_price"] != "null" else match["price"]
+        if raw_price == "null":
+            raw_price = match["default_price"]
+        if raw_price == "null":
+            raise PermanentCollectionError("Published price is missing", code="missing_price")
+        price = Decimal(raw_price)
+        if price <= 0:
+            raise PermanentCollectionError("Published price is not positive", code="invalid_price")
+        candidates.append(StructuredProduct(name, price, "RUB", None, {}))
+
+    unique = {(candidate.name, candidate.price): candidate for candidate in candidates}
+    if len(unique) != 1:
+        raise PermanentCollectionError(
+            f"Embedded product {product_id} is ambiguous",
+            code="ambiguous_product",
+        )
+    return next(iter(unique.values()))
 
 
 class CentrToAdapter:
@@ -99,6 +145,14 @@ class CentrToAdapter:
                         html,
                         task.expected_product_name or "",
                         required_specs=required_specs,
+                    ),
+                ),
+                ProductParser(
+                    "centr-to embedded product",
+                    lambda html: parse_centr_to_embedded_product(
+                        html,
+                        task.expected_product_name or "",
+                        product_id,
                     ),
                 ),
             ),

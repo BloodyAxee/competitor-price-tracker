@@ -161,6 +161,11 @@ def _validate_identity(
     return name, specs
 
 
+def validate_product_name(name: str, expected_name: str) -> str:
+    validated_name, _ = _validate_identity({"name": name}, expected_name, None)
+    return validated_name
+
+
 def _single_offer(product: dict[str, Any]) -> dict[str, Any]:
     raw_offers = product.get("offers")
     offers = raw_offers if isinstance(raw_offers, list) else [raw_offers]
