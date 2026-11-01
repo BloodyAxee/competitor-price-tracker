@@ -351,6 +351,18 @@ try {
         candidates.push({ kind: "reserve", url: research.reserve_url });
       }
 
+      const activeCandidateUrls = candidates.map((candidate) => candidate.url);
+      await tx.offer.updateMany({
+        where: {
+          productId: product.id,
+          isActive: true,
+          ...(activeCandidateUrls.length > 0
+            ? { competitorUrl: { notIn: activeCandidateUrls } }
+            : {}),
+        },
+        data: { isActive: false, updatedAt: new Date() },
+      });
+
       for (const candidate of candidates) {
         const domain = baseDomain(candidate.url);
         const profile = sourceProfile(domain);

@@ -31,6 +31,7 @@ test("required source registry keeps exact matches separate from unresolved conf
   const exact = registry.models.filter((model) => model.match_status === "точное совпадение");
   const unresolvedIds = new Set([2, 15, 18, 24, 26, 27]);
   const newlyVerifiedIds = new Set([3, 10, 13, 20, 21, 25]);
+  const recoveredNordbergIds = new Set([6, 7, 11, 28]);
 
   assert.equal(registry.models.length, 29);
   assert.equal(registry.models.filter((model) => model.own_url).length, 28);
@@ -44,6 +45,17 @@ test("required source registry keeps exact matches separate from unresolved conf
       .every(
         (model) =>
           model.match_status === "точное совпадение" &&
+          model.current_price_verified &&
+          model.automated_collection_verified,
+      ),
+  );
+  assert.ok(
+    registry.models
+      .filter((model) => recoveredNordbergIds.has(model.id))
+      .every(
+        (model) =>
+          model.primary_url !== null &&
+          new URL(model.primary_url).hostname === "nordberg-shop.ru" &&
           model.current_price_verified &&
           model.automated_collection_verified,
       ),

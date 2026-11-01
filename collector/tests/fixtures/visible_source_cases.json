@@ -39,13 +39,13 @@
     "source": "source:optima-trade.ru",
     "expected_name": "Грузовой шиномонтажный станок NORDBERG 46TRK(B)",
     "expected_price": "460000",
-    "html": "<html><head><title>Nordberg 46TRK(B) 380 В</title></head><body><h1>Шиномонтажный грузовой станок Nordberg 46TRK(B)</h1><div>380 В, диски 14-26, количество скоростей 1</div><div>460 000 р уб. с НДС</div><h2>Описание</h2></body></html>"
+    "html": "<html><head><title>Nordberg 46TRK(B) 380 В</title></head><body><h1>Шиномонтажный грузовой станок Nordberg 46TRK(B)</h1><div>380 В, диски 14-26, количество скоростей 1, максимальный вес колеса 1000 кг</div><div>460 000 р уб. с НДС</div><h2>Описание</h2></body></html>"
   },
   {
     "source": "source:optima-trade.ru",
     "expected_name": "Грузовой шиномонтажный станок NORDBERG 46TRKE(B)",
     "expected_price": "413000",
-    "html": "<html><head><title>Nordberg 46TRKE(B) 380 В</title></head><body><h1>Шиномонтажный грузовой станок Nordberg 46TRKE(B)</h1><div>380 В, диски 14-26, односкоростной</div><div>413 000 р уб. с НДС</div><h2>Описание</h2></body></html>"
+    "html": "<html><head><title>Nordberg 46TRKE(B) 380 В</title></head><body><h1>Шиномонтажный грузовой станок Nordberg 46TRKE(B)</h1><div>380 В, диски 14-26, односкоростной, максимальный вес колеса 1000 кг</div><div>413 000 р уб. с НДС</div><h2>Описание</h2></body></html>"
   },
   {
     "source": "source:optima-trade.ru",
@@ -100,5 +100,29 @@
     "expected_name": "Окрасочно-сушильная камера Guangli GL3",
     "expected_price": "1745640",
     "html": "<html><head><title>Окрасочно-сушильная камера Guangli GL3</title></head><body><h1>Окрасочно-сушильная камера Guangli GL3</h1><div>Основание 30 см, стены из сэндвич-панелей 50 мм</div><div>Верхний свет 40 ламп, нижний свет 16 ламп</div><div>Приточный блок 7,5 кВт, экстрактор 5,5 кВт, воздухообмен 22000 м3/час</div><div>Дизельная горелка Riello G20 мощностью 202 кВт, потребление 15 кВт</div><div>1 745 640 руб. за 1 В наличии много</div><h2>Похожие товары</h2><div>2 100 000 руб.</div></body></html>"
+  },
+  {
+    "source": "source:nordberg-shop.ru",
+    "expected_name": "Балансировочный станок NORDBERG 4523 с автовводом",
+    "expected_price": "86400",
+    "html": "<html><head><title>4523 NORDBERG станок балансировочный</title></head><body><h1>4523 NORDBERG станок балансировочный с автоматическим вводом 2-х параметров</h1><div>Артикул 4523, питание 220 В, диски 10-24, вал 40 мм</div><div>86 400 RUB Минимальный заказ 10 000 RUB</div><h2>Опции и аксессуары</h2><div>8 490 RUB В корзину</div></body></html>"
+  },
+  {
+    "source": "source:nordberg-shop.ru",
+    "expected_name": "Грузовой шиномонтажный станок NORDBERG 46TRK(B)",
+    "expected_price": "460000",
+    "html": "<html><head><title>46TRK(B) NORDBERG 380V</title></head><body><h1>46TRK(B) NORDBERG шиномонтажный станок для грузовых авто 380V</h1><div>380 В, диаметр диска 14-26, максимальный вес колеса 1000 кг</div><div>460 000 RUB В корзину</div><h2>Опции и аксессуары</h2><div>18 800 RUB В корзину</div></body></html>"
+  },
+  {
+    "source": "source:nordberg-shop.ru",
+    "expected_name": "Грузовой шиномонтажный станок NORDBERG 46TRKE(B)",
+    "expected_price": "413000",
+    "html": "<html><head><title>46TRKE(B) NORDBERG 380V</title></head><body><h1>46TRKE(B) NORDBERG шиномонтажный станок для грузовых авто</h1><div>380 В, диаметр диска 14-26, максимальный вес колеса 1000 кг</div><div>413 000 RUB Минимальный заказ 10 000 RUB</div><h2>Опции и аксессуары</h2><div>5 420 RUB В корзину</div></body></html>"
+  },
+  {
+    "source": "source:nordberg-shop.ru",
+    "expected_name": "Окрасочно-сушильная камера NORDBERG STANDART",
+    "expected_price": "2127500",
+    "html": "<html><head><title>STANDART Nordberg покрасочная камера</title></head><body><h1>STANDART Nordberg покрасочная камера</h1><div>Внутренние габариты 6,9 x 3,9 x 2,65 м, высота основания 300 мм, толщина стен 50 мм</div><div>Горелка Riello F40 серия G20, электромотор притока 7,5 кВт и вытяжки 7,5 кВт, производительность 25000 м3/час</div><div>2 127 500 RUB В корзину</div><h2>Опции и аксессуары</h2><div>12 000 RUB В корзину</div></body></html>"
   }
 ]

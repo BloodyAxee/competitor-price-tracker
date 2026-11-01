@@ -38,6 +38,10 @@ VISIBLE_SOURCE_PROFILES = {
         price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*a\s*(?:В корзину|О товаре)",),
         stop_markers=("Запчасти", "Опции и запчасти"),
     ),
+    "source:nordberg-shop.ru": VisibleProductProfile(
+        price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*(?:RUB|₽)\s*(?:В корзину|Минимальный заказ)",),
+        stop_markers=("Опции и аксессуары", "С этим товаром покупают"),
+    ),
     "source:rossvik.moscow": VisibleProductProfile(
         price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*₽\s*(?:В корзину|Сравнить|Гарантия|Наличие)",),
         stop_markers=("Рекомендуем купить",),
@@ -66,7 +70,7 @@ VISIBLE_SOURCE_PROFILES = {
     ),
     "source:optima-trade.ru": VisibleProductProfile(
         price_patterns=(rf"(?P<price>{_HIGH_VALUE_PRICE_NUMBER})\s*р\s*уб\.?\s*с НДС",),
-        stop_markers=("Похожие товары", "С этим товаром покупают"),
+        stop_markers=("Сопутствующие товары", "Похожие товары", "С этим товаром покупают"),
     ),
     "source:carmod.ru": VisibleProductProfile(
         price_patterns=(rf"Подробности\s*(?P<price>{_PRICE_NUMBER})\s*₽\s*В корзину",),
@@ -86,13 +90,21 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
     ("4641",): ((r"\b380\s*[вv]\b", "380 V"), (r"(?:двухскорост|2\s*скорост)", "two speeds")),
     ("46trkb",): (
         (r"\b380\s*[вv]\b", "380 V"),
-        (r"14\s*-\s*26", "14-26"),
-        (r"(?:односкорост|одна скорость|количество скоростей[^0-9]{0,20}1)", "one speed"),
+        (r"14\s*[\"'′″]{0,2}\s*-\s*26", "14-26"),
+        (
+            r"(?:односкорост|одна скорость|количество скоростей[^0-9]{0,20}1|"
+            r"максимальн\w* (?:вес|масса) колес\w*[^0-9]{0,20}1000\s*кг|1000\s*кг)",
+            "one speed or 1000 kg wheel mass",
+        ),
     ),
     ("46trkeb",): (
         (r"\b380\s*[вv]\b", "380 V"),
-        (r"14\s*-\s*26", "14-26"),
-        (r"(?:односкорост|одна скорость|количество скоростей[^0-9]{0,20}1)", "one speed"),
+        (r"14\s*[\"'′″]{0,2}\s*-\s*26", "14-26"),
+        (
+            r"(?:односкорост|одна скорость|количество скоростей[^0-9]{0,20}1|"
+            r"максимальн\w* (?:вес|масса) колес\w*[^0-9]{0,20}1000\s*кг|1000\s*кг)",
+            "one speed or 1000 kg wheel mass",
+        ),
     ),
     ("vt63",): (
         (r"\b220\s*[вv]\b", "220 V"),
@@ -174,6 +186,20 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
         (r"riello\s*g20[^\n]{0,80}202\s*квт", "Riello G20 202 kW burner"),
         (r"потреблен[^\n]{0,40}15\s*квт", "15 kW electric power"),
     ),
+    ("standart",): (
+        (r"6[,.]9\s*x\s*3[,.]9\s*x\s*2[,.]65", "6.9 x 3.9 x 2.65 m internal size"),
+        (r"высота основан[^\n]{0,30}(?:300\s*мм|мм[^0-9]{0,10}300)", "300 mm base"),
+        (r"riello\s*f40[^\n]{0,30}g20", "Riello F40 G20 burner"),
+        (r"толщина[^\n]{0,30}50\s*мм", "50 mm walls"),
+        (r"(?:приток|вытяж)[^\n]{0,50}7[,.]5\s*квт", "7.5 kW ventilation"),
+        (r"25000\s*м", "25000 m3/h airflow"),
+    ),
+}
+
+
+_FORBIDDEN_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
+    ("46trkb",): ((r"(?:двухскорост|2\s*скорост)", "two-speed conflicting version"),),
+    ("46trkeb",): ((r"(?:двухскорост|2\s*скорост)", "two-speed conflicting version"),),
 }
 
 
@@ -279,6 +305,13 @@ def validate_visible_product_qualifiers(
             raise PermanentCollectionError(
                 f"Required exact product qualifier is missing: {label}",
                 code="missing_product_specification",
+            )
+    scoped_evidence = normalized_text(_scoped_visible_text(parser, profile))
+    for pattern, label in _FORBIDDEN_QUALIFIER_RULES.get(identity_tokens(expected_name), ()):
+        if re.search(pattern, scoped_evidence, re.IGNORECASE) is not None:
+            raise PermanentCollectionError(
+                f"Conflicting product qualifier is present: {label}",
+                code="conflicting_product_specification",
             )
 
 

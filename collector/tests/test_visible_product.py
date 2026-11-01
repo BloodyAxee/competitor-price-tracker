@@ -88,6 +88,10 @@ class VisibleProductParserTest(unittest.TestCase):
             "Шиномонтажный полуавтомат ROSSVIK V-524, 380 В": ("V524.380.5005", "V524.220.5005"),
             "Балансировочный станок ROSSVIK VT-61, 220 В": ("RAL5005", "RAL3020"),
             "Окрасочно-сушильная камера Guangli GL3": ("нижний свет 16 ламп", "нижний свет 10 ламп"),
+            "Окрасочно-сушильная камера NORDBERG STANDART": (
+                "6,9 x 3,9 x 2,65",
+                "6,9 x 3,9 x 2,70",
+            ),
         }
 
         for case in cases:
@@ -102,6 +106,22 @@ class VisibleProductParserTest(unittest.TestCase):
                         case["expected_name"],
                         VISIBLE_SOURCE_PROFILES[case["source"]],
                     )
+
+    def test_conflicting_two_speed_nordberg_version_is_rejected(self) -> None:
+        html = """
+        <html><body>
+          <h1>46TRKE(B) NORDBERG шиномонтажный станок</h1>
+          <div>380 В, диски 14-26, максимальный вес колеса 1000 кг, двухскоростной</div>
+          <div>413 000 RUB В корзину</div>
+        </body></html>
+        """
+
+        with self.assertRaisesRegex(PermanentCollectionError, "Conflicting"):
+            parse_visible_product(
+                html,
+                "Грузовой шиномонтажный станок NORDBERG 46TRKE(B)",
+                VISIBLE_SOURCE_PROFILES["source:nordberg-shop.ru"],
+            )
 
     def test_navigation_stop_marker_before_product_does_not_hide_the_card(self) -> None:
         html = """
