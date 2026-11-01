@@ -20,9 +20,11 @@ from .visible_product import (
 STRUCTURED_SOURCE_KEYS = (
     "source:aet-auto.ru",
     "source:autoservice2.ru",
+    "source:carmod.ru",
     "source:master-instrument.ru",
     "source:nordberg-shop.ru",
     "source:nordberg.ru",
+    "source:optima-trade.ru",
     "source:rossvik.moscow",
     "source:rustehnika.ru",
     "source:technovector.ru",

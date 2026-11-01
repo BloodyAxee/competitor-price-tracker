@@ -8,6 +8,8 @@ interface ResearchModel {
   label: string;
   own_url: string | null;
   primary_url: string | null;
+  reserve_url?: string | null;
+  verified_exact_urls?: string[];
   match_status: string;
   review_scope: string;
 }
@@ -33,6 +35,13 @@ test("required source registry keeps exact matches separate from unresolved conf
   assert.ok(exact.every((model) => model.primary_url));
   assert.ok(exact.every((model) => !model.review_scope.includes("полное совпадение не подтверждено")));
   assert.ok(registry.models.filter((model) => unresolvedIds.has(model.id)).every((model) => model.match_status !== "точное совпадение"));
+  assert.ok(
+    registry.models.every((model) =>
+      (model.verified_exact_urls ?? []).every(
+        (url) => model.match_status === "точное совпадение" && url === model.reserve_url,
+      ),
+    ),
+  );
   assert.equal(registry.bundle_offers.length, 1);
   assert.equal(registry.bundle_offers[0]?.bundle_model, "Шиномонтажный комплект NORDBERG 4641N + VT-64");
   assert.deepEqual(

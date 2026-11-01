@@ -28,5 +28,41 @@
     "expected_name": "Шиномонтажный станок NORDBERG 46TRKE56(B), 14–56″",
     "expected_price": "784000",
     "html": "<html><head><title>NORDBERG 46TRKE56(B) 14-56 380V</title></head><body><h1>Станок шиномонтажный 380V 14-56 NORDBERG 46TRKE56(B)</h1><div>Напряжение 380 В, 14-56, 2 скорости</div><div>784 000р</div><button>Оставить заявку</button><h2>Описание</h2></body></html>"
+  },
+  {
+    "source": "source:optima-trade.ru",
+    "expected_name": "Балансировочный станок NORDBERG 45TRKE, 220 В",
+    "expected_price": "181000",
+    "html": "<html><head><title>Nordberg 45TRKE 220 В</title></head><body><h1>Балансировочный грузовой станок Nordberg 45TRKE, синий</h1><div>Напряжение 220 В, вес колеса до 150 кг</div><div>181 000 р уб. с НДС</div><h2>Описание</h2></body></html>"
+  },
+  {
+    "source": "source:optima-trade.ru",
+    "expected_name": "Грузовой шиномонтажный станок NORDBERG 46TRK(B)",
+    "expected_price": "460000",
+    "html": "<html><head><title>Nordberg 46TRK(B) 380 В</title></head><body><h1>Шиномонтажный грузовой станок Nordberg 46TRK(B)</h1><div>380 В, диски 14-26, количество скоростей 1</div><div>460 000 р уб. с НДС</div><h2>Описание</h2></body></html>"
+  },
+  {
+    "source": "source:optima-trade.ru",
+    "expected_name": "Грузовой шиномонтажный станок NORDBERG 46TRKE(B)",
+    "expected_price": "413000",
+    "html": "<html><head><title>Nordberg 46TRKE(B) 380 В</title></head><body><h1>Шиномонтажный грузовой станок Nordberg 46TRKE(B)</h1><div>380 В, диски 14-26, односкоростной</div><div>413 000 р уб. с НДС</div><h2>Описание</h2></body></html>"
+  },
+  {
+    "source": "source:optima-trade.ru",
+    "expected_name": "Балансировочный станок NORDBERG 4523 с автовводом",
+    "expected_price": "86400",
+    "html": "<html><head><title>Nordberg 4523 220 В</title></head><body><h1>Балансировочный станок Nordberg 4523</h1><div>220 В, диски 10-24, автоматический ввод двух параметров</div><div>86 400 р уб. с НДС</div><h2>Описание</h2></body></html>"
+  },
+  {
+    "source": "source:optima-trade.ru",
+    "expected_name": "Балансировочный станок NORDBERG 4523N1(B), лазер",
+    "expected_price": "107600",
+    "html": "<html><head><title>Nordberg 4523N1(B) 220 В</title></head><body><h1>Балансировочный станок Nordberg 4523N1(B)</h1><div>220 В, диски 10-24, лазер, автоматический ввод двух параметров</div><div>107 600 р уб. с НДС</div><h2>Описание</h2></body></html>"
+  },
+  {
+    "source": "source:carmod.ru",
+    "expected_name": "Шиномонтажный станок NORDBERG 46TRKE56(B), 14–56″",
+    "expected_price": "708000",
+    "html": "<html><head><title>Nordberg 46TRKE56(B)</title></head><body><h1>Шиномонтажный станок Nordberg 46TRKE56(B)</h1><div>Для грузовых, двухскоростной, диски 14-56, 380В</div><div>Подробности 708 000 ₽ В корзину</div><h2>Описание</h2></body></html>"
   }
 ]

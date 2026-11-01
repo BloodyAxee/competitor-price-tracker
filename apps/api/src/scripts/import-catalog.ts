@@ -13,6 +13,7 @@ interface ResearchModel {
   own_url: string | null;
   primary_url: string | null;
   reserve_url: string | null;
+  verified_exact_urls?: string[];
   match_status: string;
   review_scope: string;
   note: string;
@@ -378,7 +379,9 @@ try {
         });
         const isExactOffer =
           candidate.kind === "own" ||
-          (candidate.kind === "primary" && research.match_status === "точное совпадение");
+          (research.match_status === "точное совпадение" &&
+            (candidate.kind === "primary" ||
+              research.verified_exact_urls?.includes(candidate.url) === true));
         const sourceLabel =
           candidate.kind === "own"
             ? "Собственная карточка"

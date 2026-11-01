@@ -20,11 +20,14 @@ class VisibleProductProfile:
 
 
 _PRICE_NUMBER = r"(?<![\d.])(?:\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d{4,9})(?!\d)"
+_HIGH_VALUE_PRICE_NUMBER = r"(?<![\d.])(?:\d{2,3}(?:[ \u00a0\u202f]\d{3})+|\d{5,9})(?!\d)"
 
 
 VISIBLE_SOURCE_PROFILES = {
     "source:aet-auto.ru": VisibleProductProfile(
-        price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*₽\s*В наличии",),
+        price_patterns=(
+            rf"(?P<price>{_PRICE_NUMBER})\s*₽\s*(?:В наличии|[−–—-]\s*\+\s*В корзину)",
+        ),
         stop_markers=("С этим товаром покупают", "Похожие товары"),
     ),
     "source:autoservice2.ru": VisibleProductProfile(
@@ -57,33 +60,61 @@ VISIBLE_SOURCE_PROFILES = {
         price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*₽",),
         stop_markers=("С этим товаром покупают", "Похожие товары"),
     ),
+    "source:optima-trade.ru": VisibleProductProfile(
+        price_patterns=(rf"(?P<price>{_HIGH_VALUE_PRICE_NUMBER})\s*р\s*уб\.?\s*с НДС",),
+        stop_markers=("Похожие товары", "С этим товаром покупают"),
+    ),
+    "source:carmod.ru": VisibleProductProfile(
+        price_patterns=(rf"Подробности\s*(?P<price>{_PRICE_NUMBER})\s*₽\s*В корзину",),
+        stop_markers=("Похожие товары", "Рекомендуем"),
+    ),
 }
 
 
 _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
-    ("mt290",): ((r"\b380\s*в\b", "380 V"), (r"14\s*-\s*26", "14-26")),
-    ("46trke42b",): ((r"\b380\s*в\b", "380 V"), (r"14\s*-\s*42", "14-42")),
-    ("45trkb",): ((r"\b380\s*в\b", "380 V"), (r"200\s*кг", "200 kg")),
-    ("4641",): ((r"\b380\s*в\b", "380 V"), (r"(?:двухскорост|2\s*скорост)", "two speeds")),
+    ("mt290",): ((r"\b380\s*[вv]\b", "380 V"), (r"14\s*-\s*26", "14-26")),
+    ("46trke42b",): ((r"\b380\s*[вv]\b", "380 V"), (r"14\s*-\s*42", "14-42")),
+    ("45trkb",): ((r"\b380\s*[вv]\b", "380 V"), (r"200\s*кг", "200 kg")),
+    ("4641",): ((r"\b380\s*[вv]\b", "380 V"), (r"(?:двухскорост|2\s*скорост)", "two speeds")),
+    ("46trkb",): (
+        (r"\b380\s*[вv]\b", "380 V"),
+        (r"14\s*-\s*26", "14-26"),
+        (r"(?:односкорост|одна скорость|количество скоростей[^0-9]{0,20}1)", "one speed"),
+    ),
+    ("46trkeb",): (
+        (r"\b380\s*[вv]\b", "380 V"),
+        (r"14\s*-\s*26", "14-26"),
+        (r"(?:односкорост|одна скорость|количество скоростей[^0-9]{0,20}1)", "one speed"),
+    ),
     ("vt63",): (
-        (r"\b220\s*в\b", "220 V"),
+        (r"\b220\s*[вv]\b", "220 V"),
         (r"(?:лазер|laser)", "laser"),
         (r"(?:уз|sonar|ультразвук)", "ultrasonic sensor"),
     ),
-    ("4523n1b",): ((r"\b220\s*в\b", "220 V"), (r"(?:лазер|laser)", "laser")),
-    ("45trke",): ((r"\b220\s*в\b", "220 V"),),
+    ("4523",): (
+        (r"\b220\s*[вv]\b", "220 V"),
+        (r"10\s*-\s*24", "10-24"),
+        (r"(?:автоматическ\w* ввод\w* (?:двух|2х|2-х) параметр|автоввод)", "automatic input"),
+    ),
+    ("4523n1b",): (
+        (r"\b220\s*[вv]\b", "220 V"),
+        (r"10\s*-\s*24", "10-24"),
+        (r"(?:лазер|laser)", "laser"),
+        (r"(?:автоматическ\w* ввод\w* (?:двух|2х|2-х) параметр|автоввод)", "automatic input"),
+    ),
+    ("45trke",): ((r"\b220\s*[вv]\b", "220 V"), (r"150\s*кг", "150 kg")),
     ("4638nb",): (
-        (r"\b220\s*в\b", "220 V"),
+        (r"\b220\s*[вv]\b", "220 V"),
         (r"(?:односкорост|количество скоростей[^0-9]{0,20}1)", "one speed"),
     ),
     ("p7204", "mc4"): ((r"(?:четыре|4)[^\n]{0,40}камер", "four cameras"),),
     ("46trke56b",): (
-        (r"\b380\s*в\b", "380 V"),
+        (r"\b380\s*[вv]\b", "380 V"),
         (r"14\s*-\s*56", "14-56"),
         (r"(?:двухскорост|2\s*скорост)", "two speeds"),
     ),
-    ("4641n",): ((r"\b380\s*в\b", "380 V"), (r"(?:двухскорост|2\s*скорост)", "two speeds")),
-    ("vt64", "220в", "ral5005"): ((r"\b220\s*в\b", "220 V"), (r"ral\s*5005", "RAL5005")),
+    ("4641n",): ((r"\b380\s*[вv]\b", "380 V"), (r"(?:двухскорост|2\s*скорост)", "two speeds")),
+    ("vt64", "220в", "ral5005"): ((r"\b220\s*[вv]\b", "220 V"), (r"ral\s*5005", "RAL5005")),
 }
 
 
@@ -151,8 +182,20 @@ class _VisibleTextParser(HTMLParser):
             self.text.append("\n")
 
 
-def _scoped_visible_text(parser: _VisibleTextParser, profile: VisibleProductProfile) -> str:
+def _scoped_visible_text(
+    parser: _VisibleTextParser,
+    profile: VisibleProductProfile,
+    *,
+    stop_at_recommendations: bool = True,
+) -> str:
     visible_text = " ".join(" ".join(parser.text).split())
+    lowered = visible_text.casefold()
+    heading_indexes = [lowered.find(heading.casefold()) for heading in parser.headings]
+    heading_indexes = [index for index in heading_indexes if index >= 0]
+    if heading_indexes:
+        visible_text = visible_text[min(heading_indexes) :]
+    if not stop_at_recommendations:
+        return visible_text
     lowered = visible_text.casefold()
     stop_indexes = [lowered.find(marker.casefold()) for marker in profile.stop_markers]
     stop_indexes = [index for index in stop_indexes if index >= 0]
@@ -169,7 +212,9 @@ def validate_visible_product_qualifiers(
         return
     parser = _VisibleTextParser()
     parser.feed(html)
-    evidence = normalized_text(_scoped_visible_text(parser, profile))
+    evidence = normalized_text(
+        _scoped_visible_text(parser, profile, stop_at_recommendations=False)
+    )
     for pattern, label in requirements:
         if re.search(pattern, evidence, re.IGNORECASE) is None:
             raise PermanentCollectionError(

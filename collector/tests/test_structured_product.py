@@ -64,6 +64,7 @@ class StructuredProductAdapterTest(unittest.TestCase):
     def test_identity_tokens_keep_model_suffixes_and_ignore_numeric_ranges(self) -> None:
         self.assertEqual(identity_tokens("NORDBERG 45TRK(B), 14–26"), ("45trkb",))
         self.assertEqual(identity_tokens("Грузовой ES-26D, 14–26"), ("es26d",))
+        self.assertEqual(identity_tokens("Окрасочно-сушильная камера NORDBERG STANDART"), ("standart",))
 
     def test_selects_exact_product_from_graph_and_builds_observation(self) -> None:
         observed_at = datetime(2026, 11, 1, 13, 30, tzinfo=UTC)
@@ -97,6 +98,15 @@ class StructuredProductAdapterTest(unittest.TestCase):
     def test_challenge_page_requires_manual_fallback(self) -> None:
         adapter = StructuredProductAdapter(
             StaticFetcher("<title>Подтвердите, что вы человек</title>"),
+            "source:nordberg.ru",
+        )
+
+        with self.assertRaises(ManualFallbackRequired):
+            adapter.collect(_task())
+
+    def test_english_user_verification_page_is_not_parsed_as_a_product(self) -> None:
+        adapter = StructuredProductAdapter(
+            StaticFetcher("<html><title>User verification...</title></html>"),
             "source:nordberg.ru",
         )
 

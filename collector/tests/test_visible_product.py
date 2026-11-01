@@ -21,6 +21,20 @@ class VisibleProductParserTest(unittest.TestCase):
         self.assertEqual(product.price, Decimal("379490"))
         self.assertEqual(product.availability, "https://schema.org/InStock")
 
+    def test_aet_current_cart_controls_are_supported(self) -> None:
+        html = (FIXTURES / "aet_auto_visible.html").read_text(encoding="utf-8").replace(
+            "379 490 ₽</div><div>В наличии",
+            "392 350 ₽ − + В корзину</div><div>Доставка от 1 дня",
+        )
+
+        product = parse_visible_product(
+            html,
+            "Грузовой шиномонтажный станок AE&T MT-290",
+            VISIBLE_SOURCE_PROFILES["source:aet-auto.ru"],
+        )
+
+        self.assertEqual(product.price, Decimal("392350"))
+
     def test_autoservice_recommendation_price_is_ignored(self) -> None:
         product = parse_visible_product(
             (FIXTURES / "autoservice_visible.html").read_text(encoding="utf-8"),
@@ -64,6 +78,26 @@ class VisibleProductParserTest(unittest.TestCase):
                 "Грузовой шиномонтажный станок AE&T MT-290",
                 VISIBLE_SOURCE_PROFILES["source:aet-auto.ru"],
             )
+
+    def test_navigation_stop_marker_before_product_does_not_hide_the_card(self) -> None:
+        html = """
+        <html><body>
+          <nav>Каталог Запчасти</nav>
+          <h1>Станок балансировочный NORDBERG 45TRK(B)</h1>
+          <div>Синий, 380 В</div><div>217 500 a В корзину</div>
+          <div>Описание Опции и запчасти О товаре</div>
+          <article>Допустимая масса колеса до 200 кг</article>
+          <h2>Запчасти</h2><div>7 150 a Заказать</div>
+        </body></html>
+        """
+
+        product = parse_visible_product(
+            html,
+            "Балансировочный станок 45TRK(B): колёса до 200 кг",
+            VISIBLE_SOURCE_PROFILES["source:master-instrument.ru"],
+        )
+
+        self.assertEqual(product.price, Decimal("217500"))
 
 
 if __name__ == "__main__":

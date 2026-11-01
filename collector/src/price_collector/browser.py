@@ -19,6 +19,7 @@ class PlaywrightFetcher:
         "cloudflare challenge",
         "подтвердите, что вы человек",
         "проверка, что вы человек",
+        "user verification",
     )
 
     def __init__(self, user_agent: str) -> None:
