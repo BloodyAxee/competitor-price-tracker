@@ -24,6 +24,8 @@ class SourceTask:
     timeout_seconds: float
     max_retries: int
     rate_limit_per_host: float
+    expected_product_name: str | None = None
+    seller_article: str | None = None
 
 
 @dataclass(frozen=True)

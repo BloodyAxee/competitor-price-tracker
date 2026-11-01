@@ -6,7 +6,7 @@ from .adapters import AdapterRegistry
 from .engine import CollectorEngine
 from .http import HttpFetcher
 from .repository import PostgresCollectorRepository
-from .sources import CentrToT300Adapter, SiToolsT300Adapter
+from .sources import CentrToAdapter, SiToolsT300Adapter
 from .worker import CollectorWorker
 
 
@@ -23,7 +23,7 @@ def main() -> None:
     fetcher = HttpFetcher(user_agent)
     adapters = AdapterRegistry(
         (
-            CentrToT300Adapter(fetcher),
+            CentrToAdapter(fetcher),
             SiToolsT300Adapter(fetcher),
         )
     )

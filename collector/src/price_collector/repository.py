@@ -63,9 +63,12 @@ class PostgresCollectorRepository:
                     s.collection_method,
                     s.request_timeout_seconds,
                     s.max_retries,
-                    s.rate_limit_per_host
+                    s.rate_limit_per_host,
+                    p.name AS expected_product_name,
+                    o.seller_article
                 FROM offers o
                 JOIN sources s ON s.id = o.source_id
+                JOIN products p ON p.id = o.product_id
                 WHERE o.is_active
                   AND s.is_active
                   AND o.match_status = 'exact'
@@ -89,6 +92,8 @@ class PostgresCollectorRepository:
             timeout_seconds=float(row["request_timeout_seconds"]),
             max_retries=int(row["max_retries"]),
             rate_limit_per_host=float(row["rate_limit_per_host"]),
+            expected_product_name=row["expected_product_name"],
+            seller_article=row["seller_article"],
         )
 
     def start_attempt(self, task: SourceTask, attempt_number: int, method: str) -> int:

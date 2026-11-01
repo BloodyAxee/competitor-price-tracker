@@ -7,14 +7,22 @@ from price_monitor_domain import Reliability
 from price_collector.errors import ManualFallbackRequired, PermanentCollectionError
 from price_collector.http import HttpResponse
 from price_collector.models import SourceTask
-from price_collector.sources.centr_to import CentrToT300Adapter, parse_centr_to_t300
+from price_collector.sources.centr_to import (
+    CentrToAdapter,
+    parse_centr_to_product,
+    parse_centr_to_t300,
+)
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "centr_to_t300.html"
+SECOND_FIXTURE = Path(__file__).parent / "fixtures" / "centr_to_4523.html"
 
 
 def _task(
     url: str = "https://centr-to.ru/good-15155-t300-shinomontazhnyy-poluavtomat-380v",
+    *,
+    expected_product_name: str = "Шиномонтажный станок Станкоимпорт T300, 380 В",
+    seller_article: str = "15155",
 ) -> SourceTask:
     return SourceTask(
         job_id="00000000-0000-0000-0000-000000000001",
@@ -26,6 +34,8 @@ def _task(
         timeout_seconds=45,
         max_retries=2,
         rate_limit_per_host=0.5,
+        expected_product_name=expected_product_name,
+        seller_article=seller_article,
     )
 
 
@@ -65,6 +75,22 @@ class CentrToParserTest(unittest.TestCase):
         with self.assertRaisesRegex(PermanentCollectionError, "Unexpected product specification"):
             parse_centr_to_t300(wrong_product)
 
+    def test_second_product_uses_the_same_structured_data_parser(self) -> None:
+        product = parse_centr_to_product(
+            SECOND_FIXTURE.read_text(encoding="utf-8"),
+            "Балансировочный станок NORDBERG 4523 с автовводом",
+        )
+
+        self.assertEqual(product.name, "Балансировочный станок NORDBERG 4523 с автовводом")
+        self.assertEqual(product.price, Decimal("189000"))
+
+    def test_wrong_model_is_rejected(self) -> None:
+        with self.assertRaisesRegex(PermanentCollectionError, "Unexpected product name"):
+            parse_centr_to_product(
+                SECOND_FIXTURE.read_text(encoding="utf-8"),
+                "Балансировочный станок NORDBERG 4524C(B)",
+            )
+
 
 class CentrToAdapterTest(unittest.TestCase):
     @classmethod
@@ -74,7 +100,7 @@ class CentrToAdapterTest(unittest.TestCase):
     def test_adapter_builds_reliable_own_price_observation(self) -> None:
         observed_at = datetime(2026, 11, 1, 11, 30, tzinfo=UTC)
         fetcher = StaticFetcher(self.html)
-        adapter = CentrToT300Adapter(fetcher, clock=lambda: observed_at)
+        adapter = CentrToAdapter(fetcher, clock=lambda: observed_at)
 
         observation = adapter.collect(_task())
 
@@ -90,14 +116,28 @@ class CentrToAdapterTest(unittest.TestCase):
 
     def test_unverified_centr_to_url_is_rejected_before_request(self) -> None:
         fetcher = StaticFetcher(self.html)
-        adapter = CentrToT300Adapter(fetcher)
+        adapter = CentrToAdapter(fetcher)
 
-        with self.assertRaisesRegex(PermanentCollectionError, "only supports"):
+        with self.assertRaisesRegex(PermanentCollectionError, "does not match"):
             adapter.collect(_task("https://centr-to.ru/good-999-other-product"))
         self.assertEqual(fetcher.calls, [])
 
+    def test_second_product_builds_an_observation(self) -> None:
+        adapter = CentrToAdapter(StaticFetcher(SECOND_FIXTURE.read_text(encoding="utf-8")))
+
+        observation = adapter.collect(
+            _task(
+                "https://centr-to.ru/good-12941-stanok-balansirovochnyy-nordberg-4523",
+                expected_product_name="Балансировочный станок NORDBERG 4523 с автовводом",
+                seller_article="12941",
+            )
+        )
+
+        self.assertEqual(observation.price.normalized_price, Decimal("189000"))
+        self.assertEqual(observation.evidence["seller_article"], "12941")
+
     def test_challenge_page_requests_manual_fallback(self) -> None:
-        adapter = CentrToT300Adapter(StaticFetcher("<title>Verify you are human</title>"))
+        adapter = CentrToAdapter(StaticFetcher("<title>Verify you are human</title>"))
 
         with self.assertRaises(ManualFallbackRequired):
             adapter.collect(_task())

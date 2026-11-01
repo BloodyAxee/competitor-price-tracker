@@ -31,8 +31,6 @@ interface SourceProfile {
   rateLimitPerHost?: number;
 }
 
-const OWN_T300_MODEL = "Шиномонтажный станок Станкоимпорт T300, 380 В";
-
 const sourceProfiles: Record<string, SourceProfile> = {
   "centr-to.ru": {
     displayName: "ЦТО",
@@ -209,7 +207,7 @@ try {
       if (!product) throw new Error(`Research product not found in catalog: ${research.model}`);
 
       const candidates: Array<{ kind: "own" | "primary" | "reserve"; url: string }> = [];
-      if (research.model === OWN_T300_MODEL && research.own_url) {
+      if (research.own_url) {
         candidates.push({ kind: "own", url: research.own_url });
       }
       if (research.primary_url) {

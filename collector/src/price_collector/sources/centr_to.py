@@ -20,8 +20,8 @@ from ..models import CollectedObservation, SourceTask
 
 
 SOURCE_KEY = "source:centr-to.ru"
-EXPECTED_PRODUCT_ID = "15155"
-EXPECTED_SPECS = {
+T300_PRODUCT_ID = "15155"
+T300_EXPECTED_SPECS = {
     "напряжение питания, в": "380",
     "внешний зажим диска": '10-21"',
     "внутренний зажим диска": '12-24"',
@@ -88,10 +88,7 @@ def _normalized_text(value: Any) -> str:
 def _product_specs(product: dict[str, Any]) -> dict[str, str]:
     properties = product.get("additionalProperty")
     if not isinstance(properties, list):
-        raise PermanentCollectionError(
-            "Product specifications are missing",
-            code="missing_product_specifications",
-        )
+        return {}
     result: dict[str, str] = {}
     for item in properties:
         if isinstance(item, dict) and item.get("name") is not None and item.get("value") is not None:
@@ -99,17 +96,63 @@ def _product_specs(product: dict[str, Any]) -> dict[str, str]:
     return result
 
 
-def _validate_identity(product: dict[str, Any]) -> tuple[str, dict[str, str]]:
+def _identity_tokens(value: str) -> tuple[str, ...]:
+    normalized = _normalized_text(value).replace("×", "x")
+    raw_tokens = re.findall(r"[a-zа-яё0-9]+(?:[-./][a-zа-яё0-9]+)*", normalized)
+    compact_tokens = [re.sub(r"[^a-zа-яё0-9]", "", token) for token in raw_tokens]
+    model_tokens = [
+        token
+        for token in compact_tokens
+        if len(token) >= 3
+        and (
+            (any(character.isalpha() for character in token) and any(character.isdigit() for character in token))
+            or (token.isdigit() and len(token) >= 4)
+        )
+    ]
+    if model_tokens:
+        return tuple(dict.fromkeys(model_tokens))
+
+    ignored = {
+        "автомат",
+        "балансировочный",
+        "грузовых",
+        "колес",
+        "комплект",
+        "окрасочная",
+        "полуавтомат",
+        "станок",
+        "стенд",
+        "сушильная",
+        "шиномонтажный",
+        "nordberg",
+        "rossvik",
+        "guangli",
+    }
+    distinctive = [token for token in compact_tokens if len(token) >= 4 and token not in ignored]
+    return (max(distinctive, key=len),) if distinctive else ()
+
+
+def _validate_identity(
+    product: dict[str, Any],
+    expected_name: str,
+    required_specs: dict[str, str] | None = None,
+) -> tuple[str, dict[str, str]]:
     name = str(product.get("name") or "").strip()
-    normalized_name = _normalized_text(name)
-    if "t300" not in normalized_name or "380" not in normalized_name:
+    actual_compact = re.sub(r"[^a-zа-яё0-9]", "", _normalized_text(name))
+    expected_tokens = _identity_tokens(expected_name)
+    if not expected_tokens:
+        raise PermanentCollectionError(
+            "The expected product name has no stable identity token",
+            code="unsupported_offer",
+        )
+    if any(token not in actual_compact for token in expected_tokens):
         raise PermanentCollectionError(
             f"Unexpected product name: {name or 'missing'}",
             code="product_mismatch",
         )
 
     specs = _product_specs(product)
-    for spec_name, expected_value in EXPECTED_SPECS.items():
+    for spec_name, expected_value in (required_specs or {}).items():
         actual_value = specs.get(spec_name)
         if actual_value is None:
             raise PermanentCollectionError(
@@ -139,7 +182,12 @@ def _single_offer(product: dict[str, Any]) -> dict[str, Any]:
     return valid_offers[0]
 
 
-def parse_centr_to_t300(html: str) -> CentrToProduct:
+def parse_centr_to_product(
+    html: str,
+    expected_name: str,
+    *,
+    required_specs: dict[str, str] | None = None,
+) -> CentrToProduct:
     parser = _JsonLdParser()
     parser.feed(html)
     products: list[dict[str, Any]] = []
@@ -150,16 +198,11 @@ def parse_centr_to_t300(html: str) -> CentrToProduct:
         except json.JSONDecodeError:
             invalid_blocks += 1
 
-    candidates = [
-        product
-        for product in products
-        if "t300" in _normalized_text(product.get("name") or "")
-    ]
     matching: list[tuple[dict[str, Any], str, dict[str, str]]] = []
     identity_errors: list[PermanentCollectionError] = []
-    for product in candidates:
+    for product in products:
         try:
-            name, specs = _validate_identity(product)
+            name, specs = _validate_identity(product, expected_name, required_specs)
             matching.append((product, name, specs))
         except PermanentCollectionError as error:
             identity_errors.append(error)
@@ -167,9 +210,9 @@ def parse_centr_to_t300(html: str) -> CentrToProduct:
         if identity_errors:
             raise identity_errors[0]
         code = "invalid_structured_data" if invalid_blocks and not products else "product_mismatch"
-        raise PermanentCollectionError("Exact T300/380 product data was not found", code=code)
+        raise PermanentCollectionError("Exact product data was not found", code=code)
     if len(matching) > 1:
-        raise PermanentCollectionError("Exact T300/380 product data is ambiguous", code="ambiguous_product")
+        raise PermanentCollectionError("Exact product data is ambiguous", code="ambiguous_product")
 
     product, name, specs = matching[0]
     offer = _single_offer(product)
@@ -202,7 +245,15 @@ def _stock_status(availability: str | None) -> str | None:
     }.get(value)
 
 
-class CentrToT300Adapter:
+def parse_centr_to_t300(html: str) -> CentrToProduct:
+    return parse_centr_to_product(
+        html,
+        "Шиномонтажный станок Станкоимпорт T300, 380 В",
+        required_specs=T300_EXPECTED_SPECS,
+    )
+
+
+class CentrToAdapter:
     key = SOURCE_KEY
     method = "http"
 
@@ -218,12 +269,21 @@ class CentrToT300Adapter:
     def collect(self, task: SourceTask) -> CollectedObservation:
         url = urlsplit(task.url)
         hostname = (url.hostname or "").casefold().removeprefix("www.")
-        if hostname != "centr-to.ru" or not re.match(
-            rf"^/good-{EXPECTED_PRODUCT_ID}(?:-|$)",
-            url.path,
-        ):
+        path_match = re.match(r"^/good-(\d+)(?:-|$)", url.path)
+        if hostname != "centr-to.ru" or path_match is None:
             raise PermanentCollectionError(
-                "The centr-to adapter only supports the verified T300/380 card",
+                "The centr-to adapter only supports product card URLs",
+                code="unsupported_offer",
+            )
+        product_id = path_match.group(1)
+        if task.seller_article and task.seller_article != product_id:
+            raise PermanentCollectionError(
+                "The product card ID does not match the imported offer",
+                code="product_mismatch",
+            )
+        if not task.expected_product_name:
+            raise PermanentCollectionError(
+                "The imported offer has no expected product name",
                 code="unsupported_offer",
             )
         response = self._fetcher.fetch(
@@ -232,7 +292,12 @@ class CentrToT300Adapter:
             rate_limit_per_host=task.rate_limit_per_host,
         )
         try:
-            product = parse_centr_to_t300(response.text)
+            required_specs = T300_EXPECTED_SPECS if product_id == T300_PRODUCT_ID else None
+            product = parse_centr_to_product(
+                response.text,
+                task.expected_product_name,
+                required_specs=required_specs,
+            )
         except PermanentCollectionError:
             PlaywrightFetcher.assert_not_protected(response.text)
             raise
@@ -250,7 +315,9 @@ class CentrToT300Adapter:
         )
         evidence = {
             "product_name": product.name,
-            "seller_article": EXPECTED_PRODUCT_ID,
+            "expected_product_name": task.expected_product_name,
+            "identity_tokens": _identity_tokens(task.expected_product_name),
+            "seller_article": product_id,
             "price": str(product.price),
             "currency": product.currency,
             "availability": product.availability,
@@ -265,9 +332,12 @@ class CentrToT300Adapter:
             unit="piece",
             observed_at=self._clock(),
             evidence_text=(
-                f"{EXPECTED_PRODUCT_ID}; {product.price} {product.currency}; "
+                f"{product_id}; {product.price} {product.currency}; "
                 f"{stock_status or 'stock unknown'}"
             ),
             evidence=evidence,
             source_payload_hash=sha256(response.text.encode("utf-8")).hexdigest(),
         )
+
+
+CentrToT300Adapter = CentrToAdapter
