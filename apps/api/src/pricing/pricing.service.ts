@@ -287,8 +287,12 @@ export class PricingService {
         take: query.limit,
         include: {
           offers: {
-            where: { isActive: true, matchStatus: "exact", source: { isActive: true } },
-            orderBy: [{ createdAt: "asc" }],
+            where: {
+              isActive: true,
+              matchStatus: { in: ["exact", "review"] },
+              source: { isActive: true },
+            },
+            orderBy: [{ matchStatus: "asc" }, { createdAt: "asc" }],
             include: {
               seller: { select: { displayName: true } },
               source: {
@@ -299,11 +303,6 @@ export class PricingService {
                   sourceType: true,
                   officialStatus: true,
                 },
-              },
-              observations: {
-                where: { reliability: "valid" },
-                orderBy: [{ receivedAt: "desc" }, { id: "desc" }],
-                take: 1,
               },
             },
           },
@@ -357,22 +356,54 @@ export class PricingService {
       }),
     ]);
 
+    const directOfferIds = products.flatMap((product) => product.offers.map((offer) => offer.id));
+    const [latestObservations, latestValidObservations] = directOfferIds.length
+      ? await Promise.all([
+          this.prisma.priceObservation.findMany({
+            where: { offerId: { in: directOfferIds } },
+            orderBy: [{ offerId: "asc" }, { receivedAt: "desc" }, { id: "desc" }],
+            distinct: ["offerId"],
+          }),
+          this.prisma.priceObservation.findMany({
+            where: { offerId: { in: directOfferIds }, reliability: "valid" },
+            orderBy: [{ offerId: "asc" }, { receivedAt: "desc" }, { id: "desc" }],
+            distinct: ["offerId"],
+          }),
+        ])
+      : [[], []];
+    const latestObservationByOffer = new Map(
+      latestObservations.map((observation) => [observation.offerId, observation]),
+    );
+    const latestValidObservationByOffer = new Map(
+      latestValidObservations.map((observation) => [observation.offerId, observation]),
+    );
+
     const items = products.map((product) => {
-      const offers = product.offers.map((offer) => ({
-        offerId: offer.id,
-        url: offer.competitorUrl,
-        seller: offer.seller.displayName,
-        source: offer.source,
-        isOwn: offer.source.domain === "centr-to.ru" || offer.competitorUrl === product.ownUrl,
-        price: offer.observations[0] ? priceDto(offer.observations[0]) : null,
-      }));
+      const offers = product.offers.map((offer) => {
+        const latestObservation = latestObservationByOffer.get(offer.id);
+        const latestValidObservation = latestValidObservationByOffer.get(offer.id);
+        return {
+          offerId: offer.id,
+          url: offer.competitorUrl,
+          seller: offer.seller.displayName,
+          source: offer.source,
+          matchStatus: offer.matchStatus,
+          matchReason: offer.matchReason,
+          isOwn: offer.source.domain === "centr-to.ru" || offer.competitorUrl === product.ownUrl,
+          price: latestObservation ? priceDto(latestObservation) : null,
+          comparisonPrice:
+            offer.matchStatus === "exact" && latestValidObservation
+              ? priceDto(latestValidObservation)
+              : null,
+        };
+      });
       const own = offers.find((offer) => offer.isOwn) ?? null;
-      const ownValue = own?.price?.normalizedPrice ?? null;
+      const ownValue = own?.comparisonPrice?.normalizedPrice ?? null;
       const directCompetitors = offers
         .filter((offer) => !offer.isOwn)
         .map((offer) => ({
           ...offer,
-          difference: comparisonDelta(ownValue, offer.price?.normalizedPrice ?? null),
+          difference: comparisonDelta(ownValue, offer.comparisonPrice?.normalizedPrice ?? null),
         }));
       const bundle = evaluateBundle(
         product.bundleParts.map((part) => ({
@@ -401,8 +432,29 @@ export class PricingService {
         url: candidate.url,
         seller: candidate.sellerName,
         source: candidate.source,
+        matchStatus: "exact",
+        matchReason: "Цена комплекта рассчитана по двум компонентам одного продавца",
         isOwn: false,
         price: {
+          id: `bundle:${product.id}:${candidate.sellerId}`,
+          rawPrice: candidate.totalPrice,
+          normalizedPrice: candidate.totalPrice,
+          currency: candidate.currency,
+          unit: "set",
+          priceType: candidate.priceType,
+          vatIncluded: null,
+          stockStatus: null,
+          region: null,
+          deliveryIncluded: null,
+          installationIncluded: null,
+          observedAt: candidate.receivedAt,
+          receivedAt: candidate.receivedAt,
+          method: candidate.method,
+          reliability: "valid",
+          exclusionReason: null,
+          evidenceText: "Сумма цен 4641N и VT-64 у одного продавца",
+        },
+        comparisonPrice: {
           id: `bundle:${product.id}:${candidate.sellerId}`,
           rawPrice: candidate.totalPrice,
           normalizedPrice: candidate.totalPrice,

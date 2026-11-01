@@ -2,11 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   bestCompetitor,
-  competitorPriceCountLabel,
+  collectionMethodLabel,
+  competitorCountLabel,
+  confirmedPriceCountLabel,
   differenceTone,
   formatDifference,
   formatPrice,
   observationStatus,
+  offerStatusLabel,
+  offerStatusTone,
   reliabilityLabel,
   sortedCompetitors,
 } from "../src/view-model.ts";
@@ -20,20 +24,20 @@ test("missing prices are never displayed as zero", () => {
 test("the cheapest priced competitor is selected", () => {
   const item = {
     competitors: [
-      { price: { normalizedPrice: "110000" } },
-      { price: { normalizedPrice: "95000" } },
-      { price: null },
+      { comparisonPrice: { normalizedPrice: "110000" }, price: { normalizedPrice: "110000" } },
+      { comparisonPrice: { normalizedPrice: "95000" }, price: { normalizedPrice: "95000" } },
+      { comparisonPrice: null, price: null },
     ],
   };
-  assert.equal(bestCompetitor(item).price.normalizedPrice, "95000");
+  assert.equal(bestCompetitor(item).comparisonPrice.normalizedPrice, "95000");
 });
 
 test("all competitors are kept and priced offers are ordered before unavailable ones", () => {
   const item = {
     competitors: [
-      { seller: "Без цены", price: null },
-      { seller: "Дороже", price: { normalizedPrice: "110000" } },
-      { seller: "Дешевле", price: { normalizedPrice: "95000" } },
+      { seller: "Без цены", comparisonPrice: null, price: null },
+      { seller: "Дороже", comparisonPrice: { normalizedPrice: "110000" }, price: { normalizedPrice: "110000" } },
+      { seller: "Дешевле", comparisonPrice: { normalizedPrice: "95000" }, price: { normalizedPrice: "95000" } },
     ],
   };
 
@@ -43,10 +47,31 @@ test("all competitors are kept and priced offers are ordered before unavailable 
   );
 });
 
-test("competitor price count is displayed in natural Russian", () => {
-  assert.equal(competitorPriceCountLabel(1), "1 цена конкурента");
-  assert.equal(competitorPriceCountLabel(3), "3 цены конкурентов");
-  assert.equal(competitorPriceCountLabel(5), "5 цен конкурентов");
+test("competitor count is displayed in natural Russian", () => {
+  assert.equal(competitorCountLabel(1), "1 конкурент");
+  assert.equal(competitorCountLabel(3), "3 конкурента");
+  assert.equal(competitorCountLabel(5), "5 конкурентов");
+  assert.equal(confirmedPriceCountLabel(1), "1 подтверждённая цена");
+  assert.equal(confirmedPriceCountLabel(3), "3 подтверждённые цены");
+});
+
+test("unreliable and review offers stay visible but are marked", () => {
+  const review = { matchStatus: "review", price: null, comparisonPrice: null };
+  const unreliable = {
+    matchStatus: "exact",
+    price: { reliability: "unreliable", method: "automatic" },
+    comparisonPrice: null,
+  };
+  const valid = {
+    matchStatus: "exact",
+    price: { reliability: "valid", method: "manual" },
+    comparisonPrice: { normalizedPrice: "100000" },
+  };
+
+  assert.equal(offerStatusLabel(review), "Требует проверки");
+  assert.equal(offerStatusTone(unreliable), "warning");
+  assert.equal(offerStatusLabel(valid), "Подтверждено");
+  assert.equal(collectionMethodLabel(valid.price), "Внесено вручную");
 });
 
 test("difference tone follows the own-price perspective", () => {

@@ -71,8 +71,11 @@ export interface ComparisonOffer {
     sourceType: string;
     officialStatus: string;
   };
+  matchStatus: "exact" | "review";
+  matchReason: string | null;
   isOwn: boolean;
   price: PriceObservation | null;
+  comparisonPrice: PriceObservation | null;
 }
 
 export interface CompetitorComparison extends ComparisonOffer {

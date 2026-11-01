@@ -1,4 +1,10 @@
-import type { CollectionJob, ComparisonItem, CompetitorComparison, PriceObservation } from "./types";
+import type {
+  CollectionJob,
+  ComparisonItem,
+  ComparisonOffer,
+  CompetitorComparison,
+  PriceObservation,
+} from "./types";
 
 const moneyFormatter = new Intl.NumberFormat("ru-RU", {
   style: "currency",
@@ -29,8 +35,8 @@ export function bestCompetitor(item: ComparisonItem): CompetitorComparison | nul
 
 export function sortedCompetitors(item: ComparisonItem): CompetitorComparison[] {
   return [...item.competitors].sort((left, right) => {
-    const leftPrice = left.price?.normalizedPrice;
-    const rightPrice = right.price?.normalizedPrice;
+    const leftPrice = left.comparisonPrice?.normalizedPrice ?? left.price?.normalizedPrice;
+    const rightPrice = right.comparisonPrice?.normalizedPrice ?? right.price?.normalizedPrice;
     if (leftPrice != null && rightPrice != null) return Number(leftPrice) - Number(rightPrice);
     if (leftPrice != null) return -1;
     if (rightPrice != null) return 1;
@@ -66,10 +72,35 @@ export function reliabilityLabel(price: PriceObservation | null | undefined) {
   return price.method === "manual" ? "Надёжно · вручную" : "Надёжно · автоматически";
 }
 
-export function competitorPriceCountLabel(count: number) {
-  if (count === 1) return "1 цена конкурента";
-  if (count >= 2 && count <= 4) return `${count} цены конкурентов`;
-  return `${count} цен конкурентов`;
+export function offerStatusLabel(offer: ComparisonOffer) {
+  if (offer.matchStatus === "review") return "Требует проверки";
+  if (offer.price && offer.price.reliability !== "valid") return "Сомнительная цена";
+  if (offer.comparisonPrice?.normalizedPrice != null) return "Подтверждено";
+  return "Цена недоступна";
+}
+
+export function offerStatusTone(offer: ComparisonOffer) {
+  if (offer.matchStatus === "review" || (offer.price && offer.price.reliability !== "valid")) {
+    return "warning";
+  }
+  return offer.comparisonPrice?.normalizedPrice != null ? "valid" : "missing";
+}
+
+export function collectionMethodLabel(price: PriceObservation | null | undefined) {
+  if (!price) return "Цена ещё не собрана";
+  return price.method === "manual" ? "Внесено вручную" : "Собрано автоматически";
+}
+
+export function competitorCountLabel(count: number) {
+  if (count === 1) return "1 конкурент";
+  if (count >= 2 && count <= 4) return `${count} конкурента`;
+  return `${count} конкурентов`;
+}
+
+export function confirmedPriceCountLabel(count: number) {
+  if (count === 1) return "1 подтверждённая цена";
+  if (count >= 2 && count <= 4) return `${count} подтверждённые цены`;
+  return `${count} подтверждённых цен`;
 }
 
 export function jobLabel(job: Pick<CollectionJob, "status"> | null) {

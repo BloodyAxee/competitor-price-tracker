@@ -101,7 +101,7 @@ main { width: min(1460px, 92vw); margin: 0 auto; padding: 36px 0 70px; }
 .filters input:focus, .filters select:focus, .manual-form input:focus, .manual-form select:focus, .manual-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
 
 .table-wrap { overflow: auto; border-top: 1px solid var(--line); }
-table { width: 100%; border-collapse: collapse; min-width: 1280px; }
+table { width: 100%; border-collapse: collapse; min-width: 1180px; }
 th { padding: 12px 18px; text-align: left; background: var(--surface-soft); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .055em; position: sticky; top: 0; }
 td { padding: 16px 18px; border-top: 1px solid var(--line); vertical-align: middle; font-size: 13px; }
 tbody tr { cursor: pointer; transition: background .15s ease; }
@@ -111,17 +111,31 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .model-data strong { line-height: 1.35; }
 .model-data span, .price-data span, .price-data small, .delta-data span, .status-data small { color: var(--muted); margin-top: 4px; font-size: 11px; }
 .price-data strong { font-size: 15px; white-space: nowrap; }
+.price-data a { display: inline-block; margin-top: 5px; font-size: 12px; font-weight: 750; text-underline-offset: 2px; }
 .price-data small { line-height: 1.35; }
-.competitor-stack, .difference-stack { min-width: 245px; display: grid; gap: 10px; }
-.competitor-offer, .delta-data { min-height: 58px; }
-.competitor-offer:not(:last-child), .difference-stack .delta-data:not(:last-child) { padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-.competitor-offer strong { font-size: 15px; white-space: nowrap; }
-.competitor-offer a { display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 750; text-decoration-thickness: 1px; text-underline-offset: 2px; }
-.competitor-offer > span, .competitor-offer > small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.35; }
-.competitor-offer.empty { color: var(--muted); }
-.competitor-price-line { display: flex; align-items: center; gap: 8px; }
-.best-price-badge { border-radius: 999px; padding: 3px 6px; background: #d9f1e4; color: #11603f; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .035em; }
-:root[data-theme="dark"] .best-price-badge { background: #21433b; color: #91dcc4; }
+.competitor-stack { min-width: 390px; display: grid; gap: 9px; }
+.market-offer { padding: 12px 13px; border: 1px solid var(--line); border-left: 3px solid var(--success); border-radius: 11px; background: var(--surface-soft); }
+.market-offer.warning { border-left-color: var(--warning); background: color-mix(in srgb, var(--warning) 6%, var(--surface-soft)); }
+.market-offer.missing { border-left-color: var(--line); color: var(--muted); }
+.market-offer-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.market-offer-heading > span:first-child { color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.trust-badge { display: inline-flex; border-radius: 999px; padding: 4px 7px; font-size: 9px; font-weight: 800; white-space: nowrap; }
+.trust-badge.valid { color: #11603f; background: #d9f1e4; }
+.trust-badge.warning { color: #8a4b17; background: #f8e7d8; }
+.trust-badge.missing { color: #69767d; background: #e8edef; }
+:root[data-theme="dark"] .trust-badge.valid { background: #21433b; color: #91dcc4; }
+:root[data-theme="dark"] .trust-badge.warning { background: #4c3526; color: #f1bd88; }
+:root[data-theme="dark"] .trust-badge.missing { background: #2a373a; color: #afbdc0; }
+.competitor-link { font-size: 13px; font-weight: 800; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.market-price-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 7px 10px; margin-top: 7px; }
+.market-price-row strong { font-size: 16px; white-space: nowrap; }
+.market-delta { font-size: 12px; font-weight: 800; white-space: nowrap; }
+.market-delta.positive { color: var(--success); }
+.market-delta.negative { color: var(--danger); }
+.excluded-label { color: var(--warning); font-size: 11px; font-weight: 750; }
+.market-offer small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.market-offer p { display: -webkit-box; margin: 7px 0 0; overflow: hidden; color: var(--muted); font-size: 10px; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.market-offer.warning p { color: var(--warning); }
 .delta-data strong { white-space: nowrap; }
 .delta-data.positive strong { color: var(--success); }
 .delta-data.negative strong { color: var(--danger); }
@@ -169,6 +183,7 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .history-item { padding: 14px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 11px; background: var(--surface-soft); display: grid; grid-template-columns: 1fr auto; gap: 10px; }
 .history-item.unreliable { border-left-color: var(--warning); }
 .history-item strong, .history-item span, .history-item small { display: block; }
+.history-item > div:first-child a { display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 750; }
 .history-item > div:first-child span, .history-status small { color: var(--muted); font-size: 11px; margin-top: 4px; }
 .history-status { text-align: right; }
 .method-badge { padding: 4px 7px; margin-left: auto; }
@@ -184,6 +199,10 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .form-message.success { color: #11603f; background: #d9f1e4; }
 .form-message.warning { color: #744818; background: #fff3df; }
 .form-message.error { color: #8d3029; background: #fbe2df; }
+.drawer-competitors { display: grid; gap: 10px; }
+.drawer-competitors .market-offer { padding: 15px; }
+.drawer-competitors .market-offer p { display: block; overflow: visible; font-size: 11px; -webkit-line-clamp: unset; }
+.comparison-note { margin: 12px 0 0; padding: 11px 13px; border-radius: 9px; background: color-mix(in srgb, var(--accent) 8%, var(--surface)); color: var(--muted); font-size: 11px; line-height: 1.5; }
 
 @media (max-width: 1080px) {
   .metrics { grid-template-columns: repeat(3, 1fr); }
@@ -206,10 +225,10 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
   .metrics article { min-height: 105px; padding: 14px; }
   .metrics strong { font-size: 27px; }
   .filters { grid-template-columns: 1fr; padding-inline: 16px; }
-  .panel-heading { padding-inline: 16px; align-items: flex-start; }
+  .panel-heading { padding-inline: 16px; align-items: flex-start; flex-direction: column; }
   .panel-heading p { line-height: 1.45; }
-  .panel-actions { align-items: stretch; }
-  .panel-actions .export-button { font-size: 12px; }
+  .panel-actions { width: 100%; align-items: stretch; display: grid; grid-template-columns: 1fr 1fr; }
+  .panel-actions .export-button, .panel-actions .refresh-button { width: 100%; font-size: 12px; }
   .column-picker { display: none; }
   .desktop-table { display: none; }
   .mobile-list { display: grid; border-top: 1px solid var(--line); }
@@ -218,8 +237,8 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
   .product-card .model-data { grid-column: 1 / -1; }
   .product-card .model-data strong { font-size: 14px; }
   .product-card [data-label]::before { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; content: attr(data-label); }
-  .product-card .competitor-stack, .product-card .difference-stack { grid-column: 1 / -1; }
-  .product-card .competitor-offer, .product-card .delta-data { min-height: 0; }
+  .product-card .competitor-stack { grid-column: 1 / -1; min-width: 0; }
+  .product-card .market-offer { min-height: 0; }
   .drawer { width: 100%; max-width: 100%; padding: 24px 18px; }
   .drawer h2 { font-size: 24px; }
   .form-row { grid-template-columns: 1fr; }

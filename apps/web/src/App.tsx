@@ -11,6 +11,7 @@ import type {
   CatalogSummary,
   CollectionJobDetails,
   CollectionSchedule,
+  CompetitorComparison,
   ComparisonItem,
   HistoryResponse,
   ManualObservationInput,
@@ -18,14 +19,17 @@ import type {
 } from "./types";
 import {
   bestCompetitor,
-  competitorPriceCountLabel,
+  collectionMethodLabel,
+  competitorCountLabel,
+  confirmedPriceCountLabel,
   differenceTone,
   formatDate,
   formatDifference,
   formatPrice,
   jobLabel,
   observationStatus,
-  reliabilityLabel,
+  offerStatusLabel,
+  offerStatusTone,
   sortedCompetitors,
 } from "./view-model";
 
@@ -71,8 +75,8 @@ function bundleStatusLabel(
 }
 
 function comparisonState(item: ComparisonItem | undefined) {
-  const ownPrice = item?.own?.price?.normalizedPrice;
-  const competitorPrice = bestCompetitor(item ?? ({ competitors: [] } as unknown as ComparisonItem))?.price
+  const ownPrice = item?.own?.comparisonPrice?.normalizedPrice;
+  const competitorPrice = bestCompetitor(item ?? ({ competitors: [] } as unknown as ComparisonItem))?.comparisonPrice
     ?.normalizedPrice;
   if (ownPrice && competitorPrice) return "compared";
   if (ownPrice || competitorPrice) return "partial";
@@ -224,8 +228,11 @@ function App() {
       .filter((product) => dataFilter === "all" || comparisonState(comparisonMap.get(product.id)) === dataFilter)
       .filter((product) => {
         if (matchFilter === "all") return true;
-        if (matchFilter === "without-offers") return product.offers.length === 0;
-        return product.offers.some((offer) => offer.matchStatus === matchFilter);
+        const competitorOffers = product.offers.filter(
+          (offer) => offer.competitorUrl !== product.ownUrl,
+        );
+        if (matchFilter === "without-offers") return competitorOffers.length === 0;
+        return competitorOffers.some((offer) => offer.matchStatus === matchFilter);
       })
       .filter((product) => {
         if (!normalizedQuery) return true;
@@ -236,13 +243,13 @@ function App() {
       .sort((left, right) => {
         if (sort === "name") return left.name.localeCompare(right.name, "ru");
         if (sort === "own-price") {
-          const leftPrice = Number(comparisonMap.get(left.id)?.own?.price?.normalizedPrice ?? Infinity);
-          const rightPrice = Number(comparisonMap.get(right.id)?.own?.price?.normalizedPrice ?? Infinity);
+          const leftPrice = Number(comparisonMap.get(left.id)?.own?.comparisonPrice?.normalizedPrice ?? Infinity);
+          const rightPrice = Number(comparisonMap.get(right.id)?.own?.comparisonPrice?.normalizedPrice ?? Infinity);
           return leftPrice - rightPrice;
         }
         if (sort === "competitor-price") {
-          const leftPrice = Number(bestCompetitor(comparisonMap.get(left.id) ?? ({ competitors: [] } as unknown as ComparisonItem))?.price?.normalizedPrice ?? Infinity);
-          const rightPrice = Number(bestCompetitor(comparisonMap.get(right.id) ?? ({ competitors: [] } as unknown as ComparisonItem))?.price?.normalizedPrice ?? Infinity);
+          const leftPrice = Number(bestCompetitor(comparisonMap.get(left.id) ?? ({ competitors: [] } as unknown as ComparisonItem))?.comparisonPrice?.normalizedPrice ?? Infinity);
+          const rightPrice = Number(bestCompetitor(comparisonMap.get(right.id) ?? ({ competitors: [] } as unknown as ComparisonItem))?.comparisonPrice?.normalizedPrice ?? Infinity);
           return leftPrice - rightPrice;
         }
         if (sort === "difference") {
@@ -317,49 +324,85 @@ function App() {
   const jobActive = job ? ["pending", "running"].includes(job.status) : false;
   const failedAttempts = job?.attempts.filter((attempt) => attempt.status === "failed") ?? [];
 
+  const competitorOfferCard = (
+    competitor: CompetitorComparison,
+    index: number,
+    showReason = false,
+  ) => {
+    const tone = offerStatusTone(competitor);
+    const currentPrice = competitor.price;
+    const confirmedPrice = competitor.comparisonPrice;
+    const reason = currentPrice?.exclusionReason ?? competitor.matchReason;
+    const showConfirmedDifference = tone === "valid" && columns.difference;
+    return (
+      <article className={`market-offer ${tone}`} key={competitor.offerId}>
+        <div className="market-offer-heading">
+          <span>Конкурент {index + 1}</span>
+          <span className={`trust-badge ${tone}`}>{offerStatusLabel(competitor)}</span>
+        </div>
+        <a
+          className="competitor-link"
+          href={competitor.url}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {competitor.seller}
+        </a>
+        <div className="market-price-row">
+          <strong>{formatPrice(currentPrice?.normalizedPrice)}</strong>
+          {showConfirmedDifference && (
+            <span className={`market-delta ${differenceTone(competitor.difference.amount)}`}>
+              {formatDifference(competitor.difference.amount, competitor.difference.percent)}
+            </span>
+          )}
+          {tone === "warning" && <span className="excluded-label">Не входит в итог</span>}
+        </div>
+        <small>
+          {collectionMethodLabel(currentPrice)}
+          {currentPrice ? ` · ${formatDate(currentPrice.observedAt ?? currentPrice.receivedAt)}` : ""}
+        </small>
+        {tone === "warning" && confirmedPrice?.normalizedPrice && (
+          <small>Последняя подтверждённая · {formatPrice(confirmedPrice.normalizedPrice)}</small>
+        )}
+        {(showReason || tone === "warning") && reason && <p>{reason}</p>}
+      </article>
+    );
+  };
+
   const productRow = (product: Product, mobile = false) => {
     const item = comparisonMap.get(product.id);
     const competitors = sortedCompetitors(item ?? ({ competitors: [] } as unknown as ComparisonItem));
-    const pricedCompetitors = competitors.filter((competitor) => competitor.price?.normalizedPrice != null);
+    const confirmedCompetitors = competitors.filter(
+      (competitor) => competitor.comparisonPrice?.normalizedPrice != null,
+    );
     const ownPrice = item?.own?.price;
     const modelCell = <div className="model-data"><strong>{product.name}</strong><span>{product.article ?? "Артикул не указан"}</span></div>;
-    const ownCell = <div className="price-data" data-label="Наша цена"><strong>{formatPrice(ownPrice?.normalizedPrice)}</strong><span>{item?.own?.source.name ?? "Свой источник не указан"}</span><small>{reliabilityLabel(ownPrice)} · {formatDate(ownPrice?.observedAt ?? ownPrice?.receivedAt)}</small></div>;
+    const ownCell = <div className="price-data own-price" data-label="Наша цена"><strong>{formatPrice(ownPrice?.normalizedPrice)}</strong>{item?.own?.url ? <a href={item.own.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>ЦТО</a> : <span>Карточка ЦТО не указана</span>}<small>{collectionMethodLabel(ownPrice)}{ownPrice ? ` · ${formatDate(ownPrice.observedAt ?? ownPrice.receivedAt)}` : ""}</small></div>;
     const competitorCell = (
       <div className="competitor-stack" data-label="Конкуренты">
-        {competitors.length === 0 && <div className="competitor-offer empty"><strong>Не собрано</strong><span>Точных источников с ценой пока нет</span></div>}
-        {competitors.map((competitor, index) => (
-          <div className="competitor-offer" key={competitor.offerId}>
-            <div className="competitor-price-line"><strong>{formatPrice(competitor.price?.normalizedPrice)}</strong>{pricedCompetitors.length > 1 && index === 0 && <span className="best-price-badge">Минимальная</span>}</div>
-            <a href={competitor.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{competitor.seller}</a>
-            <span>{competitor.source.name} · {formatDate(competitor.price?.observedAt ?? competitor.price?.receivedAt)}</span>
-            <small>{reliabilityLabel(competitor.price)}</small>
-          </div>
-        ))}
+        {competitors.length === 0 && <div className="market-offer missing"><strong>Конкуренты пока не найдены</strong><small>Добавьте или проверьте карточки продавцов</small></div>}
+        {competitors.map((competitor, index) => competitorOfferCard(competitor, index))}
       </div>
     );
-    const differenceCell = (
-      <div className="difference-stack" data-label="Разница">
-        {competitors.length === 0 && <div className="delta-data neutral"><strong>Нет сравнения</strong><span>Нужны обе цены</span></div>}
-        {competitors.map((competitor) => {
-          const delta = competitor.difference;
-          return <div className={`delta-data ${differenceTone(delta.amount)}`} key={competitor.offerId}><strong>{formatDifference(delta.amount, delta.percent)}</strong><span>{competitor.seller} · {delta.amount == null ? "нужны обе цены" : Number(delta.amount) > 0 ? "наша цена ниже" : Number(delta.amount) < 0 ? "наша цена выше" : "цены равны"}</span></div>;
-        })}
-      </div>
-    );
-    const statusCell = <div className="status-data" data-label="Состояние"><span className={`data-badge ${comparisonState(item)}`}>{comparisonState(item) === "compared" ? "Сравнено" : comparisonState(item) === "partial" ? "Одна цена" : "Нет цен"}</span><small>{pricedCompetitors.length > 0 ? competitorPriceCountLabel(pricedCompetitors.length) : "Нет цены конкурента"}</small><small>{formatDate(latestComparisonDate(item) ? new Date(latestComparisonDate(item)).toISOString() : null)}</small></div>;
+    const statusCell = <div className="status-data" data-label="Охват"><span className={`data-badge ${comparisonState(item)}`}>{comparisonState(item) === "compared" ? "Есть сравнение" : comparisonState(item) === "partial" ? "Данных недостаточно" : "Нет цен"}</span><small>{competitorCountLabel(competitors.length)}</small><small>{confirmedPriceCountLabel(confirmedCompetitors.length)}</small><small>Обновлено · {formatDate(latestComparisonDate(item) ? new Date(latestComparisonDate(item)).toISOString() : null)}</small></div>;
     if (mobile) {
-      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{competitorCell}{differenceCell}{statusCell}</article>;
+      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{competitorCell}{statusCell}</article>;
     }
     return (
       <tr key={product.id} onClick={() => setSelected(product)} tabIndex={0} onKeyDown={(event) => event.key === "Enter" && setSelected(product)}>
         <td>{modelCell}</td>
         {columns.own && <td>{ownCell}</td>}
         {columns.competitor && <td>{competitorCell}</td>}
-        {columns.difference && <td>{differenceCell}</td>}
         {columns.status && <td>{statusCell}</td>}
       </tr>
     );
   };
+
+  const selectedComparison = selected ? comparisonMap.get(selected.id) : undefined;
+  const selectedCompetitors = selectedComparison
+    ? sortedCompetitors(selectedComparison)
+    : [];
 
   return (
     <div className="app-shell">
@@ -406,10 +449,10 @@ function App() {
 
         <section className="catalog-panel">
           <div className="panel-heading">
-            <div><h2>Таблица сравнения</h2><p>Показано {visibleProducts.length} позиций · нажмите на модель для истории и ручного ввода</p></div>
+            <div><h2>Мониторинг по моделям</h2><p>Показано {visibleProducts.length} позиций · в каждой карточке перечислены отдельные конкуренты</p></div>
             <div className="panel-actions">
               <a className="export-button" href={priceExportUrl}>Скачать CSV</a>
-              <details className="column-picker"><summary>Столбцы</summary><div>{([['own', 'Наша цена'], ['competitor', 'Конкурент'], ['difference', 'Разница'], ['status', 'Состояние']] as Array<[ColumnKey, string]>).map(([key, label]) => <label key={key}><input type="checkbox" checked={columns[key]} onChange={() => setColumns((value) => ({ ...value, [key]: !value[key] }))} />{label}</label>)}</div></details>
+              <details className="column-picker"><summary>Столбцы</summary><div>{([['own', 'Наша цена'], ['competitor', 'Предложения конкурентов'], ['difference', 'Разница в предложениях'], ['status', 'Охват источников']] as Array<[ColumnKey, string]>).map(([key, label]) => <label key={key}><input type="checkbox" checked={columns[key]} onChange={() => setColumns((value) => ({ ...value, [key]: !value[key] }))} />{label}</label>)}</div></details>
               <button className="refresh-button" onClick={() => void refresh()} disabled={loading}>{loading ? "Обновление" : "Обновить"}</button>
             </div>
           </div>
@@ -428,7 +471,7 @@ function App() {
 
           {!loading && !error && visibleProducts.length > 0 && (
             <>
-              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th>{columns.own && <th>Наша цена</th>}{columns.competitor && <th>Все конкуренты</th>}{columns.difference && <th>Разница по каждому</th>}{columns.status && <th>Состояние</th>}</tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
+              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th>{columns.own && <th>Наша цена</th>}{columns.competitor && <th>Предложения конкурентов</th>}{columns.status && <th>Охват</th>}</tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
               <div className="mobile-list">{visibleProducts.map((product) => productRow(product, true))}</div>
             </>
           )}
@@ -448,11 +491,17 @@ function App() {
 
             {selected.catalogScope === "component" && <div className="notice">Укажите цену из одного и того же предложения продавца для обоих компонентов комплекта. Название продавца и ссылку сохраните в подтверждении цены.</div>}
 
+            <section className="drawer-section competitor-overview">
+              <div className="section-heading"><div><h3>Конкуренты по этой модели</h3><p>Каждая карточка ниже — отдельный продавец или кандидат на проверку</p></div><span className="count-badge">{selectedCompetitors.length}</span></div>
+              {selectedCompetitors.length === 0 ? <p className="muted">Конкурентные предложения для этой модели пока не найдены.</p> : <div className="drawer-competitors">{selectedCompetitors.map((competitor, index) => competitorOfferCard(competitor, index, true))}</div>}
+              <p className="comparison-note">В расчёт разницы попадают только предложения с пометкой «Подтверждено». Сомнительные цены остаются видимыми для ручной проверки.</p>
+            </section>
+
             <section className="drawer-section">
               <div className="section-heading"><div><h3>История цен</h3><p>Каждый сбор сохраняется отдельной записью</p></div><span className="count-badge">{history?.total ?? 0}</span></div>
               {historyLoading && <div className="inline-loading"><div className="spinner"></div>Загружаем историю</div>}
               {!historyLoading && history?.items.length === 0 && <p className="muted">Истории пока нет. Запустите сбор или внесите цену вручную.</p>}
-              <div className="history-list">{history?.items.map((entry) => <article className={`history-item ${entry.reliability}`} key={entry.id}><div><strong>{formatPrice(entry.normalizedPrice ?? entry.rawPrice)}</strong><span>{entry.offer.seller.displayName} · {formatDate(entry.receivedAt)}</span></div><div className="history-status"><span className={`method-badge ${entry.method}`}>{entry.method === "manual" ? "Вручную" : "Автоматически"}</span><small>{observationStatus(entry)}</small></div>{entry.exclusionReason && <p>Причина исключения · {entry.exclusionReason}</p>}</article>)}</div>
+              <div className="history-list">{history?.items.map((entry) => <article className={`history-item ${entry.reliability}`} key={entry.id}><div><strong>{formatPrice(entry.normalizedPrice ?? entry.rawPrice)}</strong><a href={entry.offer.competitorUrl} target="_blank" rel="noreferrer">{entry.offer.source.domain === "centr-to.ru" ? "Наша цена · ЦТО" : `Конкурент · ${entry.offer.seller.displayName}`}</a><span>{formatDate(entry.receivedAt)}</span></div><div className="history-status"><span className={`method-badge ${entry.method}`}>{entry.method === "manual" ? "Вручную" : "Автоматически"}</span><small>{observationStatus(entry)}</small></div>{entry.exclusionReason && <p>Причина исключения · {entry.exclusionReason}</p>}</article>)}</div>
             </section>
 
             <section className="drawer-section manual-section">
@@ -469,10 +518,6 @@ function App() {
               )}
             </section>
 
-            <section className="drawer-section">
-              <div className="section-heading"><div><h3>Исследованные источники</h3><p>Карточки для автоматического и ручного сбора</p></div></div>
-              {selected.offers.length === 0 ? <p className="muted">Для этой позиции источники пока не исследованы.</p> : selected.offers.map((offer) => <article className="offer-card" key={offer.id}><div className="offer-title"><strong>{offer.seller.displayName}</strong><span className={`match-badge ${offer.matchStatus}`}>{matchLabel(offer.matchStatus)}</span></div><p>{offer.matchReason ?? "Пояснение не указано"}</p>{offer.source.sourceType === "manual" ? <span className="muted">Источник заполняется вручную</span> : <a href={offer.competitorUrl} target="_blank" rel="noreferrer">Открыть источник</a>}</article>)}
-            </section>
           </aside>
         </div>
       )}
