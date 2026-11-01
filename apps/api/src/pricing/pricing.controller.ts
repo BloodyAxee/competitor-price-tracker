@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   Param,
   Post,
@@ -66,6 +67,13 @@ const manualObservationSchema = z.object({
 @Controller("api")
 export class PricingController {
   constructor(private readonly pricing: PricingService) {}
+
+  @Get("export.csv")
+  @Header("Content-Type", "text/csv; charset=utf-8")
+  @Header("Content-Disposition", 'attachment; filename="competitor-prices.csv"')
+  exportCsv() {
+    return this.pricing.exportCsv();
+  }
 
   @Get("comparisons")
   comparisons(@Query() rawQuery: Record<string, unknown>) {

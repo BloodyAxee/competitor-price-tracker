@@ -1,6 +1,12 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import type { Prisma } from "../generated/prisma/client.ts";
 import { PrismaService } from "../database/prisma.service.ts";
+import {
+  createPriceCsv,
+  exportMethod,
+  exportReliability,
+  type PriceExportRow,
+} from "./csv-export.ts";
 import { evaluateManualPrice, type ManualPriceType } from "./manual-price.ts";
 
 export interface ComparisonQuery {
@@ -88,9 +94,94 @@ function comparisonDelta(ownPrice: string | null, competitorPrice: string | null
   };
 }
 
+function evidenceComment(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const comment = (value as Record<string, unknown>).comment;
+  return typeof comment === "string" && comment.trim() ? comment.trim() : null;
+}
+
+function exportPriceUnit(quantity: { toString(): string } | null, unit: string | null) {
+  const normalizedUnit = unit === "piece" ? "шт." : (unit ?? "не указано");
+  return `${quantity?.toString() ?? "1"} ${normalizedUnit}`;
+}
+
+function exportComment(parts: Array<string | null | undefined>) {
+  return [...new Set(parts.map((part) => part?.trim()).filter((part): part is string => Boolean(part)))].join(
+    "\n",
+  );
+}
+
 @Injectable()
 export class PricingService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async exportCsv() {
+    const products = await this.prisma.product.findMany({
+      where: { isActive: true },
+      orderBy: [{ priority: "asc" }, { name: "asc" }],
+      select: {
+        name: true,
+        ownUrl: true,
+        offers: {
+          where: { isActive: true, source: { isActive: true } },
+          orderBy: [{ createdAt: "asc" }],
+          select: {
+            competitorUrl: true,
+            seller: { select: { displayName: true } },
+            source: { select: { domain: true } },
+            observations: {
+              orderBy: [{ receivedAt: "asc" }, { id: "asc" }],
+              select: {
+                rawPrice: true,
+                normalizedPrice: true,
+                sourceQuantity: true,
+                normalizedQuantity: true,
+                unit: true,
+                observedAt: true,
+                receivedAt: true,
+                method: true,
+                reliability: true,
+                exclusionReason: true,
+                evidenceText: true,
+                evidenceJson: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const rows: PriceExportRow[] = [];
+    for (const product of products) {
+      for (const offer of product.offers) {
+        const isOwn = offer.source.domain === "centr-to.ru" || offer.competitorUrl === product.ownUrl;
+        if (isOwn) continue;
+        for (const observation of offer.observations) {
+          const normalized = observation.normalizedPrice != null;
+          rows.push({
+            model: product.name,
+            nash_url: product.ownUrl ?? "",
+            konkurent: offer.seller.displayName,
+            konkurent_url: offer.competitorUrl,
+            cena: (observation.normalizedPrice ?? observation.rawPrice)?.toString() ?? "",
+            cena_za: exportPriceUnit(
+              normalized ? observation.normalizedQuantity : observation.sourceQuantity,
+              observation.unit,
+            ),
+            data_sbora: (observation.observedAt ?? observation.receivedAt).toISOString(),
+            sposob: exportMethod(observation.method),
+            nadezhnost: exportReliability(observation.reliability),
+            kommentariy: exportComment([
+              observation.exclusionReason,
+              observation.evidenceText,
+              evidenceComment(observation.evidenceJson),
+            ]),
+          });
+        }
+      }
+    }
+    return createPriceCsv(rows);
+  }
 
   async comparisons(query: ComparisonQuery) {
     const where: Prisma.ProductWhereInput = {

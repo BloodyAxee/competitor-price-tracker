@@ -11,6 +11,8 @@ import type {
 
 const apiBase = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api";
 
+export const priceExportUrl = `${apiBase}/export.csv`;
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
     ...init,

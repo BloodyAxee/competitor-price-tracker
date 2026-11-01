@@ -4,6 +4,7 @@ import {
   loadCollectionJob,
   loadDashboard,
   loadHistory,
+  priceExportUrl,
   startCollection,
 } from "./api";
 import type {
@@ -358,6 +359,7 @@ function App() {
           <div className="panel-heading">
             <div><h2>Таблица сравнения</h2><p>Показано {visibleProducts.length} позиций · нажмите на модель для истории и ручного ввода</p></div>
             <div className="panel-actions">
+              <a className="export-button" href={priceExportUrl}>Скачать CSV</a>
               <details className="column-picker"><summary>Столбцы</summary><div>{([['own', 'Наша цена'], ['competitor', 'Конкурент'], ['difference', 'Разница'], ['status', 'Состояние']] as Array<[ColumnKey, string]>).map(([key, label]) => <label key={key}><input type="checkbox" checked={columns[key]} onChange={() => setColumns((value) => ({ ...value, [key]: !value[key] }))} />{label}</label>)}</div></details>
               <button className="refresh-button" onClick={() => void refresh()} disabled={loading}>{loading ? "Обновление" : "Обновить"}</button>
             </div>
