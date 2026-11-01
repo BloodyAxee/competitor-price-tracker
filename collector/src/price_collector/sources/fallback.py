@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar
 
 from ..browser import BrowserDocument, PlaywrightFetcher
-from ..errors import PermanentCollectionError
+from ..errors import PermanentCollectionError, RetryableCollectionError
 from ..http import HttpResponse
 from ..models import SourceTask
 
@@ -61,11 +61,19 @@ def extract_product(
     *,
     browser_fetcher: BrowserPageFetcher | None = None,
 ) -> ProductExtraction[ProductT]:
-    response = http_fetcher.fetch(
-        task.url,
-        timeout=task.timeout_seconds,
-        rate_limit_per_host=task.rate_limit_per_host,
-    )
+    try:
+        response = http_fetcher.fetch(
+            task.url,
+            timeout=task.timeout_seconds,
+            rate_limit_per_host=task.rate_limit_per_host,
+        )
+    except RetryableCollectionError as error:
+        if browser_fetcher is None or error.code != "network_error":
+            raise
+        document = browser_fetcher.fetch(task.url, timeout=task.timeout_seconds)
+        PlaywrightFetcher.assert_not_protected(document.html)
+        product, parser = _parse_document(document.html, parsers)
+        return ProductExtraction(product, document.html, parser, "browser", document.url)
     PlaywrightFetcher.assert_not_protected(response.text)
     try:
         product, parser = _parse_document(response.text, parsers)

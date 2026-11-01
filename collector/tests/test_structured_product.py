@@ -4,7 +4,11 @@ from decimal import Decimal
 from pathlib import Path
 
 from price_monitor_domain import Reliability
-from price_collector.errors import ManualFallbackRequired, PermanentCollectionError
+from price_collector.errors import (
+    ManualFallbackRequired,
+    PermanentCollectionError,
+    RetryableCollectionError,
+)
 from price_collector.browser import BrowserDocument
 from price_collector.http import HttpResponse
 from price_collector.models import SourceTask
@@ -32,6 +36,16 @@ class StaticBrowserFetcher:
     def fetch(self, url: str, *, timeout: float) -> BrowserDocument:
         self.calls += 1
         return BrowserDocument(url, self.html, 200)
+
+
+class NetworkFailingFetcher:
+    def fetch(self, url: str, *, timeout: float, rate_limit_per_host: float) -> HttpResponse:
+        raise RetryableCollectionError("TLS handshake timed out", code="network_error")
+
+
+class RateLimitedFetcher:
+    def fetch(self, url: str, *, timeout: float, rate_limit_per_host: float) -> HttpResponse:
+        raise RetryableCollectionError("HTTP 429", code="temporary_http_error", http_status=429)
 
 
 def _task(url: str = "https://www.nordberg.ru/catalog/nordberg-4523/") -> SourceTask:
@@ -126,6 +140,33 @@ class StructuredProductAdapterTest(unittest.TestCase):
         self.assertEqual(observation.price.raw_price, Decimal("189000.00"))
         self.assertEqual(observation.evidence["transport"], "browser")
         self.assertEqual(browser.calls, 1)
+
+    def test_browser_retries_after_http_network_failure(self) -> None:
+        browser = StaticBrowserFetcher(FIXTURE.read_text(encoding="utf-8"))
+        adapter = StructuredProductAdapter(
+            NetworkFailingFetcher(),
+            "source:nordberg.ru",
+            browser_fetcher=browser,
+        )
+
+        observation = adapter.collect(_task())
+
+        self.assertEqual(observation.price.raw_price, Decimal("189000.00"))
+        self.assertEqual(observation.evidence["transport"], "browser")
+        self.assertEqual(browser.calls, 1)
+
+    def test_browser_does_not_bypass_rate_limit(self) -> None:
+        browser = StaticBrowserFetcher(FIXTURE.read_text(encoding="utf-8"))
+        adapter = StructuredProductAdapter(
+            RateLimitedFetcher(),
+            "source:nordberg.ru",
+            browser_fetcher=browser,
+        )
+
+        with self.assertRaisesRegex(RetryableCollectionError, "429"):
+            adapter.collect(_task())
+
+        self.assertEqual(browser.calls, 0)
 
     def test_browser_is_not_started_when_http_document_is_complete(self) -> None:
         browser = StaticBrowserFetcher("unused")
