@@ -13,7 +13,7 @@ function option(name, fallback = undefined) {
 const apiOrigin = option("--api", process.env.ACCEPTANCE_API_ORIGIN ?? "http://localhost:3000");
 const webOrigin = option("--web", process.env.ACCEPTANCE_WEB_ORIGIN ?? "http://localhost:5173");
 const jobId = option("--job", process.env.ACCEPTANCE_JOB_ID);
-const expectedExactOffers = Number(option("--exact-offers", process.env.ACCEPTANCE_EXACT_OFFERS ?? "62"));
+const expectedExactOffers = Number(option("--exact-offers", process.env.ACCEPTANCE_EXACT_OFFERS ?? "64"));
 
 assert.ok(Number.isInteger(expectedExactOffers) && expectedExactOffers > 0, "exact offer count must be positive");
 
@@ -61,7 +61,7 @@ assert.deepEqual(
     additional: 236,
     ownUrls: 28,
     exactOffers: expectedExactOffers,
-    reviewOffers: 90 - expectedExactOffers,
+    reviewOffers: 91 - expectedExactOffers,
   },
 );
 
