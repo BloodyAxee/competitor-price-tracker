@@ -45,7 +45,7 @@ try {
     throw new Error(`Expected PostgreSQL 18, received ${status?.serverVersion ?? "unknown"}`);
   }
 
-  if (status.migrationCount < 6n || status.tableCount < 12n) {
+  if (status.migrationCount < 7n || status.tableCount < 12n) {
     throw new Error("The expected initial database schema is not available");
   }
 

@@ -112,6 +112,11 @@ model Offer {
   matchReason   String?            @map("match_reason")
   comparisonProfile Json?          @map("comparison_profile")
   collectInFastMode Boolean         @default(false) @map("collect_in_fast_mode")
+  failureStreak Int                 @default(0) @map("failure_streak") @db.SmallInt
+  cooldownUntil DateTime?           @map("cooldown_until") @db.Timestamptz(6)
+  lastCollectionErrorCode String?   @map("last_collection_error_code")
+  lastCollectionFailureAt DateTime? @map("last_collection_failure_at") @db.Timestamptz(6)
+  lastCollectionSuccessAt DateTime? @map("last_collection_success_at") @db.Timestamptz(6)
   isActive      Boolean            @default(true) @map("is_active")
   createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
@@ -125,6 +130,7 @@ model Offer {
   @@index([productId])
   @@index([sellerId])
   @@index([sourceId])
+  @@index([cooldownUntil])
   @@map("offers")
 }
 

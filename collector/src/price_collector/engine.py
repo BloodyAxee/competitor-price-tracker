@@ -1,6 +1,7 @@
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from threading import Lock
 from typing import Protocol
 from urllib.parse import urlsplit
@@ -151,6 +152,10 @@ class CollectorEngine:
         return outcomes
 
     def _process_task(self, task: SourceTask) -> _TaskOutcome:
+        if task.cooldown_until is not None and task.cooldown_until > datetime.now(UTC):
+            self._record_cooldown_skip(task)
+            return _TaskOutcome("skipped")
+
         adapter = self._adapters.get(task.source_key)
         if adapter is None:
             with self._repository_lock:
@@ -217,6 +222,21 @@ class CollectorEngine:
                 error_message=(
                     "Host skipped after repeated retryable failures "
                     f"with error code {cause_code}"
+                ),
+            )
+
+    def _record_cooldown_skip(self, task: SourceTask) -> None:
+        adapter = self._adapters.get(task.source_key)
+        method = adapter.method if adapter is not None else task.collection_method
+        with self._repository_lock:
+            attempt_id = self._repository.start_attempt(task, 1, method)
+            self._repository.finish_attempt(
+                attempt_id,
+                status="skipped",
+                error_code="source_cooldown",
+                error_message=(
+                    "Reserve offer is cooling down until "
+                    f"{task.cooldown_until.isoformat()}"
                 ),
             )
 

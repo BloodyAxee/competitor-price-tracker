@@ -30,7 +30,8 @@ SELECT
     s.rate_limit_per_host,
     p.name AS expected_product_name,
     o.seller_article,
-    o.match_status
+    o.match_status,
+    o.cooldown_until
 FROM offers o
 JOIN sources s ON s.id = o.source_id
 JOIN products p ON p.id = o.product_id
@@ -101,6 +102,7 @@ class PostgresCollectorRepository:
             expected_product_name=row["expected_product_name"],
             seller_article=row["seller_article"],
             match_status=row["match_status"],
+            cooldown_until=row["cooldown_until"],
         )
 
     def start_attempt(self, task: SourceTask, attempt_number: int, method: str) -> int:

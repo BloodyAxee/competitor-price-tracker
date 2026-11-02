@@ -3,7 +3,7 @@ import unittest
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from threading import Event, Lock
 
@@ -374,6 +374,39 @@ class CollectorEngineTest(unittest.TestCase):
                 AdapterRegistry(),
                 circuit_breaker_threshold=0,
             )
+
+    def test_offer_in_active_cooldown_is_explicitly_skipped(self) -> None:
+        task = replace(
+            _task("cooling-down"),
+            cooldown_until=datetime.now(UTC) + timedelta(hours=1),
+        )
+        repository = FakeRepository(CollectionJob(task.job_id, (task,)))
+        adapter = SequenceAdapter(task.source_key, [_observation()])
+
+        summary = CollectorEngine(
+            repository,
+            AdapterRegistry((adapter,)),
+        ).process_job(repository.job)
+
+        self.assertEqual(summary.skipped, 1)
+        self.assertEqual(adapter.calls, 0)
+        self.assertEqual(repository.attempts[0]["error_code"], "source_cooldown")
+
+    def test_expired_offer_cooldown_does_not_block_collection(self) -> None:
+        task = replace(
+            _task("cooled-down"),
+            cooldown_until=datetime.now(UTC) - timedelta(seconds=1),
+        )
+        repository = FakeRepository(CollectionJob(task.job_id, (task,)))
+        adapter = SequenceAdapter(task.source_key, [_observation()])
+
+        summary = CollectorEngine(
+            repository,
+            AdapterRegistry((adapter,)),
+        ).process_job(repository.job)
+
+        self.assertEqual(summary.succeeded, 1)
+        self.assertEqual(adapter.calls, 1)
 
     def test_repeated_retryable_host_failure_opens_circuit_for_remaining_tasks(self) -> None:
         tasks = tuple(

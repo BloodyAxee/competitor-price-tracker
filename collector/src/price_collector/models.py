@@ -32,6 +32,7 @@ class SourceTask:
     expected_product_name: str | None = None
     seller_article: str | None = None
     match_status: str = "exact"
+    cooldown_until: datetime | None = None
 
 
 @dataclass(frozen=True)

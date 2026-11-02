@@ -55,6 +55,26 @@ BEGIN
         FROM information_schema.columns
         WHERE table_schema = 'public'
           AND table_name = 'offers'
+          AND column_name = 'cooldown_until'
+    ) THEN
+        RAISE EXCEPTION 'Missing reserve offer cooldown';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgrelid = 'collection_attempts'::regclass
+          AND tgname = 'collection_attempt_offer_health_trigger'
+          AND NOT tgisinternal
+    ) THEN
+        RAISE EXCEPTION 'Missing offer collection health trigger';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'offers'
           AND column_name = 'comparison_profile'
           AND data_type = 'jsonb'
     ) THEN
@@ -357,6 +377,138 @@ BEGIN
         RAISE EXCEPTION
             'Expected three append-only observations, got %',
             observation_count;
+    END IF;
+END;
+$$;
+
+UPDATE offers
+SET collect_in_fast_mode = true
+WHERE competitor_url = 'https://example.test/t300';
+
+INSERT INTO sources (
+    seller_id,
+    external_key,
+    name,
+    base_url,
+    domain,
+    source_type,
+    official_status,
+    collection_method
+)
+SELECT
+    id,
+    'test-reserve-source',
+    'Test reserve source',
+    'https://reserve.example.test',
+    'reserve.example.test',
+    'retailer',
+    'unknown',
+    'http'
+FROM sellers
+WHERE external_key = 'test-seller';
+
+INSERT INTO offers (
+    product_id,
+    seller_id,
+    source_id,
+    competitor_url,
+    seller_article,
+    match_status
+)
+SELECT
+    p.id,
+    s.id,
+    src.id,
+    'https://reserve.example.test/t300',
+    'T300 reserve',
+    'review'
+FROM products p
+CROSS JOIN sellers s
+CROSS JOIN sources src
+WHERE p.external_key = 'test-t300-380'
+  AND s.external_key = 'test-seller'
+  AND src.external_key = 'test-reserve-source';
+
+INSERT INTO collection_attempts (
+    job_id,
+    source_id,
+    offer_id,
+    attempt_number,
+    method,
+    status,
+    started_at
+)
+SELECT j.id, src.id, o.id, attempt_number, 'http', 'running', clock_timestamp()
+FROM collection_jobs j
+CROSS JOIN sources src
+CROSS JOIN offers o
+CROSS JOIN generate_series(1, 2) AS attempt_number
+WHERE j.job_key = 'test-job'
+  AND src.external_key = 'test-reserve-source'
+  AND o.source_id = src.id;
+
+UPDATE collection_attempts
+SET status = 'failed',
+    error_code = 'browser_timeout',
+    error_message = 'fixture timeout',
+    finished_at = clock_timestamp()
+WHERE offer_id = (
+    SELECT id FROM offers WHERE competitor_url = 'https://reserve.example.test/t300'
+);
+
+DO $$
+DECLARE
+    stored_failure_streak smallint;
+    stored_cooldown timestamptz;
+BEGIN
+    SELECT failure_streak, cooldown_until
+    INTO stored_failure_streak, stored_cooldown
+    FROM offers
+    WHERE competitor_url = 'https://reserve.example.test/t300';
+
+    IF stored_failure_streak <> 2 OR stored_cooldown <= clock_timestamp() THEN
+        RAISE EXCEPTION
+            'Reserve cooldown was not activated: streak %, cooldown %',
+            stored_failure_streak,
+            stored_cooldown;
+    END IF;
+END;
+$$;
+
+INSERT INTO collection_attempts (
+    job_id,
+    source_id,
+    offer_id,
+    attempt_number,
+    method,
+    status,
+    started_at
+)
+SELECT j.id, src.id, o.id, 3, 'http', 'running', clock_timestamp()
+FROM collection_jobs j
+CROSS JOIN sources src
+CROSS JOIN offers o
+WHERE j.job_key = 'test-job'
+  AND src.external_key = 'test-reserve-source'
+  AND o.source_id = src.id;
+
+UPDATE collection_attempts
+SET status = 'success',
+    finished_at = clock_timestamp()
+WHERE offer_id = (
+    SELECT id FROM offers WHERE competitor_url = 'https://reserve.example.test/t300'
+)
+  AND attempt_number = 3;
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM offers
+        WHERE competitor_url = 'https://reserve.example.test/t300'
+          AND (failure_streak <> 0 OR cooldown_until IS NOT NULL)
+    ) THEN
+        RAISE EXCEPTION 'Successful reserve collection did not reset cooldown';
     END IF;
 END;
 $$;
