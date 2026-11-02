@@ -101,13 +101,12 @@ main { width: min(1460px, 92vw); margin: 0 auto; padding: 36px 0 70px; }
 .filters input:focus, .filters select:focus, .manual-form input:focus, .manual-form select:focus, .manual-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
 
 .table-wrap { overflow: auto; border-top: 1px solid var(--line); }
-table { width: 100%; border-collapse: collapse; min-width: 1160px; }
+table { width: 100%; border-collapse: collapse; min-width: 1050px; }
 th { padding: 12px 18px; text-align: left; background: var(--surface-soft); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .055em; position: sticky; top: 0; }
-th:first-child { width: 30%; }
-th:nth-child(2) { width: 18%; }
-th:nth-child(3) { width: 20%; }
-th:nth-child(4) { width: 18%; }
-th:nth-child(5) { width: 14%; }
+th:first-child { width: 32%; }
+th:nth-child(2) { width: 19%; }
+th:nth-child(3) { width: 23%; }
+th:nth-child(4) { width: 26%; }
 td { padding: 16px 18px; border-top: 1px solid var(--line); vertical-align: middle; font-size: 13px; }
 tbody tr { cursor: pointer; transition: background .15s ease; }
 tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); outline: none; }
@@ -126,20 +125,16 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .price-movement.down { color: var(--success); background: color-mix(in srgb, var(--success) 12%, var(--surface)); }
 .attention-icon { width: 25px; height: 25px; flex: 0 0 25px; display: inline-grid; place-items: center; border: 2px solid var(--danger); border-radius: 50%; color: var(--danger); font-size: 15px; font-weight: 950; line-height: 1; }
 .attention-icon.small { width: 19px; height: 19px; flex-basis: 19px; font-size: 12px; }
-.attention-price { min-height: 66px; display: flex; align-items: flex-start; gap: 10px; }
-.attention-price.active { padding: 7px 0 7px 10px; border-left: 2px solid var(--warning); }
-.attention-price .attention-icon { width: 19px; height: 19px; flex-basis: 19px; border-width: 1.5px; border-color: var(--warning); color: var(--warning); font-size: 12px; }
-.attention-price strong, .attention-price a, .attention-price small { display: block; }
-.attention-price strong { font-size: 15px; white-space: nowrap; }
-.attention-price a { margin-top: 4px; font-size: 12px; font-weight: 750; }
-.attention-price small { margin-top: 5px; font-size: 10px; }
-.attention-price .attention-difference { color: var(--warning); font-weight: 750; }
-.attention-price .attention-note { color: var(--muted); }
-.attention-price.quiet { min-height: auto; color: var(--muted); font-size: 12px; }
 .other-competitors strong, .other-competitors small { display: block; }
-.other-competitors strong { max-width: 190px; font-size: 12px; line-height: 1.4; }
+.other-competitors strong { max-width: 230px; font-size: 12px; line-height: 1.4; }
 .other-competitors small { margin-top: 5px; color: var(--muted); font-size: 10px; }
 .other-competitors.quiet { color: var(--muted); font-size: 12px; }
+.review-price-signal { display: flex; align-items: flex-start; gap: 8px; margin-top: 9px; padding: 7px 0 0; border-top: 1px solid var(--line); }
+.review-price-signal .attention-icon { width: 18px; height: 18px; flex-basis: 18px; border-width: 1.5px; border-color: var(--warning); color: var(--warning); font-size: 11px; }
+.review-price-signal strong, .review-price-signal a, .review-price-signal small { display: block; }
+.review-price-signal a { margin-top: 3px; font-size: 11px; font-weight: 750; }
+.review-price-signal small { color: var(--warning); }
+.review-price-signal .review-note { color: var(--muted); }
 .competitor-stack { min-width: 390px; display: grid; gap: 9px; }
 .market-offer { padding: 12px 13px; border: 1px solid var(--line); border-left: 3px solid var(--success); border-radius: 11px; background: var(--surface-soft); }
 .market-offer.warning { border-left-color: var(--warning); background: color-mix(in srgb, var(--warning) 6%, var(--surface-soft)); }

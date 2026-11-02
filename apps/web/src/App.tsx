@@ -389,27 +389,23 @@ function App() {
     );
     const otherCompetitorsCell = (
       <div className={`other-competitors ${otherCompetitors ? "available" : "quiet"}`} data-label="Другие конкуренты">
-        {otherCompetitors ? <><strong>{otherCompetitors}</strong><small>Все источники в карточке</small></> : <span>—</span>}
-      </div>
-    );
-    const attentionCell = (
-      <div className={`attention-price ${reviewCandidate ? "active" : "quiet"}`} data-label="Цена на проверке">
-        {reviewCandidate ? (
-          <>
+        {otherCompetitors && <><strong>{otherCompetitors}</strong><small>Все подтверждённые источники в карточке</small></>}
+        {reviewCandidate && (
+          <div className="review-price-signal">
             <span className="attention-icon" aria-label="Требует проверки">!</span>
             <div>
               <strong>{formatPrice(reviewCandidate.price?.normalizedPrice)}</strong>
               <a href={reviewCandidate.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{reviewCandidate.seller}</a>
-              {reviewCandidate.priceChange && <span className={`price-movement ${reviewCandidate.priceChange.direction}`}>{formatPriceMovement(reviewCandidate.priceChange)}</span>}
-              <small className="attention-difference">{formatAttentionDifference(attention)}</small>
-              <small className="attention-note">Требует проверки · не входит в итог</small>
+              <small>{formatAttentionDifference(attention)}</small>
+              <small className="review-note">Проверить · не входит в итог</small>
             </div>
-          </>
-        ) : <span aria-label="Нет отличающейся цены">—</span>}
+          </div>
+        )}
+        {!otherCompetitors && !reviewCandidate && <span>—</span>}
       </div>
     );
     if (mobile) {
-      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{otherCompetitorsCell}{attentionCell}</article>;
+      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{otherCompetitorsCell}</article>;
     }
     return (
       <tr key={product.id} onClick={() => setSelected(product)} tabIndex={0} onKeyDown={(event) => event.key === "Enter" && setSelected(product)}>
@@ -417,7 +413,6 @@ function App() {
         <td>{ownCell}</td>
         <td>{confirmedCell}</td>
         <td>{otherCompetitorsCell}</td>
-        <td>{attentionCell}</td>
       </tr>
     );
   };
@@ -494,7 +489,7 @@ function App() {
 
           {!loading && !error && visibleProducts.length > 0 && (
             <>
-              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th>Другие конкуренты</th><th>Цена на проверке</th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
+              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th>Другие конкуренты</th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
               <div className="mobile-list">{visibleProducts.map((product) => productRow(product, true))}</div>
             </>
           )}

@@ -43,9 +43,8 @@ export function attentionCompetitor(item: ComparisonItem): CompetitorComparison 
 }
 
 export function attentionPriceSignal(item: ComparisonItem) {
-  const confirmed = bestCompetitor(item);
-  const confirmedPrice = Number(confirmed?.comparisonPrice?.normalizedPrice);
-  if (!confirmed || !Number.isFinite(confirmedPrice) || confirmedPrice <= 0) return null;
+  const ownPrice = Number(item.own?.comparisonPrice?.normalizedPrice ?? item.own?.price?.normalizedPrice);
+  if (!Number.isFinite(ownPrice) || ownPrice <= 0) return null;
 
   const candidates = sortedCompetitors(item)
     .filter(
@@ -55,11 +54,11 @@ export function attentionPriceSignal(item: ComparisonItem) {
     )
     .map((offer) => {
       const price = Number(offer.price?.normalizedPrice);
-      const amount = price - confirmedPrice;
+      const amount = price - ownPrice;
       return {
         offer,
         amount,
-        percent: (amount / confirmedPrice) * 100,
+        percent: (amount / ownPrice) * 100,
       };
     })
     .filter(
@@ -79,19 +78,23 @@ export function otherCompetitorsSummary(item: ComparisonItem) {
   );
   if (confirmed.length <= 1) return null;
 
-  const bestPrice = Number(confirmed[0].comparisonPrice?.normalizedPrice);
+  const ownPrice = Number(item.own?.comparisonPrice?.normalizedPrice ?? item.own?.price?.normalizedPrice);
   const others = confirmed.slice(1);
   const count = others.length;
   const countLabel = count === 1 ? "Ещё 1 конкурент" : count <= 4 ? `Ещё ${count} конкурента` : `Ещё ${count} конкурентов`;
-  const allSamePrice = others.every(
-    (offer) => Number(offer.comparisonPrice?.normalizedPrice) === bestPrice,
-  );
-  if (allSamePrice) return `${countLabel} по той же цене`;
+  if (!Number.isFinite(ownPrice) || ownPrice <= 0) return countLabel;
 
-  const lowestOtherPrice = Math.min(
-    ...others.map((offer) => Number(offer.comparisonPrice?.normalizedPrice)),
+  const differences = others.map(
+    (offer) => Number(offer.comparisonPrice?.normalizedPrice) - ownPrice,
   );
-  return `${countLabel} · цены от ${formatPrice(String(lowestOtherPrice))}`;
+  if (differences.every((difference) => difference === 0)) return `${countLabel} по цене ЦТО`;
+
+  const allLower = differences.every((difference) => difference < 0);
+  const allHigher = differences.every((difference) => difference > 0);
+  const largestDifference = Math.max(...differences.map((difference) => Math.abs(difference)));
+  if (allLower) return `${countLabel} · до ${moneyFormatter.format(largestDifference)} ниже ЦТО`;
+  if (allHigher) return `${countLabel} · до ${moneyFormatter.format(largestDifference)} выше ЦТО`;
+  return `${countLabel} · есть цены выше и ниже ЦТО`;
 }
 
 export function sortedCompetitors(item: ComparisonItem): CompetitorComparison[] {
@@ -135,7 +138,7 @@ export function formatAttentionDifference(
   signal: NonNullable<ReturnType<typeof attentionPriceSignal>>,
 ) {
   const direction = signal.amount > 0 ? "Выше" : "Ниже";
-  return `${direction} подтверждённой на ${moneyFormatter.format(Math.abs(signal.amount))} · ${Math.abs(signal.percent).toFixed(1)}%`;
+  return `${direction} ЦТО на ${moneyFormatter.format(Math.abs(signal.amount))} · ${Math.abs(signal.percent).toFixed(1)}%`;
 }
 
 export function observationStatus(price: PriceObservation | null | undefined) {

@@ -39,6 +39,10 @@ test("the cheapest priced competitor is selected", () => {
 
 test("the result price ignores a cheaper unverified offer", () => {
   const item = {
+    own: {
+      price: { normalizedPrice: "100000", reliability: "valid" },
+      comparisonPrice: { normalizedPrice: "100000" },
+    },
     competitors: [
       {
         seller: "Проверить",
@@ -60,24 +64,28 @@ test("the result price ignores a cheaper unverified offer", () => {
   assert.equal(attentionPriceSignal(item).offer.seller, "Проверить");
   assert.equal(
     formatAttentionDifference(attentionPriceSignal(item)),
-    "Ниже подтверждённой на 20 000 ₽ · 20.0%",
+    "Ниже ЦТО на 20 000 ₽ · 20.0%",
   );
 });
 
-test("the table hides an unverified price when it equals the confirmed price", () => {
+test("the table compares an unverified price with CTO instead of another competitor", () => {
   const item = {
+    own: {
+      price: { normalizedPrice: "149000", reliability: "valid" },
+      comparisonPrice: { normalizedPrice: "149000" },
+    },
     competitors: [
       {
         seller: "Проверить",
         matchStatus: "review",
-        price: { normalizedPrice: "72000", reliability: "unreliable" },
+        price: { normalizedPrice: "149000", reliability: "unreliable" },
         comparisonPrice: null,
       },
       {
         seller: "Подтверждено",
         matchStatus: "exact",
-        price: { normalizedPrice: "72000", reliability: "valid" },
-        comparisonPrice: { normalizedPrice: "72000" },
+        price: { normalizedPrice: "132500", reliability: "valid" },
+        comparisonPrice: { normalizedPrice: "132500" },
       },
     ],
   };
@@ -111,6 +119,7 @@ test("all competitors are kept and priced offers are ordered before unavailable 
 
 test("other competitor summary explains equal and different prices", () => {
   const equalPrices = {
+    own: { price: { normalizedPrice: "72000" }, comparisonPrice: { normalizedPrice: "72000" } },
     competitors: [
       { seller: "Первый", comparisonPrice: { normalizedPrice: "72000" }, price: { normalizedPrice: "72000" } },
       { seller: "Второй", comparisonPrice: { normalizedPrice: "72000" }, price: { normalizedPrice: "72000" } },
@@ -118,6 +127,7 @@ test("other competitor summary explains equal and different prices", () => {
     ],
   };
   const differentPrices = {
+    own: { price: { normalizedPrice: "72000" }, comparisonPrice: { normalizedPrice: "72000" } },
     competitors: [
       { seller: "Первый", comparisonPrice: { normalizedPrice: "72000" }, price: { normalizedPrice: "72000" } },
       { seller: "Второй", comparisonPrice: { normalizedPrice: "80000" }, price: { normalizedPrice: "80000" } },
@@ -125,9 +135,9 @@ test("other competitor summary explains equal and different prices", () => {
     ],
   };
 
-  assert.equal(otherCompetitorsSummary(equalPrices), "Ещё 2 конкурента по той же цене");
-  assert.equal(otherCompetitorsSummary(differentPrices), "Ещё 2 конкурента · цены от 80 000 ₽");
-  assert.equal(otherCompetitorsSummary({ competitors: equalPrices.competitors.slice(0, 1) }), null);
+  assert.equal(otherCompetitorsSummary(equalPrices), "Ещё 2 конкурента по цене ЦТО");
+  assert.equal(otherCompetitorsSummary(differentPrices), "Ещё 2 конкурента · до 18 000 ₽ выше ЦТО");
+  assert.equal(otherCompetitorsSummary({ own: equalPrices.own, competitors: equalPrices.competitors.slice(0, 1) }), null);
 });
 
 test("competitor count is displayed in natural Russian", () => {
