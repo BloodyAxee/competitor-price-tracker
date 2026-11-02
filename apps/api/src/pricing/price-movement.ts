@@ -2,7 +2,7 @@ export interface PriceMovement {
   previousPrice: string;
   amount: string;
   percent: string;
-  direction: "up" | "down";
+  direction: "up" | "down" | "unchanged";
 }
 
 export function calculatePriceMovement(
@@ -14,11 +14,10 @@ export function calculatePriceMovement(
   const previous = Number(previousPrice);
   if (!Number.isFinite(current) || !Number.isFinite(previous) || previous <= 0) return null;
   const amount = current - previous;
-  if (amount === 0) return null;
   return {
     previousPrice: previous.toFixed(2),
     amount: amount.toFixed(2),
     percent: ((amount / previous) * 100).toFixed(2),
-    direction: amount > 0 ? "up" : "down",
+    direction: amount === 0 ? "unchanged" : amount > 0 ? "up" : "down",
   };
 }

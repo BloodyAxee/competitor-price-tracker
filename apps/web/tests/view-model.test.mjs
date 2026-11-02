@@ -169,6 +169,10 @@ test("price movement is formatted as a separate market signal", () => {
     formatPriceMovement({ amount: "-10000", percent: "-10", direction: "down" }),
     "Снизилась на 10 000 ₽ · 10.0%",
   );
+  assert.equal(
+    formatPriceMovement({ amount: "0", percent: "0", direction: "unchanged" }),
+    "Без изменений",
+  );
   assert.equal(formatPriceMovement(null), null);
 });
 

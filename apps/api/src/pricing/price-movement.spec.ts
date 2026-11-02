@@ -12,8 +12,13 @@ test("price movement is calculated against the previous observation", () => {
   assert.equal(calculatePriceMovement("90000", "100000")?.direction, "down");
 });
 
-test("unchanged or incomplete prices do not create an alert", () => {
-  assert.equal(calculatePriceMovement("100000", "100000"), null);
+test("unchanged prices are distinct from a missing previous observation", () => {
+  assert.deepEqual(calculatePriceMovement("100000", "100000"), {
+    previousPrice: "100000.00",
+    amount: "0.00",
+    percent: "0.00",
+    direction: "unchanged",
+  });
   assert.equal(calculatePriceMovement("100000", null), null);
   assert.equal(calculatePriceMovement("bad", "100000"), null);
 });

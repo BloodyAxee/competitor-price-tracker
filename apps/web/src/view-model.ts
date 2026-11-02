@@ -130,6 +130,7 @@ export function formatPriceMovement(
   const amount = Math.abs(Number(change.amount));
   const percent = Math.abs(Number(change.percent));
   if (!Number.isFinite(amount) || !Number.isFinite(percent)) return null;
+  if (change.direction === "unchanged") return "Без изменений";
   const direction = change.direction === "up" ? "Выросла" : "Снизилась";
   return `${direction} на ${moneyFormatter.format(amount)} · ${percent.toFixed(1)}%`;
 }

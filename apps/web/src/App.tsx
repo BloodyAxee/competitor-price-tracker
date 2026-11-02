@@ -432,12 +432,26 @@ function App() {
       <div className="price-data competitor-result" data-label="Подтверждённая цена">
         <strong>{formatPrice(confirmed?.comparisonPrice?.normalizedPrice)}</strong>
         {confirmed ? <a href={confirmed.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{confirmed.seller}</a> : <span>Нет цены для итога</span>}
-        {confirmed?.priceChange && confirmed.price?.reliability === "valid" && (
-          <span className={`price-movement ${confirmed.priceChange.direction}`}>{formatPriceMovement(confirmed.priceChange)}</span>
-        )}
         {confirmed?.difference.amount != null && Number(confirmed.difference.amount) !== 0 && <small className={`result-difference ${differenceTone(confirmed.difference.amount)}`}>{formatDifference(confirmed.difference.amount, confirmed.difference.percent)}</small>}
         {confirmed?.difference.amount != null && Number(confirmed.difference.amount) === 0 && <small>Цена совпадает с нашей</small>}
         {confirmed && <small>{formatDate(confirmed.comparisonPrice?.observedAt ?? confirmed.comparisonPrice?.receivedAt)}{confirmed.comparisonPrice?.region ? ` · ${confirmed.comparisonPrice.region}` : ""}</small>}
+      </div>
+    );
+    const priceChangeCell = (
+      <div className="price-data price-change-result" data-label="Изменение цены">
+        {confirmed?.priceChange && confirmed.price?.reliability === "valid" ? (
+          <>
+            <strong className={`price-movement ${confirmed.priceChange.direction}`}>
+              {formatPriceMovement(confirmed.priceChange)}
+            </strong>
+            <small>к предыдущему наблюдению</small>
+          </>
+        ) : (
+          <>
+            <strong className="no-price-change">—</strong>
+            <small>{confirmed ? "Первое наблюдение" : "Нет подтверждённой цены"}</small>
+          </>
+        )}
       </div>
     );
     const marketReferenceCell = comparable ? (
@@ -458,13 +472,14 @@ function App() {
       </div>
     );
     if (mobile) {
-      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{marketReferenceCell}</article>;
+      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{priceChangeCell}{marketReferenceCell}</article>;
     }
     return (
       <tr key={product.id} onClick={() => setSelected(product)} tabIndex={0} onKeyDown={(event) => event.key === "Enter" && setSelected(product)}>
         <td>{modelCell}</td>
         <td>{ownCell}</td>
         <td>{confirmedCell}</td>
+        <td>{priceChangeCell}</td>
         <td>{marketReferenceCell}</td>
       </tr>
     );
@@ -585,7 +600,7 @@ function App() {
 
           {!loading && !error && visibleProducts.length > 0 && (
             <>
-              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th>Рыночный ориентир / другие</th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
+              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th>Изменение цены</th><th>Рыночный ориентир / другие</th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
               <div className="mobile-list">{visibleProducts.map((product) => productRow(product, true))}</div>
             </>
           )}

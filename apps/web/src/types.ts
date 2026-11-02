@@ -122,7 +122,7 @@ export interface ComparisonOffer {
     previousPrice: string;
     amount: string;
     percent: string;
-    direction: "up" | "down";
+    direction: "up" | "down" | "unchanged";
   } | null;
   comparisonPrice: PriceObservation | null;
   referencePrice: PriceObservation | null;

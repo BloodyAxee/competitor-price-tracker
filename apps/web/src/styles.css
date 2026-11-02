@@ -126,12 +126,13 @@ main { width: min(1460px, 92vw); margin: 0 auto; padding: 36px 0 70px; }
 .filters input:focus, .filters select:focus, .manual-form input:focus, .manual-form select:focus, .manual-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
 
 .table-wrap { overflow: auto; border-top: 1px solid var(--line); }
-table { width: 100%; border-collapse: collapse; min-width: 1050px; }
+table { width: 100%; border-collapse: collapse; min-width: 1180px; }
 th { padding: 12px 18px; text-align: left; background: var(--surface-soft); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .055em; position: sticky; top: 0; }
-th:first-child { width: 32%; }
-th:nth-child(2) { width: 19%; }
-th:nth-child(3) { width: 23%; }
-th:nth-child(4) { width: 26%; }
+th:first-child { width: 27%; }
+th:nth-child(2) { width: 16%; }
+th:nth-child(3) { width: 20%; }
+th:nth-child(4) { width: 17%; }
+th:nth-child(5) { width: 20%; }
 td { padding: 16px 18px; border-top: 1px solid var(--line); vertical-align: middle; font-size: 13px; }
 tbody tr { cursor: pointer; transition: background .15s ease; }
 tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); outline: none; }
@@ -148,6 +149,9 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .price-movement { display: inline-flex !important; width: fit-content; margin-top: 6px !important; padding: 4px 7px; border-radius: 7px; font-size: 10px !important; font-weight: 800; line-height: 1.25; }
 .price-movement.up { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
 .price-movement.down { color: var(--success); background: color-mix(in srgb, var(--success) 12%, var(--surface)); }
+.price-movement.unchanged { color: var(--muted); background: color-mix(in srgb, var(--muted) 10%, var(--surface)); }
+.price-change-result .price-movement { margin-top: 0 !important; white-space: normal; }
+.price-change-result .no-price-change { color: var(--muted); font-size: 20px; }
 .attention-icon { width: 25px; height: 25px; flex: 0 0 25px; display: inline-grid; place-items: center; border: 2px solid var(--danger); border-radius: 50%; color: var(--danger); font-size: 15px; font-weight: 950; line-height: 1; }
 .attention-icon.small { width: 19px; height: 19px; flex-basis: 19px; font-size: 12px; }
 .other-competitors strong, .other-competitors small { display: block; }
