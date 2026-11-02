@@ -12,6 +12,7 @@ import {
   formatDifference,
   formatPrice,
   formatPriceMovement,
+  historyPriceMovement,
   observationStatus,
   observedPriceValue,
   offerStatusLabel,
@@ -174,6 +175,24 @@ test("price movement is formatted as a separate market signal", () => {
     "Без изменений",
   );
   assert.equal(formatPriceMovement(null), null);
+});
+
+test("price movement in history uses the previous observation of the same offer and region", () => {
+  const history = [
+    { normalizedPrice: "90000", regionCode: null, offer: { competitorUrl: "https://seller.test/1" } },
+    { normalizedPrice: "50000", regionCode: null, offer: { competitorUrl: "https://seller.test/2" } },
+    { normalizedPrice: "100000", regionCode: "moscow", offer: { competitorUrl: "https://seller.test/1" } },
+    { normalizedPrice: "100000", regionCode: null, offer: { competitorUrl: "https://seller.test/1" } },
+  ];
+
+  assert.deepEqual(historyPriceMovement(history, 0), {
+    previousPrice: "100000.00",
+    amount: "-10000.00",
+    percent: "-10.00",
+    direction: "down",
+  });
+  assert.equal(historyPriceMovement(history, 1), null);
+  assert.equal(historyPriceMovement(history, 2), null);
 });
 
 test("collection retries are summarized by unique offer", () => {

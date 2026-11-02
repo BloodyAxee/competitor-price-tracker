@@ -150,8 +150,9 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .price-movement.up { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
 .price-movement.down { color: var(--success); background: color-mix(in srgb, var(--success) 12%, var(--surface)); }
 .price-movement.unchanged { color: var(--muted); background: color-mix(in srgb, var(--muted) 10%, var(--surface)); }
-.price-change-result .price-movement { margin-top: 0 !important; white-space: normal; }
-.price-change-result .no-price-change { color: var(--muted); font-size: 20px; }
+.comparison-difference-result strong.positive { color: var(--success); }
+.comparison-difference-result strong.negative { color: var(--danger); }
+.comparison-difference-result .no-price-difference { color: var(--muted); font-size: 20px; }
 .attention-icon { width: 25px; height: 25px; flex: 0 0 25px; display: inline-grid; place-items: center; border: 2px solid var(--danger); border-radius: 50%; color: var(--danger); font-size: 15px; font-weight: 950; line-height: 1; }
 .attention-icon.small { width: 19px; height: 19px; flex-basis: 19px; font-size: 12px; }
 .other-competitors strong, .other-competitors small { display: block; }
@@ -247,6 +248,7 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .history-item > div:first-child a { display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 750; }
 .history-item > div:first-child span, .history-status small { color: var(--muted); font-size: 11px; margin-top: 4px; }
 .history-status { text-align: right; }
+.history-movement { margin: 7px 0 0 auto !important; }
 .method-badge { padding: 4px 7px; margin-left: auto; }
 .method-badge.manual { color: #5e557b; background: #ebe8f5; }
 .method-badge.automatic { color: #11603f; background: #d9f1e4; }

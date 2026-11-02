@@ -5,6 +5,7 @@ import type {
   ComparisonItem,
   ComparisonOffer,
   CompetitorComparison,
+  HistoryItem,
   PriceObservation,
 } from "./types";
 
@@ -133,6 +134,31 @@ export function formatPriceMovement(
   if (change.direction === "unchanged") return "Без изменений";
   const direction = change.direction === "up" ? "Выросла" : "Снизилась";
   return `${direction} на ${moneyFormatter.format(amount)} · ${percent.toFixed(1)}%`;
+}
+
+export function historyPriceMovement(items: HistoryItem[], index: number) {
+  const current = items[index];
+  if (!current?.normalizedPrice) return null;
+  const previous = items
+    .slice(index + 1)
+    .find(
+      (candidate) =>
+        candidate.offer.competitorUrl === current.offer.competitorUrl &&
+        candidate.regionCode === current.regionCode,
+    );
+  if (!previous?.normalizedPrice) return null;
+  const currentPrice = Number(current.normalizedPrice);
+  const previousPrice = Number(previous.normalizedPrice);
+  if (!Number.isFinite(currentPrice) || !Number.isFinite(previousPrice) || previousPrice <= 0) {
+    return null;
+  }
+  const amount = currentPrice - previousPrice;
+  return {
+    previousPrice: previousPrice.toFixed(2),
+    amount: amount.toFixed(2),
+    percent: ((amount / previousPrice) * 100).toFixed(2),
+    direction: amount === 0 ? "unchanged" as const : amount > 0 ? "up" as const : "down" as const,
+  };
 }
 
 export interface CollectionOfferResult {

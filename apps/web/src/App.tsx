@@ -31,6 +31,7 @@ import {
   formatDifference,
   formatPrice,
   formatPriceMovement,
+  historyPriceMovement,
   jobLabel,
   observationStatus,
   offerStatusLabel,
@@ -355,7 +356,6 @@ function App() {
     const tone = offerStatusTone(competitor);
     const currentPrice = competitor.referencePrice ?? competitor.price;
     const reason = competitor.comparisonProfile?.summary ?? currentPrice?.exclusionReason ?? competitor.matchReason;
-    const movement = formatPriceMovement(competitor.priceChange);
     return (
       <details className={`competitor-detail ${tone}`} key={competitor.offerId}>
         <summary>
@@ -368,7 +368,6 @@ function App() {
           </span>
           <span className="competitor-summary-price">
             <strong>{formatPrice(observedPriceValue(currentPrice))}</strong>
-            {movement && <small className={`price-movement ${competitor.priceChange?.direction}`}>{movement}</small>}
           </span>
           <span className={`trust-badge ${tone}`}>{offerStatusLabel(competitor)}</span>
         </summary>
@@ -432,55 +431,51 @@ function App() {
       <div className="price-data competitor-result" data-label="Подтверждённая цена">
         <strong>{formatPrice(confirmed?.comparisonPrice?.normalizedPrice)}</strong>
         {confirmed ? <a href={confirmed.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{confirmed.seller}</a> : <span>Нет цены для итога</span>}
-        {confirmed?.difference.amount != null && Number(confirmed.difference.amount) !== 0 && <small className={`result-difference ${differenceTone(confirmed.difference.amount)}`}>{formatDifference(confirmed.difference.amount, confirmed.difference.percent)}</small>}
-        {confirmed?.difference.amount != null && Number(confirmed.difference.amount) === 0 && <small>Цена совпадает с нашей</small>}
         {confirmed && <small>{formatDate(confirmed.comparisonPrice?.observedAt ?? confirmed.comparisonPrice?.receivedAt)}{confirmed.comparisonPrice?.region ? ` · ${confirmed.comparisonPrice.region}` : ""}</small>}
       </div>
     );
-    const priceChangeCell = (
-      <div className="price-data price-change-result" data-label="Изменение цены">
-        {confirmed?.priceChange && confirmed.price?.reliability === "valid" ? (
-          <>
-            <strong className={`price-movement ${confirmed.priceChange.direction}`}>
-              {formatPriceMovement(confirmed.priceChange)}
-            </strong>
-            <small>к предыдущему наблюдению</small>
-          </>
-        ) : (
-          <>
-            <strong className="no-price-change">—</strong>
-            <small>{confirmed ? "Первое наблюдение" : "Нет подтверждённой цены"}</small>
-          </>
-        )}
-      </div>
-    );
     const marketReferenceCell = comparable ? (
-      <div className="price-data market-reference-result" data-label="Рыночный ориентир">
+      <div className="price-data market-reference-result" data-label="Цена требует проверки">
         <span className="comparable-label">{offerStatusLabel(comparable)}</span>
         <strong>{formatPrice(observedPriceValue(comparable.referencePrice))}</strong>
         <a href={comparable.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{comparable.seller}</a>
-        {comparable.referenceDifference && (
-          <small className={`result-difference ${differenceTone(comparable.referenceDifference.amount)}`}>
-            {formatDifference(comparable.referenceDifference.amount, comparable.referenceDifference.percent)}
-          </small>
-        )}
         <small>Не входит в точный итог</small>
       </div>
     ) : (
-      <div className={`other-competitors ${otherCompetitors ? "available" : "quiet"}`} data-label="Другие конкуренты">
+      <div className={`other-competitors ${otherCompetitors ? "available" : "quiet"}`} data-label="Цена требует проверки">
         {otherCompetitors ? <><strong>{otherCompetitors.countLabel}</strong><small>{otherCompetitors.priceNote ?? "Все источники в карточке"}</small></> : <span>—</span>}
       </div>
     );
+    const displayedDifference = confirmed?.difference.amount != null
+      ? confirmed.difference
+      : comparable?.referenceDifference ?? null;
+    const differenceCell = (
+      <div className="price-data comparison-difference-result" data-label="Разница в цене">
+        {displayedDifference?.amount != null ? (
+          <>
+            <strong className={differenceTone(displayedDifference.amount)}>
+              {formatDifference(displayedDifference.amount, displayedDifference.percent)}
+            </strong>
+            <small>{confirmed ? "между нашей и подтверждённой ценой" : "между нашей ценой и ориентиром"}</small>
+          </>
+        ) : (
+          <>
+            <strong className="no-price-difference">—</strong>
+            <small>Недостаточно данных для сравнения</small>
+          </>
+        )}
+      </div>
+    );
     if (mobile) {
-      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{priceChangeCell}{marketReferenceCell}</article>;
+      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{marketReferenceCell}{differenceCell}</article>;
     }
     return (
       <tr key={product.id} onClick={() => setSelected(product)} tabIndex={0} onKeyDown={(event) => event.key === "Enter" && setSelected(product)}>
         <td>{modelCell}</td>
         <td>{ownCell}</td>
         <td>{confirmedCell}</td>
-        <td>{priceChangeCell}</td>
         <td>{marketReferenceCell}</td>
+        <td>{differenceCell}</td>
       </tr>
     );
   };
@@ -600,7 +595,7 @@ function App() {
 
           {!loading && !error && visibleProducts.length > 0 && (
             <>
-              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th>Изменение цены</th><th>Рыночный ориентир / другие</th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
+              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th>Цена требует проверки</th><th>Разница в цене</th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
               <div className="mobile-list">{visibleProducts.map((product) => productRow(product, true))}</div>
             </>
           )}
@@ -638,7 +633,7 @@ function App() {
               <div className="section-heading"><div><h3>История цен</h3><p>{historyExpanded ? "Показаны все сохранённые наблюдения" : "Три последних наблюдения"}</p></div><span className="count-badge">{history?.total ?? 0}</span></div>
               {historyLoading && <div className="inline-loading"><div className="spinner"></div>Загружаем историю</div>}
               {!historyLoading && history?.items.length === 0 && <p className="muted">Истории пока нет. Запустите сбор или внесите цену вручную.</p>}
-              <div className="history-list">{visibleHistory?.map((entry) => <article className={`history-item ${entry.reliability}`} key={entry.id}><div><strong>{formatPrice(entry.normalizedPrice ?? entry.rawPrice)}</strong><a href={entry.offer.competitorUrl} target="_blank" rel="noreferrer">{entry.offer.source.domain === "centr-to.ru" ? "Наша цена · ЦТО" : `Конкурент · ${entry.offer.seller.displayName}`}</a><span>{formatDate(entry.receivedAt)} · {entry.region ?? "регион не указан"}</span></div><div className="history-status"><span className={`method-badge ${entry.method}`}>{entry.method === "manual" ? "Вручную" : "Автоматически"}</span><small>{observationStatus(entry)}</small></div>{entry.exclusionReason && <p>Причина исключения · {entry.exclusionReason}</p>}</article>)}</div>
+              <div className="history-list">{visibleHistory?.map((entry, index) => { const movement = historyPriceMovement(history?.items ?? [], index); return <article className={`history-item ${entry.reliability}`} key={entry.id}><div><strong>{formatPrice(entry.normalizedPrice ?? entry.rawPrice)}</strong><a href={entry.offer.competitorUrl} target="_blank" rel="noreferrer">{entry.offer.source.domain === "centr-to.ru" ? "Наша цена · ЦТО" : `Конкурент · ${entry.offer.seller.displayName}`}</a><span>{formatDate(entry.receivedAt)} · {entry.region ?? "регион не указан"}</span></div><div className="history-status"><span className={`method-badge ${entry.method}`}>{entry.method === "manual" ? "Вручную" : "Автоматически"}</span><small>{observationStatus(entry)}</small>{movement && <><span className={`price-movement history-movement ${movement.direction}`}>{formatPriceMovement(movement)}</span><small>к предыдущему наблюдению этого источника</small></>}</div>{entry.exclusionReason && <p>Причина исключения · {entry.exclusionReason}</p>}</article>; })}</div>
               {(history?.items.length ?? 0) > 3 && <button type="button" className="history-toggle" onClick={() => setHistoryExpanded((value) => !value)}>{historyExpanded ? "Свернуть до трёх последних" : `Показать всю историю · ${history?.total ?? history?.items.length}`}</button>}
             </section>
 
