@@ -20,6 +20,24 @@
           "match_reason": "Точная модель VT-64.5005, напряжение 220 В и цвет RAL5005 подтверждены в карточке продавца"
         }
       ]
+    },
+    {
+      "bundle_model": "Шиномонтажный комплект NORDBERG 4641N + VT-64",
+      "seller_domain": "autoservice2.ru",
+      "seller_name": "АВТОСЕРВИС2",
+      "verified_on": "2026-11-02",
+      "components": [
+        {
+          "article": "4641N",
+          "url": "https://www.autoservice2.ru/catalog/10/tovar/47144/",
+          "match_reason": "Точная модель 4641N, автомат, две скорости, напряжение 380 В и открытая цена подтверждены в карточке официального дилера"
+        },
+        {
+          "article": "VT-64.5005",
+          "url": "https://www.autoservice2.ru/catalog/7/tovar/37118/",
+          "match_reason": "Точный артикул VT-64.5005, напряжение 220 В, цвет RAL5005 и открытая цена подтверждены в карточке официального дилера"
+        }
+      ]
     }
   ],
   "models": [
@@ -33,9 +51,9 @@
       "match_status": "точное совпадение",
       "review_scope": "Совпадение подтверждено по модели MT-290, напряжению 380 В и диапазону 14–26; цену и доступность проверяет адаптер",
       "note": "Найдена карточка 380 В, 14–26, колесо 1600 мм, ширина 780 мм. Карточка ЦТО не получена; статус aet-auto как официального продавца не подтверждён производителем.",
-      "current_price_verified": false,
-      "automated_collection_verified": false,
-      "review_date": "2026-10-30"
+      "current_price_verified": true,
+      "automated_collection_verified": true,
+      "review_date": "2026-11-02"
     },
     {
       "id": 2,
@@ -72,12 +90,13 @@
       "own_url": "https://centr-to.ru/good-665-balansirovochnyy-stanok-dlya-gruzovyh-avto-nordberg-45trk_380v",
       "primary_url": "https://www.master-instrument.ru/catalog/balansirovochnye-stanki/balansirovochnyy-stanok-dlya-gruzovykh-avtomobiley-45-trk/index.php",
       "reserve_url": "https://www.autoservice2.ru/catalog/19/tovar/1326/",
+      "verified_exact_urls": ["https://www.autoservice2.ru/catalog/19/tovar/1326/"],
       "match_status": "точное совпадение",
       "review_scope": "Совпадение подтверждено по точной модели 45TRK(B), напряжению 380 В и грузовому исполнению до 200 кг",
       "note": "Найдена версия 380 В, до 200 кг. Проверить именно (B), диапазоны и подъёмник по карточке ЦТО; РРЦ Master-Instrument не считать фактической скидочной ценой.",
-      "current_price_verified": false,
-      "automated_collection_verified": false,
-      "review_date": "2026-10-30"
+      "current_price_verified": true,
+      "automated_collection_verified": true,
+      "review_date": "2026-11-02"
     },
     {
       "id": 5,
@@ -86,6 +105,15 @@
       "own_url": "https://centr-to.ru/good-3133-balansirovochnyy-stanok-dlya-gruzovyh-avto-nordberg-45trke-220v",
       "primary_url": "https://optima-trade.ru/product/nordberg-45trke",
       "reserve_url": null,
+      "additional_sources": [
+        {
+          "url": "https://www.autoservice2.ru/catalog/19/tovar/5267/",
+          "match_status": "exact",
+          "trust_class": "B",
+          "reason": "Официальный дилер подтверждает точную модель 45TRKE, напряжение 220 В и максимальную массу колеса 150 кг",
+          "automated_collection_verified": true
+        }
+      ],
       "match_status": "точное совпадение",
       "review_scope": "Совпадение подтверждено по модели 45TRKE, напряжению 220 В и грузовому исполнению",
       "note": "Оптима-Трейд подтверждает 45TRKE, 220 В и массу колеса до 150 кг и повторно прошёл полный сбор 02.11.2026. Защищённая карточка РусТехники сохранена в аудите, но отключена из ежедневной очереди. Не переносить лимит 200 кг с 45TRK.",
@@ -98,12 +126,21 @@
       "model": "Грузовой шиномонтажный станок NORDBERG 46TRK(B)",
       "label": "NORDBERG 46TRK(B)",
       "own_url": "https://centr-to.ru/good-91-shinomontazhnyy-stanok-dlya-gruzovyh-avto-nordberg-46trk_380v",
-      "primary_url": "https://nordberg-shop.ru/shop/46trk-nordberg-shinomontazhnyj-stanok-dlya-gruzovyh-avto-380v/",
+      "primary_url": "https://www.autoservice2.ru/catalog/18/tovar/348/",
       "reserve_url": "https://optima-trade.ru/product/nordberg-46trk",
       "verified_exact_urls": ["https://optima-trade.ru/product/nordberg-46trk"],
+      "additional_sources": [
+        {
+          "url": "https://nordberg-shop.ru/shop/46trk-nordberg-shinomontazhnyj-stanok-dlya-gruzovyh-avto-380v/",
+          "match_status": "review",
+          "trust_class": "B",
+          "reason": "Характеристики совпадают, но карточка два последовательных полных запуска завершила browser timeout и не должна замедлять ежедневную очередь",
+          "automated_collection_verified": false
+        }
+      ],
       "match_status": "точное совпадение",
       "review_scope": "Точные карточки продавцов подтверждают 46TRK(B), 380 В, одну скорость, диски 14–26 и массу колеса до 1000 кг",
-      "note": "NORDBERG-SHOP заменил недоступную страницу nordberg.ru 02.11.2026. Совпадают точный артикул 46TRK(B), 380 В, 14–26 и масса колеса до 1000 кг; двухскоростные версии автоматически отклоняются. Оптима-Трейд сохранён независимым резервом.",
+      "note": "АВТОСЕРВИС2 и Оптима-Трейд подтверждают 46TRK(B), 380 В, 14–26 и односкоростное исполнение. NORDBERG-SHOP сохранён для аудита, но после двух browser timeout переведён из ежедневного exact-сбора в review.",
       "current_price_verified": true,
       "automated_collection_verified": true,
       "review_date": "2026-11-02"
@@ -113,12 +150,21 @@
       "model": "Грузовой шиномонтажный станок NORDBERG 46TRKE(B)",
       "label": "NORDBERG 46TRKE(B)",
       "own_url": "https://centr-to.ru/good-615-shinomontazhnyy-stanok-dlya-gruzovyh-avto-nordberg-46trke",
-      "primary_url": "https://nordberg-shop.ru/shop/46trke-b-nordberg-shinomontazhnyj-stanok-dlya-gruzovyh-avto-nordberg/",
+      "primary_url": "https://www.autoservice2.ru/catalog/18/tovar/2151/",
       "reserve_url": "https://optima-trade.ru/product/nordberg-46trke",
       "verified_exact_urls": ["https://optima-trade.ru/product/nordberg-46trke"],
+      "additional_sources": [
+        {
+          "url": "https://nordberg-shop.ru/shop/46trke-b-nordberg-shinomontazhnyj-stanok-dlya-gruzovyh-avto-nordberg/",
+          "match_status": "review",
+          "trust_class": "B",
+          "reason": "Характеристики совпадают, но карточка два последовательных полных запуска завершила browser timeout и не должна замедлять ежедневную очередь",
+          "automated_collection_verified": false
+        }
+      ],
       "match_status": "точное совпадение",
       "review_scope": "Точные карточки продавцов подтверждают 46TRKE(B), 380 В, одну скорость и синее исполнение",
-      "note": "NORDBERG-SHOP заменил недоступный каталог nordberg.ru 02.11.2026. Совпадают точный артикул 46TRKE(B), 380 В, 14–26, масса колеса до 1000 кг и подвижная инструментальная консоль; двухскоростные версии автоматически отклоняются. Оптима-Трейд сохранён независимым резервом.",
+      "note": "АВТОСЕРВИС2 и Оптима-Трейд подтверждают 46TRKE(B), 380 В, 14–26 и односкоростное исполнение. NORDBERG-SHOP сохранён для аудита, но после двух browser timeout переведён из ежедневного exact-сбора в review.",
       "current_price_verified": true,
       "automated_collection_verified": true,
       "review_date": "2026-11-02"
@@ -144,6 +190,15 @@
       "own_url": "https://centr-to.ru/good-7634-shinomontazhnyy-stanok-dlya-gruzovyh-avto-nordberg-46trke56-380v",
       "primary_url": "https://carmod.ru/catalog/product/shinomontazhnyy-stanok-nordberg-46trke56-b/",
       "reserve_url": null,
+      "additional_sources": [
+        {
+          "url": "https://www.autoservice2.ru/catalog/18/tovar/19173/",
+          "match_status": "exact",
+          "trust_class": "B",
+          "reason": "Официальный дилер подтверждает 46TRKE56(B), диапазон 14–56, напряжение 380 В, две скорости и открыто публикует цену",
+          "automated_collection_verified": true
+        }
+      ],
       "match_status": "точное совпадение",
       "review_scope": "Совпадение подтверждено по 46TRKE56(B), диапазону 14–56, напряжению 380 В и двум скоростям",
       "note": "Carmod подтверждает 46TRKE56(B), 380 В, диапазон 14–56 и две скорости и повторно прошёл полный сбор 02.11.2026. TMK больше не публикует открытую цену и сохранён только в аудите. У Specinstrument описание 42 при заголовке 56 — исключить до исправления.",
@@ -170,12 +225,11 @@
       "model": "Балансировочный станок NORDBERG 4523 с автовводом",
       "label": "NORDBERG 4523",
       "own_url": "https://centr-to.ru/good-12941-stanok-balansirovochnyy-s-avtomaticheskim-vvodom-2h-parametrov-nordberg-4523",
-      "primary_url": "https://nordberg-shop.ru/shop/4523-nordberg-stanok-balansirovochnyj-s-avtomaticheskim-vvodom-2h-parametrov/",
-      "reserve_url": "https://optima-trade.ru/product/nordberg-4523",
-      "verified_exact_urls": ["https://optima-trade.ru/product/nordberg-4523"],
+      "primary_url": "https://optima-trade.ru/product/nordberg-4523",
+      "reserve_url": "https://nordberg-shop.ru/shop/4523-nordberg-stanok-balansirovochnyj-s-avtomaticheskim-vvodom-2h-parametrov/",
       "match_status": "точное совпадение",
       "review_scope": "Точные карточки продавцов подтверждают 4523, автоввод двух параметров, вал 40 мм и диапазон 10–24",
-      "note": "NORDBERG-SHOP заменил недоступную страницу nordberg.ru 02.11.2026. Совпадают точный артикул 4523, 220 В, автоввод двух параметров, вал 40 мм и диапазон 10–24. Оптима-Трейд сохранён независимым резервом; 4523C и цветовые версии не подмешиваются.",
+      "note": "Оптима-Трейд остаётся рабочим exact-источником. Совпадают 4523, 220 В, автоввод двух параметров, вал 40 мм и диапазон 10–24. NORDBERG-SHOP сохранён резервом review после двух browser timeout; 4523C и цветовые версии не подмешиваются.",
       "current_price_verified": true,
       "automated_collection_verified": true,
       "review_date": "2026-11-02"
@@ -185,14 +239,14 @@
       "model": "Балансировочный станок NORDBERG 4523A с автовводом",
       "label": "NORDBERG 4523A",
       "own_url": "https://centr-to.ru/good-3593-balansirovochnyy-stanok-avtomat-s-displeem-nordberg-4523a",
-      "primary_url": "https://nordberg-shop.ru/shop/4523a-nordberg-balansirovochnyj-stanok-avtomat-s-displeem/",
-      "reserve_url": null,
+      "primary_url": "https://www.autoservice2.ru/catalog/7/tovar/3470/",
+      "reserve_url": "https://nordberg-shop.ru/shop/4523a-nordberg-balansirovochnyj-stanok-avtomat-s-displeem/",
       "match_status": "точное совпадение",
       "review_scope": "Совпадение подтверждено по модели 4523A, дисплею, напряжению 220 В и диапазону 10–24",
-      "note": "Найдена модель с дисплеем. Сверить 220 В, 10–24, 65 кг, комплект. Цена продавца обозначается как РРЦ, минимальный заказ — отдельное условие.",
-      "current_price_verified": false,
-      "automated_collection_verified": false,
-      "review_date": "2026-10-30"
+      "note": "АВТОСЕРВИС2 подтверждает 4523A, 220 В, 10–24, вал 40 мм, массу 65 кг и автоматический ввод трёх параметров и прошёл штатный live-сбор. NORDBERG-SHOP оставлен review-резервом после двух browser timeout.",
+      "current_price_verified": true,
+      "automated_collection_verified": true,
+      "review_date": "2026-11-02"
     },
     {
       "id": 13,
@@ -215,6 +269,15 @@
       "own_url": "https://centr-to.ru/good-8109-balansirovochnyy-stanok-nordberg-4523n1",
       "primary_url": "https://optima-trade.ru/product/nordberg-4523n1",
       "reserve_url": null,
+      "additional_sources": [
+        {
+          "url": "https://www.autoservice2.ru/catalog/7/tovar/15371/",
+          "match_status": "exact",
+          "trust_class": "B",
+          "reason": "Официальный дилер подтверждает 4523N1(B), 220 В, лазер, автостоп, диапазон 10–24 и автоматический ввод диаметра и дистанции",
+          "automated_collection_verified": true
+        }
+      ],
       "match_status": "точное совпадение",
       "review_scope": "Совпадение подтверждено по 4523N1(B), лазеру, автовводу двух параметров, автостопу и напряжению 220 В",
       "note": "Оптима-Трейд подтверждает 4523N1(B), 220 В, диапазон 10–24, лазер и автоматический ввод двух параметров и повторно прошёл полный сбор 02.11.2026. Защищённая карточка РусТехники сохранена в аудите, но отключена из ежедневной очереди.",
@@ -241,14 +304,23 @@
       "model": "Балансировочный станок 4524C(B): 6 программ",
       "label": "NORDBERG 4524C(B)",
       "own_url": "https://centr-to.ru/good-662-balansirovochnyy-stanok-nordberg-4524c",
-      "primary_url": "https://nordberg-shop.ru/shop/4524c-nordberg-balansirovochnyj-stanok/?mode=list",
-      "reserve_url": "https://www.rustehnika.ru/catalog/oborudovanie-dlya-shinomontazha/balansirovochnye-stanki-dlya-shinomontazha/legkovye-balansirovochnye-stanki/4524c_55072/",
+      "primary_url": "https://www.autoservice2.ru/catalog/7/tovar/2617/",
+      "reserve_url": "https://nordberg-shop.ru/shop/4524c-nordberg-balansirovochnyj-stanok/?mode=list",
+      "additional_sources": [
+        {
+          "url": "https://www.rustehnika.ru/catalog/oborudovanie-dlya-shinomontazha/balansirovochnye-stanki-dlya-shinomontazha/legkovye-balansirovochnye-stanki/4524c_55072/",
+          "match_status": "review",
+          "trust_class": "C",
+          "reason": "Точная карточка защищена проверкой человека и не используется в ежедневном автоматическом сборе",
+          "automated_collection_verified": false
+        }
+      ],
       "match_status": "точное совпадение",
       "review_scope": "Совпадение подтверждено по 4524C(B), напряжению 220 В, диапазону 10–24 и шести программам",
-      "note": "Найдено 220 В, 10–24. Проверить 6 программ, (B), вал и комплект; официальная РРЦ отдельно от продажи.",
-      "current_price_verified": false,
-      "automated_collection_verified": false,
-      "review_date": "2026-10-30"
+      "note": "АВТОСЕРВИС2 подтверждает 4524C(B), 220 В, 10–24, ручной ввод и шесть программ и прошёл штатный live-сбор. NORDBERG-SHOP и защищённая РусТехника оставлены review-источниками.",
+      "current_price_verified": true,
+      "automated_collection_verified": true,
+      "review_date": "2026-11-02"
     },
     {
       "id": 17,
@@ -284,13 +356,14 @@
       "label": "NORDBERG 4641 380",
       "own_url": "https://centr-to.ru/good-7462-stanok-shinomontazhnyy-avtomat-nordberg-4641_380v",
       "primary_url": "https://www.master-instrument.ru/catalog/shinomontazhnye-stanki/nordberg-stanok-shinomontazhnyy-4641-380v-avtomat-2kh-skorostnoy/",
-      "reserve_url": "https://chistopol.autoservice2.ru/catalog/10/tovar/11621/",
+      "reserve_url": "https://www.autoservice2.ru/catalog/10/tovar/11621/",
+      "verified_exact_urls": ["https://www.autoservice2.ru/catalog/10/tovar/11621/"],
       "match_status": "точное совпадение",
       "review_scope": "Совпадение подтверждено по модели 4641, напряжению 380 В, автомату и двум скоростям; 4641N остаётся отдельной моделью",
       "note": "380 В, автомат, две скорости найдены. Сверить внутренний 14–26/внешний 12–23, третью руку и комплектацию; региональную цену не переносить на Москву.",
-      "current_price_verified": false,
-      "automated_collection_verified": false,
-      "review_date": "2026-10-30"
+      "current_price_verified": true,
+      "automated_collection_verified": true,
+      "review_date": "2026-11-02"
     },
     {
       "id": 20,
@@ -326,11 +399,20 @@
       "label": "ROSSVIK VT-63 220 синий",
       "own_url": "https://centr-to.ru/good-18527-stanok-balansirovochnyy-rossvik-vt-63-220v-lcd-lazer-el-lineyka-uz-ral5005-siniy",
       "primary_url": "https://vniissok.autoservice2.ru/catalog/7/tovar/37073/",
-      "reserve_url": "https://topmaster-shop.ru/catalog/legkovoj-shinomontazh/balansirovochnye-stanki/3e5ca69406-84294.html",
-      "verified_exact_urls": ["https://topmaster-shop.ru/catalog/legkovoj-shinomontazh/balansirovochnye-stanki/3e5ca69406-84294.html"],
+      "reserve_url": "https://atsgroup.su/catalog/product.php?id=12913",
+      "verified_exact_urls": ["https://atsgroup.su/catalog/product.php?id=12913"],
+      "additional_sources": [
+        {
+          "url": "https://topmaster-shop.ru/catalog/legkovoj-shinomontazh/balansirovochnye-stanki/3e5ca69406-84294.html",
+          "match_status": "review",
+          "trust_class": "B",
+          "reason": "Точная карточка сохранена в аудите, но два последовательных полных запуска завершила browser timeout",
+          "automated_collection_verified": false
+        }
+      ],
       "match_status": "точное совпадение",
       "review_scope": "Совпадение подтверждено по точному артикулу VT-63.5005, 220 В, LCD, лазеру, УЗ-линейке, RAL5005, диапазону 10–24, колесу 1000 мм/65 кг и валу 40 мм",
-      "note": "Основным открыт AutoService2, резервом Топ Мастер. Оба источника 02.11.2026 независимо вернули 149 000 RUB через штатный сборщик. Недоступный rossvik.moscow, точный ATS Group, ожидаемый Rossvik SPB и другие исследованные варианты сохранены в SOURCE_EXPANSION_AUDIT.md. Старую VT-63 без лазера и УЗ исключить.",
+      "note": "Основным остаётся АВТОСЕРВИС2, стабильным резервом выбран АТС с точным VT-63_5005, 220 В, LCD, лазером, УЗ, RAL5005 и открытой ценой. Топ Мастер переведён в review после двух browser timeout. Старую VT-63 без лазера и УЗ исключить.",
       "current_price_verified": true,
       "automated_collection_verified": true,
       "review_date": "2026-11-02"
@@ -342,6 +424,7 @@
       "own_url": "https://centr-to.ru/good-15155-t300-shinomontazhnyy-poluavtomat-380v",
       "primary_url": "https://si-tools.ru/catalog/shinomontazhnie_stanki/t300_shinomontazhnyy_poluavtomat_380v/",
       "reserve_url": "https://www.autoservice2.ru/catalog/10/tovar/40748/",
+      "verified_exact_urls": ["https://www.autoservice2.ru/catalog/10/tovar/40748/"],
       "match_status": "точное совпадение",
       "review_scope": "Сопоставлены опубликованные основные технические характеристики; автоматическая цена принимается только при точном артикуле T300 380V",
       "note": "Совпали модель T300/380, полуавтомат, 380 В, зажимы 10–21/12–24, колесо 1140 мм, ширина 355 мм. В официальной таблице есть ошибочная единица «дюймов» и 41″ для 1140 мм; использовать согласованные мм, перед сбором закрепить паспорт. Контролируемый автоматический сбор 2026-11-01 подтвердил цену 95 000 RUB и наличие на centr-to.ru и si-tools.ru.",
@@ -410,11 +493,20 @@
       "model": "Окрасочно-сушильная камера NORDBERG STANDART",
       "label": "NORDBERG STANDART",
       "own_url": "https://centr-to.ru/good-180-okrasochno-sushilnaya-kamera-nordberg-standart",
-      "primary_url": "https://nordberg-shop.ru/shop/standart-nordberg-pokrasochnaya-kamera/",
-      "reserve_url": "https://www.rustehnika.ru/catalog/okrasochnoe-oborudovanie/pokrasochnye-i-okrasochnye-kamery/okrasochno-sushilnaya-kamera-nordberg-standart/",
+      "primary_url": "https://mactak-m.ru/catalog/pokrasochnoe-oborudovanie/pokrasochnye-kamery-osk/standart/",
+      "reserve_url": "https://nordberg-shop.ru/shop/standart-nordberg-pokrasochnaya-kamera/",
+      "additional_sources": [
+        {
+          "url": "https://www.rustehnika.ru/catalog/okrasochnoe-oborudovanie/pokrasochnye-i-okrasochnye-kamery/okrasochno-sushilnaya-kamera-nordberg-standart/",
+          "match_status": "review",
+          "trust_class": "C",
+          "reason": "Карточка защищена от автоматического сбора и указывает внутреннюю высоту 2,7 м вместо 2,65 м",
+          "automated_collection_verified": false
+        }
+      ],
       "match_status": "точное совпадение",
       "review_scope": "Точная карточка продавца подтверждает STANDART, Riello F40 G20, внутренние габариты 6,9×3,9×2,65 м и основание 300 мм",
-      "note": "NORDBERG-SHOP заменил недоступную страницу nordberg.ru 02.11.2026. Совпадают STANDART, внутренние габариты 6,9×3,9×2,65 м, основание 300 мм, стены 50 мм, вентиляция 7,5/7,5 кВт и Riello F40 G20. РусТехника сохранена только кандидатом из-за высоты 2,7 м; STANDART1 не эквивалент.",
+      "note": "МАСТАК подтверждает STANDART, внутренние габариты 6,9×3,9×2,65 м, основание 300 мм, стены 50 мм, вентиляцию 7,5/7,5 кВт, 25 000 м³/ч и Riello F40 G20. NORDBERG-SHOP оставлен review после двух browser timeout. РусТехника остаётся кандидатом из-за 2,7 м; STANDART1 не эквивалент.",
       "current_price_verified": true,
       "automated_collection_verified": true,
       "review_date": "2026-11-02"

@@ -124,5 +124,83 @@
     "expected_name": "Окрасочно-сушильная камера NORDBERG STANDART",
     "expected_price": "2127500",
     "html": "<html><head><title>STANDART Nordberg покрасочная камера</title></head><body><h1>STANDART Nordberg покрасочная камера</h1><div>Внутренние габариты 6,9 x 3,9 x 2,65 м, высота основания 300 мм, толщина стен 50 мм</div><div>Горелка Riello F40 серия G20, электромотор притока 7,5 кВт и вытяжки 7,5 кВт, производительность 25000 м3/час</div><div>2 127 500 RUB В корзину</div><h2>Опции и аксессуары</h2><div>12 000 RUB В корзину</div></body></html>"
+  },
+  {
+    "source": "source:autoservice2.ru",
+    "expected_name": "Балансировочный станок NORDBERG 45TRKE, 220 В",
+    "expected_price": "181000",
+    "html": "<html><head><title>NORDBERG 45TRKE 220В</title></head><body><h1>NORDBERG 45TRKE Станок балансировочный для грузовых машин, 220 В</h1><div>Максимальная масса колеса 150 кг</div><div>Ваша цена: 181 000 руб.</div><h2>Оригинальные запчасти для</h2><div>12 000 руб.</div></body></html>"
+  },
+  {
+    "source": "source:autoservice2.ru",
+    "expected_name": "Грузовой шиномонтажный станок NORDBERG 46TRK(B)",
+    "expected_price": "460000",
+    "html": "<html><head><title>NORDBERG 46TRK(B)</title></head><body><h1>NORDBERG 46TRK(B) Станок шиномонтажный односкоростной</h1><div>380 В, минимальный диаметр диска, дюйм 14 максимальный диаметр диска, дюйм 26, максимальный вес колеса 1000 кг</div><div>Ваша цена: 460 000 руб.</div><h2>Оригинальные запчасти для</h2></body></html>"
+  },
+  {
+    "source": "source:autoservice2.ru",
+    "expected_name": "Грузовой шиномонтажный станок NORDBERG 46TRKE(B)",
+    "expected_price": "413000",
+    "html": "<html><head><title>NORDBERG 46TRKE(B)</title></head><body><h1>NORDBERG 46TRKE(B) Станок шиномонтажный односкоростной</h1><div>380 В, минимальный диаметр диска, дюйм 14 максимальный диаметр диска, дюйм 26, максимальный вес колеса 1000 кг</div><div>Ваша цена: 413 000 руб.</div><h2>Оригинальные запчасти для</h2></body></html>"
+  },
+  {
+    "source": "source:autoservice2.ru",
+    "expected_name": "Шиномонтажный станок NORDBERG 46TRKE56(B), 14–56″",
+    "expected_price": "724000",
+    "html": "<html><head><title>NORDBERG 46TRKE56(B)</title></head><body><h1>NORDBERG 46TRKE56(B) Станок шиномонтажный для грузовых машин</h1><div>Двухскоростной, 380 В</div><div>Минимальный диаметр диска, дюйм 14 Максимальный диаметр диска, дюйм 56</div><div>Ваша цена: 724 000 руб.</div><h2>Оригинальные запчасти для</h2></body></html>"
+  },
+  {
+    "source": "source:autoservice2.ru",
+    "expected_name": "Балансировочный станок NORDBERG 4523A с автовводом",
+    "expected_price": "174700",
+    "html": "<html><head><title>NORDBERG 4523A</title></head><body><h1>NORDBERG 4523A Станок балансировочный автомат с дисплеем</h1><div>220 В, масса колеса 65 кг, диаметр вала 40 мм</div><div>Мин. диаметр диска, дюйм 10 Макс. диаметр диска, дюйм 24</div><div>Измерение дистанции автомат, измерение диаметра автомат, измерение ширины диска автомат</div><div>Ваша цена: 174 700 руб.</div><h2>Оригинальные запчасти для</h2></body></html>"
+  },
+  {
+    "source": "source:autoservice2.ru",
+    "expected_name": "Балансировочный станок NORDBERG 4523N1(B), лазер",
+    "expected_price": "107600",
+    "html": "<html><head><title>NORDBERG 4523N1(B)</title></head><body><h1>NORDBERG 4523N1(B) Станок балансировочный с лазером и автостопом</h1><div>220 В, лазер, автоматический ввод двух параметров</div><div>Мин. диаметр диска, дюйм 10 Макс. диаметр диска, дюйм 24</div><div>Ваша цена: 107 600 руб.</div><h2>Оригинальные запчасти для</h2></body></html>"
+  },
+  {
+    "source": "source:autoservice2.ru",
+    "expected_name": "Балансировочный станок 4524C(B): 6 программ",
+    "expected_price": "68900",
+    "html": "<html><head><title>NORDBERG 4524C(B)</title></head><body><h1>NORDBERG 4524C(B) Станок балансировочный с ручным вводом параметров</h1><div>220 В, шесть программ балансировки</div><div>Мин. диаметр диска, дюйм 10 Макс. диаметр диска, дюйм 24</div><div>Ваша цена: 68 900 руб.</div><h2>Оригинальные запчасти для</h2></body></html>"
+  },
+  {
+    "source": "source:autoservice2.ru",
+    "expected_name": "Шиномонтажный автомат NORDBERG 4641, 380 В",
+    "expected_price": "169800",
+    "html": "<html><head><title>NORDBERG 4641_380</title></head><body><h1>NORDBERG 4641_380 Станок шиномонтажный автомат</h1><div>Двухскоростной, 380 В, внутренний зажим 14-26, внешний 12-23</div><div>Ваша цена: 169 800 руб.</div><h2>Оригинальные запчасти для</h2></body></html>"
+  },
+  {
+    "source": "source:autoservice2.ru",
+    "expected_name": "Шиномонтажный станок Станкоимпорт T300, 380 В",
+    "expected_price": "95000",
+    "html": "<html><head><title>СТАНКОИМПОРТ T300 380В</title></head><body><h1>СТАНКОИМПОРТ T300 Шиномонтажный полуавтомат 380 В</h1><div>Внешний зажим 10-21, внутренний 12-24, диаметр колеса 1140 мм, ширина 355 мм</div><div>Ваша цена: 95 000 руб.</div><h2>Оригинальные запчасти для</h2></body></html>"
+  },
+  {
+    "source": "source:autoservice2.ru",
+    "expected_name": "Станок балансировочный ROSSVIK VT-64, 220В, RAL5005 СИНИЙ",
+    "expected_price": "84700",
+    "html": "<html><head><title>ROSSVIK VT-64 (синий)</title></head><body><h1>ROSSVIK VT-64 (синий) Станок балансировочный</h1><div>Артикул VT-64_5005, станок балансировочный 220В, RAL5005 СИНИЙ</div><div>Ваша цена: 84 700 руб.</div><h2>Оригинальные запчасти для</h2></body></html>"
+  },
+  {
+    "source": "source:atsgroup.su",
+    "expected_name": "Балансировочный станок ROSSVIK VT-63 с автовводом",
+    "expected_price": "132500",
+    "html": "<html><head><title>ROSSVIK VT-63.5005</title></head><body><h1>Станок балансировочный ROSSVIK VT-63.5005</h1><div>220 В, LCD, LASER, УЗ датчик, RAL5005</div><div>132 500 ₽ В наличии Купить</div><h2>Связанные разделы каталога</h2></body></html>"
+  },
+  {
+    "source": "source:mactak-m.ru",
+    "expected_name": "Окрасочно-сушильная камера NORDBERG STANDART",
+    "expected_price": "2127500",
+    "html": "<html><head><title>Окрасочно-сушильная камера NORDBERG STANDART</title></head><body><h1>Окрасочно-сушильная камера NORDBERG STANDART</h1><div>Внутренние габариты 6,9 x 3,9 x 2,65 м, высота основания 300 мм, толщина стен 50 мм</div><div>Горелка Riello F40 серия G20, электромотор притока 7,5 кВт и вытяжки 7,5 кВт, производительность 25000 м3/час</div><div>2 127 500 руб. В корзину</div></body></html>"
+  },
+  {
+    "source": "source:vseinstrumenti.ru",
+    "expected_name": "Балансировочный станок NORDBERG 4523C, 220 В",
+    "expected_price": "84955",
+    "html": "<html><head><title>СТАНОК БАЛАНСИРОВОЧНЫЙ NORDBERG 4523C</title></head><body><h1>СТАНОК БАЛАНСИРОВОЧНЫЙ NORDBERG 4523C</h1><div>Ручной ввод, 220 В, диаметр обода 10-24, ширина 1.5-20, вес колеса 65 кг, диаметр вала 40 мм</div><div>84 955 ₽ -10% для бизнеса</div><h2>Аналоги</h2><div>105 969 ₽</div></body></html>"
   }
 ]

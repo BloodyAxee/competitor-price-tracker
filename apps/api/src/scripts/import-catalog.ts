@@ -14,6 +14,13 @@ interface ResearchModel {
   primary_url: string | null;
   reserve_url: string | null;
   verified_exact_urls?: string[];
+  additional_sources?: Array<{
+    url: string;
+    match_status: "exact" | "review" | "rejected";
+    trust_class: "A" | "B" | "C";
+    reason: string;
+    automated_collection_verified: boolean;
+  }>;
   match_status: string;
   review_scope: string;
   note: string;
@@ -78,6 +85,11 @@ const sourceProfiles: Record<string, SourceProfile> = {
     sourceType: "official_dealer",
     officialStatus: "verified_dealer",
   },
+  "mactak-m.ru": {
+    displayName: "МАСТАК",
+    sourceType: "retailer",
+    officialStatus: "unknown",
+  },
   "avto-master.ru": {
     displayName: "Автомастер",
     sourceType: "official_dealer",
@@ -85,6 +97,11 @@ const sourceProfiles: Record<string, SourceProfile> = {
   },
   "topmaster-shop.ru": {
     displayName: "Топ Мастер",
+    sourceType: "retailer",
+    officialStatus: "unknown",
+  },
+  "atsgroup.su": {
+    displayName: "АТС",
     sourceType: "retailer",
     officialStatus: "unknown",
   },
@@ -107,6 +124,11 @@ const sourceProfiles: Record<string, SourceProfile> = {
     displayName: "Всё для СТО",
     sourceType: "retailer",
     officialStatus: "unknown",
+  },
+  "vseinstrumenti.ru": {
+    displayName: "ВсеИнструменты.ру",
+    sourceType: "official_dealer",
+    officialStatus: "verified_dealer",
   },
 };
 
@@ -340,7 +362,12 @@ try {
       const product = productByName.get(research.model);
       if (!product) throw new Error(`Research product not found in catalog: ${research.model}`);
 
-      const candidates: Array<{ kind: "own" | "primary" | "reserve"; url: string }> = [];
+      const candidates: Array<{
+        kind: "own" | "primary" | "reserve" | "additional";
+        url: string;
+        matchStatus?: "exact" | "review" | "rejected";
+        reason?: string;
+      }> = [];
       if (research.own_url) {
         candidates.push({ kind: "own", url: research.own_url });
       }
@@ -349,6 +376,14 @@ try {
       }
       if (research.reserve_url) {
         candidates.push({ kind: "reserve", url: research.reserve_url });
+      }
+      for (const additional of research.additional_sources ?? []) {
+        candidates.push({
+          kind: "additional",
+          url: additional.url,
+          matchStatus: additional.match_status,
+          reason: `${additional.reason} Класс доверия ${additional.trust_class}.`,
+        });
       }
 
       const activeCandidateUrls = candidates.map((candidate) => candidate.url);
@@ -411,16 +446,20 @@ try {
         });
         const isExactOffer =
           candidate.kind === "own" ||
-          (research.match_status === "точное совпадение" &&
-            (candidate.kind === "primary" ||
-              research.verified_exact_urls?.includes(candidate.url) === true));
+          (candidate.kind === "additional"
+            ? candidate.matchStatus === "exact"
+            : research.match_status === "точное совпадение" &&
+              (candidate.kind === "primary" ||
+                research.verified_exact_urls?.includes(candidate.url) === true));
         const sourceLabel =
           candidate.kind === "own"
             ? "Собственная карточка"
             : candidate.kind === "primary"
               ? "Основной источник"
-              : "Резервный источник";
-        const matchReason = `${sourceLabel}. ${research.review_scope}. ${research.note}`;
+              : candidate.kind === "reserve"
+                ? "Резервный источник"
+                : "Дополнительный независимый источник";
+        const matchReason = `${sourceLabel}. ${candidate.reason ?? research.review_scope}. ${research.note}`;
         const sellerArticle =
           candidate.kind === "own" ? candidate.url.match(/\/good-(\d+)-/)?.[1] : undefined;
         await tx.offer.upsert({
@@ -437,13 +476,21 @@ try {
             sourceId: source.id,
             competitorUrl: candidate.url,
             sellerArticle,
-            matchStatus: isExactOffer ? "exact" : "review",
+            matchStatus: isExactOffer
+              ? "exact"
+              : candidate.matchStatus === "rejected"
+                ? "rejected"
+                : "review",
             matchReason,
           },
           update: {
             sellerId: seller.id,
             sellerArticle,
-            matchStatus: isExactOffer ? "exact" : "review",
+            matchStatus: isExactOffer
+              ? "exact"
+              : candidate.matchStatus === "rejected"
+                ? "rejected"
+                : "review",
             matchReason,
             isActive: true,
             updatedAt: new Date(),

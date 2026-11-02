@@ -38,6 +38,10 @@ VISIBLE_SOURCE_PROFILES = {
         price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*a\s*(?:В корзину|О товаре)",),
         stop_markers=("Запчасти", "Опции и запчасти"),
     ),
+    "source:mactak-m.ru": VisibleProductProfile(
+        price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*руб\.?\s*(?:В корзину|Купить)",),
+        stop_markers=("Похожие товары", "С этим товаром покупают"),
+    ),
     "source:nordberg-shop.ru": VisibleProductProfile(
         price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*(?:RUB|₽)\s*(?:В корзину|Минимальный заказ)",),
         stop_markers=("Опции и аксессуары", "С этим товаром покупают"),
@@ -64,6 +68,10 @@ VISIBLE_SOURCE_PROFILES = {
         price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*₽",),
         stop_markers=("С этим товаром покупают", "Похожие товары"),
     ),
+    "source:atsgroup.su": VisibleProductProfile(
+        price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*₽\s*(?:В наличии|Купить)",),
+        stop_markers=("Связанные разделы каталога", "Похожие товары"),
+    ),
     "source:technosouz.ru": VisibleProductProfile(
         price_patterns=(rf"Цена\s+с\s+НДС\s*(?P<price>{_PRICE_NUMBER})\s*руб\.?\s*Купить",),
         stop_markers=("Похожие товары", "С этим товаром покупают"),
@@ -80,7 +88,20 @@ VISIBLE_SOURCE_PROFILES = {
         price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*руб\.?\s*за\s*1\s*В наличии",),
         stop_markers=("С этим товаром покупают", "Похожие товары", "Рекомендуем"),
     ),
+    "source:vseinstrumenti.ru": VisibleProductProfile(
+        price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*₽\s*-\s*\d+%\s*для бизнеса",),
+        stop_markers=("Аналоги", "ОПИСАНИЕ И ХАРАКТЕРИСТИКИ"),
+    ),
 }
+
+
+def _diameter_range_pattern(minimum: int, maximum: int) -> str:
+    """Match both compact ranges and separate min/max rows in specification tables."""
+    return (
+        rf"(?:{minimum}\s*-\s*{maximum}|"
+        rf"(?:мин(?:имальн\w*)?\.?\s*диаметр\w*\s+диск\w*[^0-9]{{0,40}}{minimum}"
+        rf".{{0,160}}макс(?:имальн\w*)?\.?\s*диаметр\w*\s+диск\w*[^0-9]{{0,40}}{maximum}))"
+    )
 
 
 _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
@@ -90,7 +111,7 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
     ("4641",): ((r"\b380\s*[вv]\b", "380 V"), (r"(?:двухскорост|2\s*скорост)", "two speeds")),
     ("46trkb",): (
         (r"\b380\s*[вv]\b", "380 V"),
-        (r"14\s*[\"'′″]{0,2}\s*-\s*26", "14-26"),
+        (_diameter_range_pattern(14, 26), "14-26"),
         (
             r"(?:односкорост|одна скорость|количество скоростей[^0-9]{0,20}1|"
             r"максимальн\w* (?:вес|масса) колес\w*[^0-9]{0,20}1000\s*кг|1000\s*кг)",
@@ -99,7 +120,7 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
     ),
     ("46trkeb",): (
         (r"\b380\s*[вv]\b", "380 V"),
-        (r"14\s*[\"'′″]{0,2}\s*-\s*26", "14-26"),
+        (_diameter_range_pattern(14, 26), "14-26"),
         (
             r"(?:односкорост|одна скорость|количество скоростей[^0-9]{0,20}1|"
             r"максимальн\w* (?:вес|масса) колес\w*[^0-9]{0,20}1000\s*кг|1000\s*кг)",
@@ -116,12 +137,12 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
     ),
     ("4523",): (
         (r"\b220\s*[вv]\b", "220 V"),
-        (r"10\s*-\s*24", "10-24"),
+        (_diameter_range_pattern(10, 24), "10-24"),
         (r"(?:автоматическ\w* ввод\w* (?:двух|2х|2-х) параметр|автоввод)", "automatic input"),
     ),
     ("4523n1b",): (
         (r"\b220\s*[вv]\b", "220 V"),
-        (r"10\s*-\s*24", "10-24"),
+        (_diameter_range_pattern(10, 24), "10-24"),
         (r"(?:лазер|laser)", "laser"),
         (r"(?:автоматическ\w* ввод\w* (?:двух|2х|2-х) параметр|автоввод)", "automatic input"),
     ),
@@ -133,7 +154,7 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
     ("p7204", "mc4"): ((r"(?:четыре|4)[^\n]{0,40}камер", "four cameras"),),
     ("46trke56b",): (
         (r"\b380\s*[вv]\b", "380 V"),
-        (r"14\s*-\s*56", "14-56"),
+        (_diameter_range_pattern(14, 56), "14-56"),
         (r"(?:двухскорост|2\s*скорост)", "two speeds"),
     ),
     ("4641n",): ((r"\b380\s*[вv]\b", "380 V"), (r"(?:двухскорост|2\s*скорост)", "two speeds")),
@@ -159,8 +180,29 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
         (r"10\s*-\s*24", "10-24"),
         (r"1[,.]5\s*[\"″]?\s*-\s*20", "1.5-20"),
         (r"(?:вал|диаметр вала)[^\n]{0,30}40\s*мм", "40 mm shaft"),
-        (r"65\s*кг", "65 kg wheel mass"),
+        (r"(?:65\s*кг|кг[^0-9]{0,10}65)", "65 kg wheel mass"),
         (r"ручн\w*\s+ввод", "manual input"),
+    ),
+    ("4523a",): (
+        (r"\b220\s*[вv]\b", "220 V"),
+        (_diameter_range_pattern(10, 24), "10-24"),
+        (r"(?:автоматическ\w* ввод\w* (?:тр[её]х|3)[^\n]{0,30}параметр|измерение ширины диска[^\n]{0,30}автомат)", "three-parameter automatic input"),
+        (r"(?:65\s*кг|кг[^0-9]{0,10}65)", "65 kg wheel mass"),
+        (r"(?:вал|диаметр вала)[^\n]{0,30}40\s*мм", "40 mm shaft"),
+    ),
+    ("4524cb",): (
+        (r"\b220\s*[вv]\b", "220 V"),
+        (_diameter_range_pattern(10, 24), "10-24"),
+        (r"ручн\w*\s+ввод", "manual input"),
+        (r"(?:6|шесть)[^\n]{0,30}программ", "six programs"),
+    ),
+    ("t300", "380"): (
+        (r"\b380\s*[вv]\b", "380 V"),
+        (r"полуавтомат", "semi-automatic type"),
+        (r"10\s*-\s*21", "10-21 outside clamping"),
+        (r"12\s*-\s*24", "12-24 inside clamping"),
+        (r"1140\s*мм", "1140 mm wheel diameter"),
+        (r"355\s*мм", "355 mm wheel width"),
     ),
     ("v524",): (
         (r"v\s*-?\s*524[.\s-]*380[.\s-]*5005", "V524.380.5005 article"),
@@ -190,7 +232,11 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
         (r"потреблен[^\n]{0,40}15\s*квт", "15 kW electric power"),
     ),
     ("standart",): (
-        (r"6[,.]9\s*x\s*3[,.]9\s*x\s*2[,.]65", "6.9 x 3.9 x 2.65 m internal size"),
+        (
+            r"(?:6[,.]9\s*[xх×]\s*3[,.]9\s*[xх×]\s*2[,.]65|"
+            r"6900\s*[xх×]\s*3900\s*[xх×]\s*2650)",
+            "6.9 x 3.9 x 2.65 m internal size",
+        ),
         (r"высота основан[^\n]{0,30}(?:300\s*мм|мм[^0-9]{0,10}300)", "300 mm base"),
         (r"riello\s*f40[^\n]{0,30}g20", "Riello F40 G20 burner"),
         (r"толщина[^\n]{0,30}50\s*мм", "50 mm walls"),
@@ -203,6 +249,13 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
 _FORBIDDEN_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
     ("46trkb",): ((r"(?:двухскорост|2\s*скорост)", "two-speed conflicting version"),),
     ("46trkeb",): ((r"(?:двухскорост|2\s*скорост)", "two-speed conflicting version"),),
+}
+
+
+_VISIBLE_IDENTITY_ALIASES: dict[tuple[str, ...], tuple[str, ...]] = {
+    # The live card heading is shortened to "ROSSVIK VT-64 (синий)". Voltage and
+    # RAL are still mandatory below and are checked by _EXACT_QUALIFIER_RULES.
+    ("vt64", "220в", "ral5005"): ("vt64",),
 }
 
 
@@ -337,6 +390,14 @@ def parse_visible_product(
             break
         except PermanentCollectionError as error:
             identity_errors.append(error)
+            expected_tokens = identity_tokens(expected_name)
+            required_alias_tokens = _VISIBLE_IDENTITY_ALIASES.get(expected_tokens)
+            candidate_tokens = identity_tokens(candidate)
+            if required_alias_tokens and all(
+                token in candidate_tokens for token in required_alias_tokens
+            ):
+                name = candidate
+                break
     if name is None:
         raise identity_errors[0]
 
