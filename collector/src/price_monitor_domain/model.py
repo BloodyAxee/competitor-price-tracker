@@ -64,6 +64,7 @@ class PriceInput:
     vat_included: bool | None = None
     stock_status: str | None = None
     region: str | None = None
+    region_code: str | None = None
     delivery_included: bool | None = None
     installation_included: bool | None = None
 
@@ -80,6 +81,7 @@ class PriceDecision:
     vat_included: bool | None
     stock_status: str | None
     region: str | None
+    region_code: str | None
     delivery_included: bool | None
     installation_included: bool | None
 

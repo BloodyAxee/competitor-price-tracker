@@ -191,6 +191,7 @@ model PriceObservation {
   vatRate              Decimal?          @map("vat_rate") @db.Decimal(5, 2)
   stockStatus          String?           @map("stock_status")
   region               String?
+  regionCode           String?           @map("region_code")
   deliveryIncluded     Boolean?          @map("delivery_included")
   installationIncluded Boolean?          @map("installation_included")
   observedAt           DateTime?         @map("observed_at") @db.Timestamptz(6)
@@ -206,12 +207,27 @@ model PriceObservation {
   job                  CollectionJob     @relation(fields: [jobId], references: [id], onDelete: Restrict)
   attempt              CollectionAttempt @relation(fields: [attemptId], references: [id], onDelete: Restrict)
   offer                Offer             @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  priceRegion          PriceRegion?      @relation(fields: [regionCode], references: [code], onDelete: Restrict)
 
   @@index([offerId, receivedAt, id])
   @@index([observedAt])
   @@index([jobId])
   @@index([reliability, receivedAt])
+  @@index([regionCode, offerId, receivedAt, id])
   @@map("price_observations")
+}
+
+model PriceRegion {
+  code            String             @id
+  name            String             @unique
+  city            String
+  federalDistrict String             @map("federal_district")
+  sortOrder       Int                @unique @map("sort_order") @db.SmallInt
+  isActive        Boolean            @default(true) @map("is_active")
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  observations    PriceObservation[]
+
+  @@map("price_regions")
 }
 
 model AppSetting {

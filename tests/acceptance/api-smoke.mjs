@@ -83,7 +83,32 @@ assert.equal(products.items.filter((product) => product.bundleParts.length === 2
 const comparisons = await json("/api/comparisons?scope=required&limit=500");
 assert.equal(comparisons.total, 29);
 assert.equal(comparisons.items.length, 29);
+assert.equal(comparisons.region, null);
 assertNoZeroPrices(comparisons);
+for (const item of comparisons.items) {
+  for (const offer of [item.own, ...item.competitors].filter(Boolean)) {
+    for (const price of [offer.price, offer.comparisonPrice, offer.referencePrice].filter(Boolean)) {
+      assert.equal(price.regionCode, null, "unscoped comparison must not mix a regional price");
+    }
+  }
+}
+
+const regions = await json("/api/regions");
+assert.deepEqual(
+  regions.items.map((region) => region.code),
+  ["moscow", "saint-petersburg", "kazan", "yekaterinburg", "krasnodar", "novosibirsk", "khabarovsk"],
+);
+assert.ok(regions.unscopedObservationCount > 0);
+
+const moscowComparisons = await json("/api/comparisons?scope=required&limit=500&region=moscow");
+assert.equal(moscowComparisons.region, "moscow");
+for (const item of moscowComparisons.items) {
+  for (const offer of [item.own, ...item.competitors].filter(Boolean)) {
+    for (const price of [offer.price, offer.comparisonPrice, offer.referencePrice].filter(Boolean)) {
+      assert.equal(price.regionCode, "moscow", "regional comparison must stay inside its region");
+    }
+  }
+}
 
 const csvResponse = await response("/api/export.csv");
 assert.match(csvResponse.headers.get("content-type") ?? "", /^text\/csv/);

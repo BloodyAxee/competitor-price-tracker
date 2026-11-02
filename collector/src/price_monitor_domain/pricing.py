@@ -46,6 +46,7 @@ def _decision(
         vat_included=candidate.vat_included,
         stock_status=candidate.stock_status,
         region=candidate.region,
+        region_code=candidate.region_code,
         delivery_included=candidate.delivery_included,
         installation_included=candidate.installation_included,
     )

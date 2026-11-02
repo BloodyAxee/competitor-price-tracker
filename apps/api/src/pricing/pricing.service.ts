@@ -11,12 +11,14 @@ import { evaluateBundle } from "./bundle-price.ts";
 import { evaluateManualPrice, type ManualPriceType } from "./manual-price.ts";
 import { calculatePriceMovement } from "./price-movement.ts";
 import { calculateMarketReferenceDifference } from "./market-reference.ts";
+import { regionName, type RegionCode } from "./regions.ts";
 
 export interface ComparisonQuery {
   limit: number;
   offset: number;
   q?: string;
   scope?: "required" | "additional" | "component";
+  region?: RegionCode;
 }
 
 export interface HistoryQuery {
@@ -36,7 +38,7 @@ export interface ManualObservationInput {
   packageHomogeneous: boolean;
   vatIncluded?: boolean;
   stockStatus?: string;
-  region?: string;
+  regionCode?: RegionCode;
   deliveryIncluded?: boolean;
   installationIncluded?: boolean;
   observedAt?: string;
@@ -54,6 +56,7 @@ function priceDto(observation: {
   vatIncluded: boolean | null;
   stockStatus: string | null;
   region: string | null;
+  regionCode: string | null;
   deliveryIncluded: boolean | null;
   installationIncluded: boolean | null;
   observedAt: Date | null;
@@ -73,6 +76,7 @@ function priceDto(observation: {
     vatIncluded: observation.vatIncluded,
     stockStatus: observation.stockStatus,
     region: observation.region,
+    regionCode: observation.regionCode,
     deliveryIncluded: observation.deliveryIncluded,
     installationIncluded: observation.installationIncluded,
     observedAt: observation.observedAt,
@@ -117,6 +121,28 @@ function exportComment(parts: Array<string | null | undefined>) {
 @Injectable()
 export class PricingService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async regions() {
+    const [regions, unscopedObservationCount] = await Promise.all([
+      this.prisma.priceRegion.findMany({
+        where: { isActive: true },
+        orderBy: { sortOrder: "asc" },
+        include: { _count: { select: { observations: true } } },
+      }),
+      this.prisma.priceObservation.count({ where: { regionCode: null } }),
+    ]);
+    return {
+      items: regions.map((region) => ({
+        code: region.code,
+        name: region.name,
+        city: region.city,
+        federalDistrict: region.federalDistrict,
+        sortOrder: region.sortOrder,
+        observationCount: region._count.observations,
+      })),
+      unscopedObservationCount,
+    };
+  }
 
   async exportCsv() {
     const products = await this.prisma.product.findMany({
@@ -337,7 +363,10 @@ export class PricingService {
                         },
                       },
                       observations: {
-                        where: { reliability: "valid" },
+                        where: {
+                          reliability: "valid",
+                          regionCode: query.region ?? null,
+                        },
                         orderBy: [{ receivedAt: "desc" }, { id: "desc" }],
                         take: 1,
                         select: {
@@ -362,11 +391,18 @@ export class PricingService {
     const [recentObservations, latestValidObservations] = directOfferIds.length
       ? await Promise.all([
           this.prisma.priceObservation.findMany({
-            where: { offerId: { in: directOfferIds } },
+            where: {
+              offerId: { in: directOfferIds },
+              regionCode: query.region ?? null,
+            },
             orderBy: [{ offerId: "asc" }, { receivedAt: "desc" }, { id: "desc" }],
           }),
           this.prisma.priceObservation.findMany({
-            where: { offerId: { in: directOfferIds }, reliability: "valid" },
+            where: {
+              offerId: { in: directOfferIds },
+              reliability: "valid",
+              regionCode: query.region ?? null,
+            },
             orderBy: [{ offerId: "asc" }, { receivedAt: "desc" }, { id: "desc" }],
             distinct: ["offerId"],
           }),
@@ -475,7 +511,8 @@ export class PricingService {
           priceType: candidate.priceType,
           vatIncluded: null,
           stockStatus: null,
-          region: null,
+          region: query.region ? regionName(query.region) : null,
+          regionCode: query.region ?? null,
           deliveryIncluded: null,
           installationIncluded: null,
           observedAt: candidate.receivedAt,
@@ -494,7 +531,8 @@ export class PricingService {
           priceType: candidate.priceType,
           vatIncluded: null,
           stockStatus: null,
-          region: null,
+          region: query.region ? regionName(query.region) : null,
+          regionCode: query.region ?? null,
           deliveryIncluded: null,
           installationIncluded: null,
           observedAt: candidate.receivedAt,
@@ -530,7 +568,13 @@ export class PricingService {
             : null,
       };
     });
-    return { total, items, limit: query.limit, offset: query.offset };
+    return {
+      total,
+      items,
+      limit: query.limit,
+      offset: query.offset,
+      region: query.region ?? null,
+    };
   }
 
   async history(productId: string, query: HistoryQuery) {
@@ -632,7 +676,8 @@ export class PricingService {
           priceType: input.priceType,
           vatIncluded: input.vatIncluded,
           stockStatus: input.stockStatus,
-          region: input.region,
+          region: input.regionCode ? regionName(input.regionCode) : null,
+          regionCode: input.regionCode,
           deliveryIncluded: input.deliveryIncluded,
           installationIncluded: input.installationIncluded,
           observedAt,
@@ -642,6 +687,7 @@ export class PricingService {
           evidenceText: input.evidenceText,
           evidenceJson: {
             submittedThrough: "api",
+            ...(input.regionCode ? { regionCode: input.regionCode } : {}),
             ...(input.comment ? { comment: input.comment } : {}),
           },
           collectorVersion: "api-manual/0.1.0",

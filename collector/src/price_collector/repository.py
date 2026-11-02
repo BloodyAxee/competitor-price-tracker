@@ -153,13 +153,13 @@ class PostgresCollectorRepository:
                 INSERT INTO price_observations (
                     job_id, attempt_id, offer_id, raw_price, normalized_price, currency,
                     source_quantity, normalized_quantity, unit, price_type, vat_included,
-                    stock_status, region, delivery_included, installation_included,
+                    stock_status, region, region_code, delivery_included, installation_included,
                     observed_at, method, reliability, exclusion_reason, evidence_text,
                     evidence_json, collector_version, source_payload_hash
                 ) VALUES (
                     %s::uuid, %s, %s::uuid, %s, %s, %s,
                     %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s,
                     %s::jsonb, %s, %s
                 )
@@ -178,6 +178,7 @@ class PostgresCollectorRepository:
                     price.vat_included,
                     price.stock_status,
                     price.region,
+                    price.region_code,
                     price.delivery_included,
                     price.installation_included,
                     observation.observed_at,

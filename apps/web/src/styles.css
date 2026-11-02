@@ -82,6 +82,20 @@ main { width: min(1460px, 92vw); margin: 0 auto; padding: 36px 0 70px; }
 .metrics strong { margin-top: auto; font-size: 31px; letter-spacing: -.04em; line-height: 1.1; }
 .metrics small { margin-top: 3px; }
 
+.region-panel { margin-bottom: 22px; padding: 20px 22px; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); box-shadow: var(--shadow); }
+.region-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.region-panel-heading h2 { margin: 4px 0 5px; font-size: 20px; }
+.region-panel-heading p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.region-panel-heading > strong { padding: 8px 11px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 11%, var(--surface)); color: var(--accent); font-size: 11px; white-space: nowrap; }
+.region-points { margin-top: 15px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.region-points button { min-height: 65px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--text); text-align: left; cursor: pointer; transition: border-color .15s ease, background .15s ease, transform .15s ease; }
+.region-points button:hover { border-color: var(--accent); transform: translateY(-1px); }
+.region-points button.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); box-shadow: inset 0 0 0 1px var(--accent); }
+.region-points strong, .region-points span { display: block; }
+.region-points strong { font-size: 12px; }
+.region-points span { margin-top: 5px; color: var(--muted); font-size: 10px; }
+.region-rule { margin: 13px 0 0; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; line-height: 1.5; }
+
 .catalog-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; }
 .panel-heading { padding: 22px 24px 16px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .panel-heading h2 { margin: 0 0 4px; font-size: 22px; }
@@ -230,6 +244,7 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .manual-section > summary small { color: var(--muted); font-size: 10px; font-weight: 500; }
 .manual-content { padding: 4px 16px 16px; }
 .manual-form { display: grid; gap: 12px; }
+.manual-form label > small { color: var(--muted); font-size: 10px; font-weight: 500; line-height: 1.4; }
 .manual-form textarea { min-height: 78px; resize: vertical; padding-top: 10px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .manual-form .primary-button { justify-self: start; }
@@ -270,6 +285,7 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 
 @media (max-width: 1080px) {
   .metrics { grid-template-columns: repeat(3, 1fr); }
+  .region-points { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .filters { grid-template-columns: 1fr 1fr; }
 }
 
@@ -289,6 +305,10 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
   .metrics { grid-template-columns: repeat(2, 1fr); }
   .metrics article { min-height: 105px; padding: 14px; }
   .metrics strong { font-size: 27px; }
+  .region-panel { padding: 17px 16px; }
+  .region-panel-heading { flex-direction: column; gap: 10px; }
+  .region-points { display: flex; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 4px; }
+  .region-points button { min-width: 150px; flex: 0 0 150px; scroll-snap-align: start; }
   .filters { grid-template-columns: 1fr; padding-inline: 16px; }
   .panel-heading { padding-inline: 16px; align-items: flex-start; flex-direction: column; }
   .panel-heading p { line-height: 1.45; }

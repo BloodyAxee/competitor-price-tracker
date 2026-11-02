@@ -10,6 +10,29 @@ export interface CatalogSummary {
 
 export type OfferMatchStatus = "exact" | "comparable" | "review" | "rejected";
 
+export type RegionCode =
+  | "moscow"
+  | "saint-petersburg"
+  | "kazan"
+  | "yekaterinburg"
+  | "krasnodar"
+  | "novosibirsk"
+  | "khabarovsk";
+
+export interface RegionPoint {
+  code: RegionCode;
+  name: string;
+  city: string;
+  federalDistrict: string;
+  sortOrder: number;
+  observationCount: number;
+}
+
+export interface RegionsResponse {
+  items: RegionPoint[];
+  unscopedObservationCount: number;
+}
+
 export interface ComparisonProfile {
   level: "close" | "market";
   trust_class: "A" | "B" | "C";
@@ -68,6 +91,7 @@ export interface PriceObservation {
   vatIncluded: boolean | null;
   stockStatus: string | null;
   region: string | null;
+  regionCode: RegionCode | null;
   deliveryIncluded: boolean | null;
   installationIncluded: boolean | null;
   observedAt: string | null;
@@ -124,6 +148,7 @@ export interface ComparisonResponse {
   items: ComparisonItem[];
   limit: number;
   offset: number;
+  region: RegionCode | null;
 }
 
 export interface HistoryItem extends PriceObservation {
@@ -195,6 +220,7 @@ export interface ManualObservationInput {
   rawPrice: string;
   priceType: "rrp" | "retail" | "sale" | "quote" | "unknown";
   stockStatus?: string;
+  regionCode?: RegionCode;
   evidenceText?: string;
   comment?: string;
 }

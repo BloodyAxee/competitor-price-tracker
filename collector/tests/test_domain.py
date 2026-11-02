@@ -64,6 +64,20 @@ class MatchingRulesTest(unittest.TestCase):
 
 
 class PriceRulesTest(unittest.TestCase):
+    def test_region_code_is_preserved_without_inference(self) -> None:
+        decision = evaluate_price(
+            PriceInput(
+                raw_price=Decimal("1000"),
+                price_type=PriceType.RETAIL,
+                region="Новосибирск",
+                region_code="novosibirsk",
+            ),
+            MatchStatus.EXACT,
+        )
+
+        self.assertEqual(decision.region, "Новосибирск")
+        self.assertEqual(decision.region_code, "novosibirsk")
+
     def test_russian_money_strings_are_parsed_without_float_rounding(self) -> None:
         self.assertEqual(parse_money("1 234 567 ₽"), Decimal("1234567"))
         self.assertEqual(parse_money("299\u202f990,50 руб."), Decimal("299990.50"))

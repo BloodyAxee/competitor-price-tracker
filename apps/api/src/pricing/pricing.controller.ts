@@ -11,12 +11,14 @@ import {
 } from "@nestjs/common";
 import { z } from "zod";
 import { PricingService } from "./pricing.service.ts";
+import { REGION_CODES } from "./regions.ts";
 
 const comparisonQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(100),
   offset: z.coerce.number().int().min(0).default(0),
   q: z.string().trim().min(1).max(200).optional(),
   scope: z.enum(["required", "additional", "component"]).optional(),
+  region: z.enum(REGION_CODES).optional(),
 });
 const historyQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(100),
@@ -56,12 +58,20 @@ const manualObservationSchema = z.object({
   packageHomogeneous: z.boolean().default(true),
   vatIncluded: z.boolean().optional(),
   stockStatus: z.string().trim().min(1).max(100).optional(),
-  region: z.string().trim().min(1).max(200).optional(),
+  regionCode: z.enum(REGION_CODES).optional(),
   deliveryIncluded: z.boolean().optional(),
   installationIncluded: z.boolean().optional(),
   observedAt: z.string().datetime({ offset: true }).optional(),
   evidenceText: z.string().trim().min(1).max(1000).optional(),
   comment: z.string().trim().min(1).max(1000).optional(),
+}).superRefine((value, context) => {
+  if (value.regionCode && !value.evidenceText) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["evidenceText"],
+      message: "Regional prices require evidence",
+    });
+  }
 });
 
 @Controller("api")
@@ -80,6 +90,11 @@ export class PricingController {
     const parsed = comparisonQuerySchema.safeParse(rawQuery);
     if (!parsed.success) throw new BadRequestException(parsed.error.flatten());
     return this.pricing.comparisons(parsed.data);
+  }
+
+  @Get("regions")
+  regions() {
+    return this.pricing.regions();
   }
 
   @Get("products/:productId/history")

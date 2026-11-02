@@ -17,6 +17,8 @@ import type {
   HistoryResponse,
   ManualObservationInput,
   Product,
+  RegionCode,
+  RegionsResponse,
 } from "./types";
 import {
   attentionCompetitor,
@@ -51,6 +53,11 @@ const initialSummary: CatalogSummary = {
   exactOffers: 0,
   comparableOffers: 0,
   reviewOffers: 0,
+};
+
+const initialRegions: RegionsResponse = {
+  items: [],
+  unscopedObservationCount: 0,
 };
 
 function scopeLabel(scope: Product["catalogScope"]) {
@@ -103,6 +110,8 @@ function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [comparisons, setComparisons] = useState<ComparisonItem[]>([]);
   const [schedule, setSchedule] = useState<CollectionSchedule | null>(null);
+  const [regions, setRegions] = useState<RegionsResponse>(initialRegions);
+  const [priceRegion, setPriceRegion] = useState<RegionCode | "">("");
   const [selected, setSelected] = useState<Product | null>(null);
   const [history, setHistory] = useState<HistoryResponse | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -133,15 +142,18 @@ function App() {
     [comparisons],
   );
 
-  const refresh = async (silent = false) => {
+  const refresh = async (silent = false, region: RegionCode | "" = priceRegion) => {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const [nextSummary, catalog, nextComparisons, nextSchedule] = await loadDashboard();
+      const [nextSummary, catalog, nextComparisons, nextSchedule, nextRegions] = await loadDashboard(
+        region || undefined,
+      );
       setSummary(nextSummary);
       setProducts(catalog.items);
       setComparisons(nextComparisons.items);
       setSchedule(nextSchedule);
+      setRegions(nextRegions);
     } catch {
       setError("Не удалось получить данные. Проверьте, что API и Docker запущены.");
     } finally {
@@ -150,7 +162,7 @@ function App() {
   };
 
   useEffect(() => {
-    void refresh();
+    void refresh(false, "");
   }, []);
 
   useEffect(() => {
@@ -173,6 +185,7 @@ function App() {
       rawPrice: "",
       priceType: "retail",
       stockStatus: "",
+      regionCode: priceRegion || undefined,
       evidenceText: "",
       comment: "",
     });
@@ -189,7 +202,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [selected]);
+  }, [selected, priceRegion]);
 
   useEffect(() => {
     if (!job || !["pending", "running"].includes(job.status)) return;
@@ -323,8 +336,15 @@ function App() {
     }
   };
 
+  const handleRegionChange = (region: RegionCode | "") => {
+    setPriceRegion(region);
+    setSelected(null);
+    void refresh(false, region);
+  };
+
   const jobActive = job ? ["pending", "running"].includes(job.status) : false;
   const failedAttempts = job?.attempts.filter((attempt) => attempt.status === "failed") ?? [];
+  const activeRegion = regions.items.find((region) => region.code === priceRegion) ?? null;
 
   const competitorDetail = (competitor: CompetitorComparison, index: number) => {
     const tone = offerStatusTone(competitor);
@@ -355,6 +375,7 @@ function App() {
             <small>
               {collectionMethodLabel(currentPrice)}
               {currentPrice ? ` · ${formatDate(currentPrice.observedAt ?? currentPrice.receivedAt)}` : ""}
+              {currentPrice?.region ? ` · ${currentPrice.region}` : ""}
             </small>
           </div>
           {tone === "valid" && competitor.difference.amount != null && (
@@ -401,7 +422,7 @@ function App() {
     const otherCompetitors = item ? otherCompetitorsSummary(item) : null;
     const ownPrice = item?.own?.price;
     const modelCell = <div className="model-data"><strong>{product.name}</strong><span>{product.article ?? "Артикул не указан"}</span></div>;
-    const ownCell = <div className="price-data own-price" data-label="Наша цена"><strong>{formatPrice(ownPrice?.normalizedPrice)}</strong>{item?.own?.url ? <a href={item.own.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>ЦТО</a> : <span>Карточка ЦТО не указана</span>}<small>{collectionMethodLabel(ownPrice)}{ownPrice ? ` · ${formatDate(ownPrice.observedAt ?? ownPrice.receivedAt)}` : ""}</small></div>;
+    const ownCell = <div className="price-data own-price" data-label="Наша цена"><strong>{formatPrice(ownPrice?.normalizedPrice)}</strong>{item?.own?.url ? <a href={item.own.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>ЦТО</a> : <span>Карточка ЦТО не указана</span>}<small>{collectionMethodLabel(ownPrice)}{ownPrice ? ` · ${formatDate(ownPrice.observedAt ?? ownPrice.receivedAt)}` : ""}{ownPrice?.region ? ` · ${ownPrice.region}` : ""}</small></div>;
     const confirmedCell = (
       <div className="price-data competitor-result" data-label="Подтверждённая цена">
         <strong>{formatPrice(confirmed?.comparisonPrice?.normalizedPrice)}</strong>
@@ -411,7 +432,7 @@ function App() {
         )}
         {confirmed?.difference.amount != null && Number(confirmed.difference.amount) !== 0 && <small className={`result-difference ${differenceTone(confirmed.difference.amount)}`}>{formatDifference(confirmed.difference.amount, confirmed.difference.percent)}</small>}
         {confirmed?.difference.amount != null && Number(confirmed.difference.amount) === 0 && <small>Цена совпадает с нашей</small>}
-        {confirmed && <small>{formatDate(confirmed.comparisonPrice?.observedAt ?? confirmed.comparisonPrice?.receivedAt)}</small>}
+        {confirmed && <small>{formatDate(confirmed.comparisonPrice?.observedAt ?? confirmed.comparisonPrice?.receivedAt)}{confirmed.comparisonPrice?.region ? ` · ${confirmed.comparisonPrice.region}` : ""}</small>}
       </div>
     );
     const marketReferenceCell = comparable ? (
@@ -463,7 +484,7 @@ function App() {
         </div>
         <div className="header-actions">
           <button className="secondary-button theme-button" onClick={() => setDark((value) => !value)}>{dark ? "Светлая тема" : "Тёмная тема"}</button>
-          <button className="secondary-button" title="Все активные точные и требующие проверки источники" onClick={() => void handleStartCollection("full")} disabled={startingMode !== null || jobActive}>
+          <button className="secondary-button" title="Все активные точные, сопоставимые и требующие проверки источники" onClick={() => void handleStartCollection("full")} disabled={startingMode !== null || jobActive}>
             {startingMode === "full" ? "Запускаем полный" : "Полный сбор"}
           </button>
           <button className="primary-button" title="Основные рабочие источники" onClick={() => void handleStartCollection("fast")} disabled={startingMode !== null || jobActive}>
@@ -497,9 +518,33 @@ function App() {
           <article><span>Наша цена ниже</span><strong>{dashboardStats.better}</strong><small>по валидным данным</small></article>
         </section>
 
+        <section className="region-panel" aria-label="Основные региональные точки">
+          <div className="region-panel-heading">
+            <div>
+              <span className="eyebrow">Региональный срез</span>
+              <h2>Основные точки России</h2>
+              <p>Таблица показывает только наблюдения выбранной точки. Цены разных регионов не смешиваются.</p>
+            </div>
+            <strong>{activeRegion?.name ?? "Без региональной привязки"}</strong>
+          </div>
+          <div className="region-points">
+            <button type="button" className={!priceRegion ? "active" : ""} aria-pressed={!priceRegion} onClick={() => handleRegionChange("")}>
+              <strong>Без привязки</strong>
+              <span>{regions.unscopedObservationCount} наблюдений</span>
+            </button>
+            {regions.items.map((region) => (
+              <button type="button" className={priceRegion === region.code ? "active" : ""} aria-pressed={priceRegion === region.code} onClick={() => handleRegionChange(region.code)} key={region.code}>
+                <strong>{region.name}</strong>
+                <span>{region.observationCount > 0 ? `${region.observationCount} наблюдений` : "Данных пока нет"}</span>
+              </button>
+            ))}
+          </div>
+          <p className="region-rule">Неизвестный регион остаётся неизвестным. Домен продавца или город в адресе сайта сам по себе не считается доказательством региональной цены.</p>
+        </section>
+
         <section className="catalog-panel">
           <div className="panel-heading">
-            <div><h2>Мониторинг по моделям</h2><p>Показано {visibleProducts.length} позиций · точный итог отделён от сопоставимых рыночных ориентиров</p></div>
+            <div><h2>Мониторинг по моделям</h2><p>Показано {visibleProducts.length} позиций · {activeRegion ? `регион ${activeRegion.name}` : "цены без подтверждённой региональной привязки"} · точный итог отделён от рыночных ориентиров</p></div>
             <div className="panel-actions">
               <a className="export-button" href={priceExportUrl}>Скачать CSV</a>
               <button className="refresh-button" onClick={() => void refresh()} disabled={loading}>{loading ? "Обновление" : "Обновить"}</button>
@@ -558,7 +603,7 @@ function App() {
               <div className="section-heading"><div><h3>История цен</h3><p>{historyExpanded ? "Показаны все сохранённые наблюдения" : "Три последних наблюдения"}</p></div><span className="count-badge">{history?.total ?? 0}</span></div>
               {historyLoading && <div className="inline-loading"><div className="spinner"></div>Загружаем историю</div>}
               {!historyLoading && history?.items.length === 0 && <p className="muted">Истории пока нет. Запустите сбор или внесите цену вручную.</p>}
-              <div className="history-list">{visibleHistory?.map((entry) => <article className={`history-item ${entry.reliability}`} key={entry.id}><div><strong>{formatPrice(entry.normalizedPrice ?? entry.rawPrice)}</strong><a href={entry.offer.competitorUrl} target="_blank" rel="noreferrer">{entry.offer.source.domain === "centr-to.ru" ? "Наша цена · ЦТО" : `Конкурент · ${entry.offer.seller.displayName}`}</a><span>{formatDate(entry.receivedAt)}</span></div><div className="history-status"><span className={`method-badge ${entry.method}`}>{entry.method === "manual" ? "Вручную" : "Автоматически"}</span><small>{observationStatus(entry)}</small></div>{entry.exclusionReason && <p>Причина исключения · {entry.exclusionReason}</p>}</article>)}</div>
+              <div className="history-list">{visibleHistory?.map((entry) => <article className={`history-item ${entry.reliability}`} key={entry.id}><div><strong>{formatPrice(entry.normalizedPrice ?? entry.rawPrice)}</strong><a href={entry.offer.competitorUrl} target="_blank" rel="noreferrer">{entry.offer.source.domain === "centr-to.ru" ? "Наша цена · ЦТО" : `Конкурент · ${entry.offer.seller.displayName}`}</a><span>{formatDate(entry.receivedAt)} · {entry.region ?? "регион не указан"}</span></div><div className="history-status"><span className={`method-badge ${entry.method}`}>{entry.method === "manual" ? "Вручную" : "Автоматически"}</span><small>{observationStatus(entry)}</small></div>{entry.exclusionReason && <p>Причина исключения · {entry.exclusionReason}</p>}</article>)}</div>
               {(history?.items.length ?? 0) > 3 && <button type="button" className="history-toggle" onClick={() => setHistoryExpanded((value) => !value)}>{historyExpanded ? "Свернуть до трёх последних" : `Показать всю историю · ${history?.total ?? history?.items.length}`}</button>}
             </section>
 
@@ -569,8 +614,9 @@ function App() {
                 <form className="manual-form" onSubmit={(event) => void handleManualSubmit(event)}>
                   <label><span>Источник</span><select value={manual.offerId} onChange={(event) => setManual((value) => ({ ...value, offerId: event.target.value }))}>{selected.offers.map((offer) => <option value={offer.id} key={offer.id}>{offer.seller.displayName} · {matchLabel(offer.matchStatus)}</option>)}</select></label>
                   <div className="form-row"><label><span>Цена в рублях</span><input required inputMode="decimal" value={manual.rawPrice} onChange={(event) => setManual((value) => ({ ...value, rawPrice: event.target.value }))} placeholder="95000" /></label><label><span>Тип цены</span><select value={manual.priceType} onChange={(event) => setManual((value) => ({ ...value, priceType: event.target.value as ManualObservationInput["priceType"] }))}><option value="retail">Розничная</option><option value="rrp">Рекомендованная</option><option value="sale">Со скидкой</option><option value="quote">По запросу</option><option value="unknown">Не указано</option></select></label></div>
+                  <label><span>Регион цены</span><select value={manual.regionCode ?? ""} onChange={(event) => setManual((value) => ({ ...value, regionCode: (event.target.value || undefined) as RegionCode | undefined }))}><option value="">Не подтверждён</option>{regions.items.map((region) => <option value={region.code} key={region.code}>{region.name} · {region.federalDistrict}</option>)}</select><small>Выбирайте регион только если он явно указан в карточке, предложении или подтверждении продавца.</small></label>
                   <label><span>Наличие</span><input value={manual.stockStatus} onChange={(event) => setManual((value) => ({ ...value, stockStatus: event.target.value }))} placeholder="В наличии или под заказ" /></label>
-                  <label><span>Подтверждение цены</span><textarea value={manual.evidenceText} onChange={(event) => setManual((value) => ({ ...value, evidenceText: event.target.value }))} placeholder="Где и когда увидели цену" /></label>
+                  <label><span>Подтверждение цены</span><textarea required={Boolean(manual.regionCode)} value={manual.evidenceText} onChange={(event) => setManual((value) => ({ ...value, evidenceText: event.target.value }))} placeholder={manual.regionCode ? "Обязательно укажите, где подтверждён регион и цена" : "Где и когда увидели цену"} /></label>
                   {manualMessage && <div className={`form-message ${manualMessage.tone}`}>{manualMessage.text}</div>}
                   <button className="primary-button" type="submit" disabled={manualSaving}>{manualSaving ? "Сохраняем" : "Сохранить цену"}</button>
                 </form>

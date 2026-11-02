@@ -14,6 +14,7 @@ BEGIN
         'collection_jobs',
         'collection_attempts',
         'price_observations',
+        'price_regions',
         'app_settings',
         'current_valid_prices',
         'comparison_candidates'
@@ -58,6 +59,20 @@ BEGIN
           AND data_type = 'jsonb'
     ) THEN
         RAISE EXCEPTION 'Missing comparable offer profile';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'price_observations'
+          AND column_name = 'region_code'
+    ) THEN
+        RAISE EXCEPTION 'Missing canonical price region code';
+    END IF;
+
+    IF (SELECT count(*) FROM price_regions WHERE is_active) <> 7 THEN
+        RAISE EXCEPTION 'Expected seven active regional price points';
     END IF;
 
     IF NOT EXISTS (
@@ -291,6 +306,45 @@ FROM price_observations po
 JOIN collection_jobs j ON j.id = po.job_id
 WHERE j.job_key = 'test-job';
 
+INSERT INTO price_observations (
+    job_id,
+    attempt_id,
+    offer_id,
+    raw_price,
+    normalized_price,
+    source_quantity,
+    normalized_quantity,
+    unit,
+    price_type,
+    region,
+    region_code,
+    observed_at,
+    method,
+    reliability,
+    evidence_text
+)
+SELECT
+    po.job_id,
+    po.attempt_id,
+    po.offer_id,
+    97500,
+    97500,
+    po.source_quantity,
+    po.normalized_quantity,
+    po.unit,
+    po.price_type,
+    'Москва',
+    'moscow',
+    po.observed_at + interval '2 minutes',
+    po.method,
+    po.reliability,
+    'regional fixture'
+FROM price_observations po
+JOIN collection_jobs j ON j.id = po.job_id
+WHERE j.job_key = 'test-job'
+ORDER BY po.id
+LIMIT 1;
+
 DO $$
 DECLARE
     observation_count integer;
@@ -299,9 +353,9 @@ BEGIN
     FROM price_observations po
     JOIN collection_jobs j ON j.id = po.job_id
     WHERE j.job_key = 'test-job';
-    IF observation_count <> 2 THEN
+    IF observation_count <> 3 THEN
         RAISE EXCEPTION
-            'Expected two append-only observations, got %',
+            'Expected three append-only observations, got %',
             observation_count;
     END IF;
 END;
@@ -350,9 +404,9 @@ BEGIN
     FROM comparison_candidates
     WHERE product_id = (SELECT id FROM products WHERE external_key = 'test-t300-380');
 
-    IF current_count <> 1 OR comparison_count <> 1 THEN
+    IF current_count <> 2 OR comparison_count <> 2 THEN
         RAISE EXCEPTION
-            'Expected one current valid price and comparison candidate, got % and %',
+            'Expected separate unscoped and Moscow prices, got % and %',
             current_count,
             comparison_count;
     END IF;

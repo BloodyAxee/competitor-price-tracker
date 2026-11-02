@@ -8,6 +8,8 @@ import type {
   ComparisonResponse,
   HistoryResponse,
   ManualObservationInput,
+  RegionCode,
+  RegionsResponse,
 } from "./types";
 
 const apiBase = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api";
@@ -26,12 +28,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function loadDashboard() {
+export function loadDashboard(region?: RegionCode) {
+  const comparisonRegion = region ? `&region=${encodeURIComponent(region)}` : "";
   return Promise.all([
     request<CatalogSummary>("/catalog/summary"),
     request<CatalogResponse>("/products?limit=500"),
-    request<ComparisonResponse>("/comparisons?limit=500"),
+    request<ComparisonResponse>(`/comparisons?limit=500${comparisonRegion}`),
     request<CollectionSchedule>("/collection-schedule"),
+    request<RegionsResponse>("/regions"),
   ]);
 }
 
