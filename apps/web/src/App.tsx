@@ -8,7 +8,6 @@ import {
   startCollection,
 } from "./api";
 import type {
-  CatalogSummary,
   CollectionJobDetails,
   CollectionMode,
   CollectionSchedule,
@@ -46,16 +45,6 @@ type ScopeFilter = "all" | "required" | "additional" | "component";
 type DataFilter = "all" | "compared" | "partial" | "missing";
 type MatchFilter = "all" | "exact" | "comparable" | "review" | "without-offers";
 type SortKey = "priority" | "name" | "own-price" | "competitor-price" | "difference" | "freshness";
-
-const initialSummary: CatalogSummary = {
-  total: 0,
-  required: 0,
-  additional: 0,
-  ownUrls: 0,
-  exactOffers: 0,
-  comparableOffers: 0,
-  reviewOffers: 0,
-};
 
 const initialRegions: RegionsResponse = {
   items: [],
@@ -108,7 +97,6 @@ function latestComparisonDate(item: ComparisonItem | undefined) {
 }
 
 function App() {
-  const [summary, setSummary] = useState(initialSummary);
   const [products, setProducts] = useState<Product[]>([]);
   const [comparisons, setComparisons] = useState<ComparisonItem[]>([]);
   const [schedule, setSchedule] = useState<CollectionSchedule | null>(null);
@@ -148,10 +136,9 @@ function App() {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const [nextSummary, catalog, nextComparisons, nextSchedule, nextRegions] = await loadDashboard(
+      const [, catalog, nextComparisons, nextSchedule, nextRegions] = await loadDashboard(
         region || undefined,
       );
-      setSummary(nextSummary);
       setProducts(catalog.items);
       setComparisons(nextComparisons.items);
       setSchedule(nextSchedule);
@@ -282,17 +269,6 @@ function App() {
         return left.priority - right.priority || left.name.localeCompare(right.name, "ru");
       });
   }, [products, query, scope, dataFilter, matchFilter, sort, comparisonMap]);
-
-  const dashboardStats = useMemo(() => {
-    const required = products.filter((product) => product.catalogScope === "required");
-    const compared = required.filter((product) => comparisonState(comparisonMap.get(product.id)) === "compared").length;
-    const withAnyPrice = required.filter((product) => comparisonState(comparisonMap.get(product.id)) !== "missing").length;
-    const better = required.filter((product) => {
-      const competitor = bestCompetitor(comparisonMap.get(product.id) ?? ({ competitors: [] } as unknown as ComparisonItem));
-      return Number(competitor?.difference.amount ?? 0) > 0;
-    }).length;
-    return { compared, withAnyPrice, better };
-  }, [products, comparisonMap]);
 
   const handleStartCollection = async (mode: CollectionMode) => {
     setStartingMode(mode);
@@ -540,13 +516,6 @@ function App() {
             )}
           </section>
         )}
-
-        <section className="metrics" aria-label="Сводка мониторинга">
-          <article><span>Обязательные модели</span><strong>{summary.required}</strong><small>из задания</small></article>
-          <article><span>Есть хотя бы одна цена</span><strong>{dashboardStats.withAnyPrice}</strong><small>из {summary.required}</small></article>
-          <article><span>Можно сравнить</span><strong>{dashboardStats.compared}</strong><small>есть обе цены</small></article>
-          <article><span>Наша цена ниже</span><strong>{dashboardStats.better}</strong><small>по валидным данным</small></article>
-        </section>
 
         <section className="region-panel" aria-label="Основные региональные точки">
           <div className="region-panel-heading">

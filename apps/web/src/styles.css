@@ -87,12 +87,6 @@ main { width: min(1460px, 92vw); margin: 0 auto; padding: 36px 0 70px; }
 .job-problem > div { padding: 0 11px 9px; }
 .job-problem > div p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
 
-.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
-.metrics article { min-height: 118px; padding: 17px; background: var(--surface); border: 1px solid var(--line); border-radius: 15px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
-.metrics span, .metrics small { color: var(--muted); font-size: 11px; }
-.metrics strong { margin-top: auto; font-size: 31px; letter-spacing: -.04em; line-height: 1.1; }
-.metrics small { margin-top: 3px; }
-
 .region-panel { margin-bottom: 22px; padding: 20px 22px; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); box-shadow: var(--shadow); }
 .region-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .region-panel-heading h2 { margin: 4px 0 5px; font-size: 20px; }
@@ -301,7 +295,6 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .comparison-note { margin: 12px 0 0; padding: 11px 13px; border-radius: 9px; background: color-mix(in srgb, var(--accent) 8%, var(--surface)); color: var(--muted); font-size: 11px; line-height: 1.5; }
 
 @media (max-width: 1080px) {
-  .metrics { grid-template-columns: repeat(3, 1fr); }
   .region-points { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .filters { grid-template-columns: 1fr 1fr; }
 }
@@ -319,9 +312,6 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
   .schedule-card { min-width: 0; }
   .job-banner { align-items: flex-start; flex-wrap: wrap; gap: 10px; }
   .job-time { text-align: left; }
-  .metrics { grid-template-columns: repeat(2, 1fr); }
-  .metrics article { min-height: 105px; padding: 14px; }
-  .metrics strong { font-size: 27px; }
   .region-panel { padding: 17px 16px; }
   .region-panel-heading { flex-direction: column; gap: 10px; }
   .region-points { display: flex; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 4px; }
@@ -350,7 +340,6 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 }
 
 @media (max-width: 420px) {
-  .metrics { grid-template-columns: 1fr 1fr; gap: 8px; }
   .product-card { grid-template-columns: 1fr; }
   .product-card .model-data { grid-column: auto; }
   .price-snapshot { grid-template-columns: 1fr; }
