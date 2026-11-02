@@ -74,6 +74,18 @@ class StubPlaywrightFetcher(PlaywrightFetcher):
         return BrowserDocument(url, "<html>rendered</html>", 200)
 
 
+class SequencePlaywrightFetcher(PlaywrightFetcher):
+    def __init__(self, documents: list[BrowserDocument], **kwargs: object) -> None:
+        super().__init__("CompetitorPriceTracker/0.1", **kwargs)
+        self.documents = documents
+        self.calls = 0
+
+    def _fetch_document(self, url: str, *, timeout: float) -> BrowserDocument:
+        document = self.documents[min(self.calls, len(self.documents) - 1)]
+        self.calls += 1
+        return document
+
+
 class FakeRepository:
     def __init__(self, job: CollectionJob) -> None:
         self.job = job
@@ -692,9 +704,44 @@ class FetcherTest(unittest.TestCase):
             release_sleep.set()
             slow_future.result(timeout=2)
 
-    def test_playwright_never_bypasses_human_verification(self) -> None:
+    def test_playwright_rejects_unresolved_human_verification(self) -> None:
         with self.assertRaises(ManualFallbackRequired):
             PlaywrightFetcher.assert_not_protected("<title>Verify you are human</title>")
+
+    def test_playwright_retries_allowlisted_verification_once(self) -> None:
+        url = "https://rustehnika.ru/product"
+        limiter = RecordingLimiter()
+        sleeps: list[float] = []
+        fetcher = SequencePlaywrightFetcher(
+            [
+                BrowserDocument(url, "<title>User verification...</title>", 200),
+                BrowserDocument(url, "<html>product</html>", 200),
+            ],
+            limiter=limiter,
+            verification_retry_hosts=("rustehnika.ru",),
+            verification_retry_seconds=2,
+            sleeper=sleeps.append,
+        )
+
+        document = fetcher.fetch(url, timeout=2, rate_limit_per_host=0.5)
+
+        self.assertEqual(document.html, "<html>product</html>")
+        self.assertEqual(fetcher.calls, 2)
+        self.assertEqual(sleeps, [2])
+        self.assertEqual(limiter.calls, [(url, 0.5), (url, 0.5)])
+
+    def test_playwright_does_not_retry_verification_on_other_hosts(self) -> None:
+        url = "https://example.com/product"
+        fetcher = SequencePlaywrightFetcher(
+            [BrowserDocument(url, "<title>User verification...</title>", 200)],
+            verification_retry_hosts=("rustehnika.ru",),
+            sleeper=lambda _: None,
+        )
+
+        with self.assertRaises(ManualFallbackRequired):
+            fetcher.fetch(url, timeout=2, rate_limit_per_host=1000)
+
+        self.assertEqual(fetcher.calls, 1)
 
     def test_playwright_uses_the_same_per_host_rate_limit_contract(self) -> None:
         limiter = RecordingLimiter()

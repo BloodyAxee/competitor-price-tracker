@@ -16,7 +16,9 @@ COPY pyproject.toml ./
 COPY src ./src
 RUN pip install --no-cache-dir --no-deps .
 
-RUN useradd --create-home --uid 10001 collector
+RUN useradd --create-home --uid 10001 collector \
+    && mkdir -p /app/browser-state \
+    && chown -R collector:collector /app/browser-state
 USER collector
 
 CMD ["price-collector"]

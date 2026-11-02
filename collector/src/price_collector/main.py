@@ -32,6 +32,18 @@ def main() -> None:
         user_agent,
         limiter=limiter,
         settle_ms=int(os.getenv("COLLECTOR_BROWSER_SETTLE_MS", "300")),
+        storage_state_path=os.getenv("COLLECTOR_BROWSER_STORAGE_STATE") or None,
+        verification_retry_hosts=tuple(
+            host.strip()
+            for host in os.getenv(
+                "COLLECTOR_BROWSER_VERIFICATION_RETRY_HOSTS",
+                "rustehnika.ru",
+            ).split(",")
+            if host.strip()
+        ),
+        verification_retry_seconds=float(
+            os.getenv("COLLECTOR_BROWSER_VERIFICATION_RETRY_SECONDS", "3")
+        ),
     )
     adapters = AdapterRegistry(
         (

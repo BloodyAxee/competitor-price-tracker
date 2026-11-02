@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar
 
 from ..browser import BrowserDocument, PlaywrightFetcher
-from ..errors import PermanentCollectionError, RetryableCollectionError
+from ..errors import ManualFallbackRequired, PermanentCollectionError, RetryableCollectionError
 from ..http import HttpResponse
 from ..models import SourceTask
 
@@ -67,15 +67,12 @@ def extract_product(
     *,
     browser_fetcher: BrowserPageFetcher | None = None,
 ) -> ProductExtraction[ProductT]:
-    try:
-        response = http_fetcher.fetch(
-            task.url,
-            timeout=task.timeout_seconds,
-            rate_limit_per_host=task.rate_limit_per_host,
-        )
-    except RetryableCollectionError as error:
-        if browser_fetcher is None or error.code != "network_error":
-            raise
+    def extract_in_browser() -> ProductExtraction[ProductT]:
+        if browser_fetcher is None:
+            raise ManualFallbackRequired(
+                "The page requires a human verification step",
+                code="human_verification_required",
+            )
         document = browser_fetcher.fetch(
             task.url,
             timeout=task.timeout_seconds,
@@ -84,7 +81,23 @@ def extract_product(
         PlaywrightFetcher.assert_not_protected(document.html)
         product, parser = _parse_document(document.html, parsers)
         return ProductExtraction(product, document.html, parser, "browser", document.url)
-    PlaywrightFetcher.assert_not_protected(response.text)
+
+    try:
+        response = http_fetcher.fetch(
+            task.url,
+            timeout=task.timeout_seconds,
+            rate_limit_per_host=task.rate_limit_per_host,
+        )
+    except ManualFallbackRequired:
+        return extract_in_browser()
+    except RetryableCollectionError as error:
+        if browser_fetcher is None or error.code != "network_error":
+            raise
+        return extract_in_browser()
+    try:
+        PlaywrightFetcher.assert_not_protected(response.text)
+    except ManualFallbackRequired:
+        return extract_in_browser()
     try:
         product, parser = _parse_document(response.text, parsers)
         return ProductExtraction(product, response.text, parser, "http", task.url)
@@ -92,11 +105,4 @@ def extract_product(
         if browser_fetcher is None:
             raise
 
-    document = browser_fetcher.fetch(
-        task.url,
-        timeout=task.timeout_seconds,
-        rate_limit_per_host=task.rate_limit_per_host,
-    )
-    PlaywrightFetcher.assert_not_protected(document.html)
-    product, parser = _parse_document(document.html, parsers)
-    return ProductExtraction(product, document.html, parser, "browser", document.url)
+    return extract_in_browser()

@@ -151,6 +151,20 @@ class StructuredProductAdapterTest(unittest.TestCase):
         with self.assertRaises(ManualFallbackRequired):
             adapter.collect(_task())
 
+    def test_browser_retries_after_http_verification_page(self) -> None:
+        browser = StaticBrowserFetcher(FIXTURE.read_text(encoding="utf-8"))
+        adapter = StructuredProductAdapter(
+            StaticFetcher("<html><title>User verification...</title></html>"),
+            "source:nordberg.ru",
+            browser_fetcher=browser,
+        )
+
+        observation = adapter.collect(_task())
+
+        self.assertEqual(observation.price.raw_price, Decimal("189000.00"))
+        self.assertEqual(observation.evidence["transport"], "browser")
+        self.assertEqual(browser.calls, 1)
+
     def test_browser_retries_extraction_after_http_document_is_incomplete(self) -> None:
         browser = StaticBrowserFetcher(FIXTURE.read_text(encoding="utf-8"))
         adapter = StructuredProductAdapter(

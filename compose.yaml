@@ -99,6 +99,11 @@ services:
       COLLECTOR_CIRCUIT_BREAKER_THRESHOLD: ${COLLECTOR_CIRCUIT_BREAKER_THRESHOLD:-2}
       COLLECTOR_USER_AGENT: ${COLLECTOR_USER_AGENT:-CompetitorPriceTracker/0.1}
       COLLECTOR_BROWSER_SETTLE_MS: ${COLLECTOR_BROWSER_SETTLE_MS:-300}
+      COLLECTOR_BROWSER_STORAGE_STATE: ${COLLECTOR_BROWSER_STORAGE_STATE:-/app/browser-state/storage.json}
+      COLLECTOR_BROWSER_VERIFICATION_RETRY_HOSTS: ${COLLECTOR_BROWSER_VERIFICATION_RETRY_HOSTS:-rustehnika.ru}
+      COLLECTOR_BROWSER_VERIFICATION_RETRY_SECONDS: ${COLLECTOR_BROWSER_VERIFICATION_RETRY_SECONDS:-3}
+    volumes:
+      - collector_browser_state:/app/browser-state
     depends_on:
       catalog-import:
         condition: service_completed_successfully
@@ -167,3 +172,4 @@ services:
 
 volumes:
   postgres_data:
+  collector_browser_state:
