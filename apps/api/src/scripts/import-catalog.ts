@@ -7,6 +7,7 @@ import {
   parseRequiredCatalog,
 } from "../import/catalog-files.ts";
 import { createPrismaClient } from "../database/client.ts";
+import type { Prisma } from "../generated/prisma/client.ts";
 
 interface ResearchModel {
   model: string;
@@ -21,9 +22,30 @@ interface ResearchModel {
     reason: string;
     automated_collection_verified: boolean;
   }>;
+  comparable_sources?: ComparableSource[];
   match_status: string;
   review_scope: string;
   note: string;
+}
+
+interface ComparableSpec {
+  label: string;
+  own_value: string;
+  candidate_value: string;
+  result: "match" | "difference" | "unknown";
+  criticality: "critical" | "material" | "context";
+}
+
+interface ComparableProfile {
+  level: "close" | "market";
+  trust_class: "A" | "B" | "C";
+  verified_on: string;
+  summary: string;
+  specs: ComparableSpec[];
+}
+
+interface ComparableSource extends ComparableProfile {
+  url: string;
 }
 
 interface ResearchRegistry {
@@ -370,19 +392,55 @@ try {
       if (!product) throw new Error(`Research product not found in catalog: ${research.model}`);
 
       const candidates: Array<{
-        kind: "own" | "primary" | "reserve" | "additional";
+        kind: "own" | "primary" | "reserve" | "additional" | "comparable";
         url: string;
-        matchStatus?: "exact" | "review" | "rejected";
+        matchStatus?: "exact" | "comparable" | "review" | "rejected";
         reason?: string;
+        comparisonProfile?: ComparableProfile;
       }> = [];
+      const comparableByUrl = new Map(
+        (research.comparable_sources ?? []).map(({ url, ...profile }) => [url, profile]),
+      );
       if (research.own_url) {
         candidates.push({ kind: "own", url: research.own_url });
       }
       if (research.primary_url) {
-        candidates.push({ kind: "primary", url: research.primary_url });
+        const comparisonProfile = comparableByUrl.get(research.primary_url);
+        candidates.push(
+          comparisonProfile
+            ? {
+                kind: "comparable",
+                url: research.primary_url,
+                matchStatus: "comparable",
+                reason: comparisonProfile.summary,
+                comparisonProfile,
+              }
+            : { kind: "primary", url: research.primary_url },
+        );
       }
       if (research.reserve_url) {
-        candidates.push({ kind: "reserve", url: research.reserve_url });
+        const comparisonProfile = comparableByUrl.get(research.reserve_url);
+        candidates.push(
+          comparisonProfile
+            ? {
+                kind: "comparable",
+                url: research.reserve_url,
+                matchStatus: "comparable",
+                reason: comparisonProfile.summary,
+                comparisonProfile,
+              }
+            : { kind: "reserve", url: research.reserve_url },
+        );
+      }
+      for (const [url, comparisonProfile] of comparableByUrl) {
+        if (candidates.some((candidate) => candidate.url === url)) continue;
+        candidates.push({
+          kind: "comparable",
+          url,
+          matchStatus: "comparable",
+          reason: comparisonProfile.summary,
+          comparisonProfile,
+        });
       }
       for (const additional of research.additional_sources ?? []) {
         candidates.push({
@@ -465,7 +523,9 @@ try {
               ? "Основной источник"
               : candidate.kind === "reserve"
                 ? "Резервный источник"
-                : "Дополнительный независимый источник";
+                : candidate.kind === "comparable"
+                  ? "Сопоставимый рыночный ориентир"
+                  : "Дополнительный независимый источник";
         const matchReason = `${sourceLabel}. ${candidate.reason ?? research.review_scope}. ${research.note}`;
         const sellerArticle =
           candidate.kind === "own" ? candidate.url.match(/\/good-(\d+)-/)?.[1] : undefined;
@@ -474,6 +534,16 @@ try {
           (candidate.kind === "primary" &&
             isExactOffer &&
             domain !== "topmaster-shop.ru");
+        const matchStatus = isExactOffer
+          ? "exact"
+          : candidate.matchStatus === "comparable"
+            ? "comparable"
+            : candidate.matchStatus === "rejected"
+              ? "rejected"
+              : "review";
+        const comparisonProfile = candidate.comparisonProfile as
+          | Prisma.InputJsonValue
+          | undefined;
         await tx.offer.upsert({
           where: {
             productId_sourceId_competitorUrl: {
@@ -488,23 +558,17 @@ try {
             sourceId: source.id,
             competitorUrl: candidate.url,
             sellerArticle,
-            matchStatus: isExactOffer
-              ? "exact"
-              : candidate.matchStatus === "rejected"
-                ? "rejected"
-                : "review",
+            matchStatus,
             matchReason,
+            comparisonProfile,
             collectInFastMode,
           },
           update: {
             sellerId: seller.id,
             sellerArticle,
-            matchStatus: isExactOffer
-              ? "exact"
-              : candidate.matchStatus === "rejected"
-                ? "rejected"
-                : "review",
+            matchStatus,
             matchReason,
+            comparisonProfile,
             collectInFastMode,
             isActive: true,
             updatedAt: new Date(),

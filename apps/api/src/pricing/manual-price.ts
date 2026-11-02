@@ -31,7 +31,7 @@ export function evaluateManualPrice(
   if (candidate.priceType === "quote") {
     return decision("unreliable", "quote_only");
   }
-  if (matchStatus !== "exact") {
+  if (matchStatus !== "exact" && matchStatus !== "comparable") {
     return decision("unreliable", "non_exact_product");
   }
   if (candidate.isFromPrice) {
@@ -53,5 +53,8 @@ export function evaluateManualPrice(
   }
 
   const normalizedPrice = (Number(candidate.rawPrice) / quantity).toFixed(2);
+  if (matchStatus === "comparable") {
+    return decision("review", "comparable_product", normalizedPrice);
+  }
   return decision("valid", null, normalizedPrice);
 }

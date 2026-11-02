@@ -51,11 +51,31 @@ BEGIN
 
     IF NOT EXISTS (
         SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'offers'
+          AND column_name = 'comparison_profile'
+          AND data_type = 'jsonb'
+    ) THEN
+        RAISE EXCEPTION 'Missing comparable offer profile';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
         FROM pg_constraint
         WHERE conrelid = 'collection_jobs'::regclass
           AND conname = 'collection_jobs_collection_mode_check'
     ) THEN
         RAISE EXCEPTION 'Missing collection mode constraint';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'offers'::regclass
+          AND conname = 'offers_comparable_profile_check'
+    ) THEN
+        RAISE EXCEPTION 'Missing comparable profile constraint';
     END IF;
 END;
 $$;

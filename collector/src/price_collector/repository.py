@@ -37,7 +37,7 @@ JOIN products p ON p.id = o.product_id
 WHERE o.is_active
   AND s.is_active
   AND s.collection_method <> 'manual'
-  AND o.match_status IN ('exact', 'review')
+  AND o.match_status IN ('exact', 'comparable', 'review')
   AND (%s = 'full' OR o.collect_in_fast_mode)
 ORDER BY s.external_key, o.id
 """

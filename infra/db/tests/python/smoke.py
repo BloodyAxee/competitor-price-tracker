@@ -50,7 +50,7 @@ if sys.version_info[:2] != (3, 13):
     raise RuntimeError(f"Expected Python 3.13, received {sys.version.split()[0]}")
 if not server_version.startswith("18."):
     raise RuntimeError(f"Expected PostgreSQL 18, received {server_version}")
-if migration_count < 4 or table_count < 11 or setting_count < 3:
+if migration_count < 5 or table_count < 11 or setting_count < 3:
     raise RuntimeError("The expected initial database schema is not available")
 
 print(

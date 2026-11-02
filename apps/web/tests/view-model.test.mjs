@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   bestCompetitor,
+  bestComparable,
   attentionCompetitor,
   collectionMethodLabel,
   collectionModeLabel,
@@ -73,6 +74,28 @@ test("the result price ignores a cheaper unverified offer", () => {
 
   assert.equal(bestCompetitor(item).seller, "Подтверждено");
   assert.equal(attentionCompetitor(item).seller, "Проверить");
+});
+
+test("a comparable price is selected separately and never becomes the exact result", () => {
+  const item = {
+    competitors: [
+      {
+        seller: "Рыночный аналог",
+        matchStatus: "comparable",
+        comparisonProfile: { level: "market" },
+        price: { rawPrice: "1400000", normalizedPrice: null, reliability: "unreliable" },
+        referencePrice: { rawPrice: "1400000", normalizedPrice: null },
+        referenceDifference: { amount: "-215000", percent: "-13.31" },
+        comparisonPrice: null,
+      },
+    ],
+  };
+
+  assert.equal(bestCompetitor(item), null);
+  assert.equal(bestComparable(item).seller, "Рыночный аналог");
+  assert.equal(attentionCompetitor(item), null);
+  assert.equal(offerStatusLabel(item.competitors[0]), "Рыночный аналог");
+  assert.equal(offerStatusTone(item.competitors[0]), "comparable");
 });
 
 test("the table counts unverified competitors and compares their prices with CTO", () => {

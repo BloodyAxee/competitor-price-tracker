@@ -4,15 +4,33 @@ export interface CatalogSummary {
   additional: number;
   ownUrls: number;
   exactOffers: number;
+  comparableOffers: number;
   reviewOffers: number;
+}
+
+export type OfferMatchStatus = "exact" | "comparable" | "review" | "rejected";
+
+export interface ComparisonProfile {
+  level: "close" | "market";
+  trust_class: "A" | "B" | "C";
+  verified_on: string;
+  summary: string;
+  specs: Array<{
+    label: string;
+    own_value: string;
+    candidate_value: string;
+    result: "match" | "difference" | "unknown";
+    criticality: "critical" | "material" | "context";
+  }>;
 }
 
 export interface Offer {
   id: string;
   competitorUrl: string;
   sellerArticle: string | null;
-  matchStatus: "exact" | "review" | "rejected";
+  matchStatus: OfferMatchStatus;
   matchReason: string | null;
+  comparisonProfile: ComparisonProfile | null;
   seller: { displayName: string };
   source: { name: string; sourceType: string; officialStatus: string };
 }
@@ -55,7 +73,7 @@ export interface PriceObservation {
   observedAt: string | null;
   receivedAt: string;
   method: "automatic" | "manual" | string;
-  reliability: "valid" | "unreliable" | string;
+  reliability: "valid" | "review" | "unreliable" | string;
   exclusionReason: string | null;
   evidenceText: string | null;
 }
@@ -71,8 +89,9 @@ export interface ComparisonOffer {
     sourceType: string;
     officialStatus: string;
   };
-  matchStatus: "exact" | "review";
+  matchStatus: Exclude<OfferMatchStatus, "rejected">;
   matchReason: string | null;
+  comparisonProfile: ComparisonProfile | null;
   isOwn: boolean;
   price: PriceObservation | null;
   priceChange: {
@@ -82,10 +101,12 @@ export interface ComparisonOffer {
     direction: "up" | "down";
   } | null;
   comparisonPrice: PriceObservation | null;
+  referencePrice: PriceObservation | null;
 }
 
 export interface CompetitorComparison extends ComparisonOffer {
   difference: { amount: string | null; percent: string | null };
+  referenceDifference: { amount: string; percent: string } | null;
 }
 
 export interface ComparisonItem {

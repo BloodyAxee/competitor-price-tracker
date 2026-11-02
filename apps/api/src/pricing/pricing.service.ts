@@ -10,6 +10,7 @@ import {
 import { evaluateBundle } from "./bundle-price.ts";
 import { evaluateManualPrice, type ManualPriceType } from "./manual-price.ts";
 import { calculatePriceMovement } from "./price-movement.ts";
+import { calculateMarketReferenceDifference } from "./market-reference.ts";
 
 export interface ComparisonQuery {
   limit: number;
@@ -290,7 +291,7 @@ export class PricingService {
           offers: {
             where: {
               isActive: true,
-              matchStatus: { in: ["exact", "review"] },
+              matchStatus: { in: ["exact", "comparable", "review"] },
               source: { isActive: true },
             },
             orderBy: [{ matchStatus: "asc" }, { createdAt: "asc" }],
@@ -405,6 +406,7 @@ export class PricingService {
           source: offer.source,
           matchStatus: offer.matchStatus,
           matchReason: offer.matchReason,
+          comparisonProfile: offer.comparisonProfile,
           isOwn: offer.source.domain === "centr-to.ru" || offer.competitorUrl === product.ownUrl,
           price: latestObservation ? priceDto(latestObservation) : null,
           priceChange: calculatePriceMovement(
@@ -415,6 +417,10 @@ export class PricingService {
             offer.matchStatus === "exact" && latestValidObservation
               ? priceDto(latestValidObservation)
               : null,
+          referencePrice:
+            offer.matchStatus === "comparable" && latestObservation
+              ? priceDto(latestObservation)
+              : null,
         };
       });
       const own = offers.find((offer) => offer.isOwn) ?? null;
@@ -424,6 +430,10 @@ export class PricingService {
         .map((offer) => ({
           ...offer,
           difference: comparisonDelta(ownValue, offer.comparisonPrice?.normalizedPrice ?? null),
+          referenceDifference: calculateMarketReferenceDifference(
+            own?.comparisonPrice,
+            offer.referencePrice,
+          ),
         }));
       const bundle = evaluateBundle(
         product.bundleParts.map((part) => ({
@@ -454,6 +464,7 @@ export class PricingService {
         source: candidate.source,
         matchStatus: "exact",
         matchReason: "Цена комплекта рассчитана по двум компонентам одного продавца",
+        comparisonProfile: null,
         isOwn: false,
         price: {
           id: `bundle:${product.id}:${candidate.sellerId}`,
@@ -494,6 +505,8 @@ export class PricingService {
           evidenceText: "Сумма цен 4641N и VT-64 у одного продавца",
         },
         priceChange: null,
+        referencePrice: null,
+        referenceDifference: null,
         difference: comparisonDelta(ownValue, candidate.totalPrice),
       }));
       const competitors = [...directCompetitors, ...bundleCompetitors];

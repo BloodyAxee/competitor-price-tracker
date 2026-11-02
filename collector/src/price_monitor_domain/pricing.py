@@ -58,7 +58,7 @@ def evaluate_price(candidate: PriceInput, match_status: MatchStatus) -> PriceDec
         return _decision(candidate, Reliability.UNRELIABLE, "missing_price")
     if candidate.raw_price <= 0:
         return _decision(candidate, Reliability.UNRELIABLE, "invalid_price")
-    if match_status is not MatchStatus.EXACT:
+    if match_status not in (MatchStatus.EXACT, MatchStatus.COMPARABLE):
         return _decision(candidate, Reliability.UNRELIABLE, "non_exact_product")
     if candidate.is_from_price:
         return _decision(candidate, Reliability.UNRELIABLE, "price_from")
@@ -74,6 +74,13 @@ def evaluate_price(candidate: PriceInput, match_status: MatchStatus) -> PriceDec
         return _decision(candidate, Reliability.UNRELIABLE, "heterogeneous_package")
 
     normalized_price = candidate.raw_price / candidate.package_quantity
+    if match_status is MatchStatus.COMPARABLE:
+        return _decision(
+            candidate,
+            Reliability.REVIEW,
+            "comparable_product",
+            normalized_price,
+        )
     return _decision(candidate, Reliability.RELIABLE, None, normalized_price)
 
 

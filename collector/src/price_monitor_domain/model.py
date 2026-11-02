@@ -6,6 +6,7 @@ from typing import Mapping
 
 class MatchStatus(StrEnum):
     EXACT = "exact"
+    COMPARABLE = "comparable"
     REVIEW = "review"
     UNRELIABLE = "unreliable"
 

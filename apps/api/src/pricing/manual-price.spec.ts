@@ -27,6 +27,14 @@ test("non-exact and quote inputs are retained but excluded", () => {
   );
 });
 
+test("comparable manual price is normalized as a market reference only", () => {
+  assert.deepEqual(evaluateManualPrice("comparable", base), {
+    normalizedPrice: "95000.00",
+    reliability: "review",
+    exclusionReason: "comparable_product",
+  });
+});
+
 test("homogeneous packages are normalized and heterogeneous sets are not divided", () => {
   assert.equal(
     evaluateManualPrice("exact", { ...base, rawPrice: "3000", quantity: "3" })

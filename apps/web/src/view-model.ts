@@ -38,12 +38,31 @@ export function bestCompetitor(item: ComparisonItem): CompetitorComparison | nul
   return sortedCompetitors(item).find((offer) => offer.comparisonPrice?.normalizedPrice != null) ?? null;
 }
 
+export function bestComparable(item: ComparisonItem): CompetitorComparison | null {
+  return [...item.competitors]
+    .filter(
+      (offer) =>
+        offer.matchStatus === "comparable" && observedPriceValue(offer.referencePrice) != null,
+    )
+    .sort((left, right) => {
+      const levelDifference =
+        (left.comparisonProfile?.level === "close" ? 0 : 1) -
+        (right.comparisonProfile?.level === "close" ? 0 : 1);
+      if (levelDifference !== 0) return levelDifference;
+      return (
+        Number(observedPriceValue(left.referencePrice) ?? Infinity) -
+        Number(observedPriceValue(right.referencePrice) ?? Infinity)
+      );
+    })[0] ?? null;
+}
+
 export function attentionCompetitor(item: ComparisonItem): CompetitorComparison | null {
   return sortedCompetitors(item)
     .filter(
       (offer) =>
         observedPriceValue(offer.price) != null &&
-        (offer.matchStatus === "review" || offer.price?.reliability !== "valid"),
+        (offer.matchStatus === "review" ||
+          (offer.matchStatus !== "comparable" && offer.price?.reliability !== "valid")),
     )[0] ?? null;
 }
 
@@ -128,6 +147,9 @@ export function reliabilityLabel(price: PriceObservation | null | undefined) {
 }
 
 export function offerStatusLabel(offer: ComparisonOffer) {
+  if (offer.matchStatus === "comparable") {
+    return offer.comparisonProfile?.level === "close" ? "Близкий аналог" : "Рыночный аналог";
+  }
   if (offer.matchStatus === "review") return "Требует проверки";
   if (offer.price && offer.price.reliability !== "valid") return "Сомнительная цена";
   if (offer.comparisonPrice?.normalizedPrice != null) return "Подтверждено";
@@ -135,6 +157,7 @@ export function offerStatusLabel(offer: ComparisonOffer) {
 }
 
 export function offerStatusTone(offer: ComparisonOffer) {
+  if (offer.matchStatus === "comparable") return "comparable";
   if (offer.matchStatus === "review" || (offer.price && offer.price.reliability !== "valid")) {
     return "warning";
   }

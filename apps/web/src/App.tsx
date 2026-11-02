@@ -20,6 +20,7 @@ import type {
 } from "./types";
 import {
   attentionCompetitor,
+  bestComparable,
   bestCompetitor,
   collectionMethodLabel,
   collectionModeLabel,
@@ -39,7 +40,7 @@ import {
 
 type ScopeFilter = "all" | "required" | "additional" | "component";
 type DataFilter = "all" | "compared" | "partial" | "missing";
-type MatchFilter = "all" | "exact" | "review" | "without-offers";
+type MatchFilter = "all" | "exact" | "comparable" | "review" | "without-offers";
 type SortKey = "priority" | "name" | "own-price" | "competitor-price" | "difference" | "freshness";
 
 const initialSummary: CatalogSummary = {
@@ -48,6 +49,7 @@ const initialSummary: CatalogSummary = {
   additional: 0,
   ownUrls: 0,
   exactOffers: 0,
+  comparableOffers: 0,
   reviewOffers: 0,
 };
 
@@ -59,6 +61,7 @@ function scopeLabel(scope: Product["catalogScope"]) {
 
 function matchLabel(status: string) {
   if (status === "exact") return "Точное совпадение";
+  if (status === "comparable") return "Сопоставимая модель";
   if (status === "review") return "Требует проверки";
   return "Отклонено";
 }
@@ -325,8 +328,8 @@ function App() {
 
   const competitorDetail = (competitor: CompetitorComparison, index: number) => {
     const tone = offerStatusTone(competitor);
-    const currentPrice = competitor.price;
-    const reason = currentPrice?.exclusionReason ?? competitor.matchReason;
+    const currentPrice = competitor.referencePrice ?? competitor.price;
+    const reason = competitor.comparisonProfile?.summary ?? currentPrice?.exclusionReason ?? competitor.matchReason;
     const movement = formatPriceMovement(competitor.priceChange);
     return (
       <details className={`competitor-detail ${tone}`} key={competitor.offerId}>
@@ -359,8 +362,32 @@ function App() {
               {formatDifference(competitor.difference.amount, competitor.difference.percent)}
             </span>
           )}
+          {tone === "comparable" && competitor.referenceDifference && (
+            <span className={`market-delta ${differenceTone(competitor.referenceDifference.amount)}`}>
+              {formatDifference(
+                competitor.referenceDifference.amount,
+                competitor.referenceDifference.percent,
+              )}
+            </span>
+          )}
           {tone === "warning" && <span className="excluded-label">Цена не входит в итоговое сравнение</span>}
+          {tone === "comparable" && <span className="excluded-label">Ориентир не входит в точный итог</span>}
           {reason && <p>{reason}</p>}
+          {competitor.comparisonProfile && (
+            <div className="comparison-specs">
+              <div className="comparison-specs-heading">
+                <strong>Сопоставление характеристик</strong>
+                <small>Проверено {formatDate(competitor.comparisonProfile.verified_on, false)}</small>
+              </div>
+              {competitor.comparisonProfile.specs.map((spec) => (
+                <div className={`comparison-spec ${spec.result}`} key={spec.label}>
+                  <strong>{spec.label}</strong>
+                  <span><b>ЦТО</b>{spec.own_value}</span>
+                  <span><b>Аналог</b>{spec.candidate_value}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </details>
     );
@@ -370,6 +397,7 @@ function App() {
     const item = comparisonMap.get(product.id);
     const competitors = sortedCompetitors(item ?? ({ competitors: [] } as unknown as ComparisonItem));
     const confirmed = bestCompetitor(item ?? ({ competitors: [] } as unknown as ComparisonItem));
+    const comparable = bestComparable(item ?? ({ competitors: [] } as unknown as ComparisonItem));
     const otherCompetitors = item ? otherCompetitorsSummary(item) : null;
     const ownPrice = item?.own?.price;
     const modelCell = <div className="model-data"><strong>{product.name}</strong><span>{product.article ?? "Артикул не указан"}</span></div>;
@@ -386,20 +414,32 @@ function App() {
         {confirmed && <small>{formatDate(confirmed.comparisonPrice?.observedAt ?? confirmed.comparisonPrice?.receivedAt)}</small>}
       </div>
     );
-    const otherCompetitorsCell = (
+    const marketReferenceCell = comparable ? (
+      <div className="price-data market-reference-result" data-label="Рыночный ориентир">
+        <span className="comparable-label">{offerStatusLabel(comparable)}</span>
+        <strong>{formatPrice(observedPriceValue(comparable.referencePrice))}</strong>
+        <a href={comparable.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{comparable.seller}</a>
+        {comparable.referenceDifference && (
+          <small className={`result-difference ${differenceTone(comparable.referenceDifference.amount)}`}>
+            {formatDifference(comparable.referenceDifference.amount, comparable.referenceDifference.percent)}
+          </small>
+        )}
+        <small>Не входит в точный итог</small>
+      </div>
+    ) : (
       <div className={`other-competitors ${otherCompetitors ? "available" : "quiet"}`} data-label="Другие конкуренты">
         {otherCompetitors ? <><strong>{otherCompetitors.countLabel}</strong><small>{otherCompetitors.priceNote ?? "Все источники в карточке"}</small></> : <span>—</span>}
       </div>
     );
     if (mobile) {
-      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{otherCompetitorsCell}</article>;
+      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{marketReferenceCell}</article>;
     }
     return (
       <tr key={product.id} onClick={() => setSelected(product)} tabIndex={0} onKeyDown={(event) => event.key === "Enter" && setSelected(product)}>
         <td>{modelCell}</td>
         <td>{ownCell}</td>
         <td>{confirmedCell}</td>
-        <td>{otherCompetitorsCell}</td>
+        <td>{marketReferenceCell}</td>
       </tr>
     );
   };
@@ -409,6 +449,7 @@ function App() {
     ? sortedCompetitors(selectedComparison)
     : [];
   const selectedConfirmed = selectedComparison ? bestCompetitor(selectedComparison) : null;
+  const selectedComparable = selectedComparison ? bestComparable(selectedComparison) : null;
   const selectedAttention = selectedComparison ? attentionCompetitor(selectedComparison) : null;
   const visibleHistory = historyExpanded ? history?.items : history?.items.slice(0, 3);
 
@@ -458,7 +499,7 @@ function App() {
 
         <section className="catalog-panel">
           <div className="panel-heading">
-            <div><h2>Мониторинг по моделям</h2><p>Показано {visibleProducts.length} позиций · итоговая цена отделена от сигналов, требующих проверки</p></div>
+            <div><h2>Мониторинг по моделям</h2><p>Показано {visibleProducts.length} позиций · точный итог отделён от сопоставимых рыночных ориентиров</p></div>
             <div className="panel-actions">
               <a className="export-button" href={priceExportUrl}>Скачать CSV</a>
               <button className="refresh-button" onClick={() => void refresh()} disabled={loading}>{loading ? "Обновление" : "Обновить"}</button>
@@ -469,7 +510,7 @@ function App() {
             <label className="search-field"><span>Поиск</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Модель или артикул" /></label>
             <label><span>Часть каталога</span><select value={scope} onChange={(event) => setScope(event.target.value as ScopeFilter)}><option value="required">29 обязательных</option><option value="component">Компоненты комплекта</option><option value="additional">Дополнительные</option><option value="all">Все товары</option></select></label>
             <label><span>Данные</span><select value={dataFilter} onChange={(event) => setDataFilter(event.target.value as DataFilter)}><option value="all">Все состояния</option><option value="compared">Есть сравнение</option><option value="partial">Только одна цена</option><option value="missing">Нет цен</option></select></label>
-            <label><span>Сопоставление</span><select value={matchFilter} onChange={(event) => setMatchFilter(event.target.value as MatchFilter)}><option value="all">Все источники</option><option value="exact">Точное</option><option value="review">Требует проверки</option><option value="without-offers">Без источников</option></select></label>
+            <label><span>Сопоставление</span><select value={matchFilter} onChange={(event) => setMatchFilter(event.target.value as MatchFilter)}><option value="all">Все источники</option><option value="exact">Точное</option><option value="comparable">Сопоставимые модели</option><option value="review">Требует проверки</option><option value="without-offers">Без источников</option></select></label>
             <label><span>Сортировка</span><select value={sort} onChange={(event) => setSort(event.target.value as SortKey)}><option value="priority">По приоритету</option><option value="name">По названию</option><option value="own-price">По нашей цене</option><option value="competitor-price">По цене конкурента</option><option value="difference">По разнице цен</option><option value="freshness">Сначала свежие</option></select></label>
           </div>
 
@@ -479,7 +520,7 @@ function App() {
 
           {!loading && !error && visibleProducts.length > 0 && (
             <>
-              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th>Другие конкуренты</th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
+              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th>Рыночный ориентир / другие</th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
               <div className="mobile-list">{visibleProducts.map((product) => productRow(product, true))}</div>
             </>
           )}
@@ -499,6 +540,7 @@ function App() {
               <article><span>Наша цена</span><strong>{formatPrice(observedPriceValue(selectedComparison?.own?.price))}</strong></article>
               <article><span>Итог конкурента</span><strong>{formatPrice(selectedConfirmed?.comparisonPrice?.normalizedPrice)}</strong><small>{selectedConfirmed?.seller ?? "Нет подтверждённой цены"}</small></article>
               <article><span>Разница</span><strong className={differenceTone(selectedConfirmed?.difference.amount)}>{formatDifference(selectedConfirmed?.difference.amount, selectedConfirmed?.difference.percent)}</strong></article>
+              {selectedComparable && <article className="comparable"><span>{offerStatusLabel(selectedComparable)}</span><strong>{formatPrice(observedPriceValue(selectedComparable.referencePrice))}</strong><small>{selectedComparable.seller}{selectedComparable.referenceDifference ? ` · ${formatDifference(selectedComparable.referenceDifference.amount, selectedComparable.referenceDifference.percent)}` : ""}</small></article>}
               {selectedAttention && <article className="attention"><span><span className="attention-icon small" aria-hidden="true">!</span>Проверить</span><strong>{formatPrice(observedPriceValue(selectedAttention.price))}</strong><small>{selectedAttention.seller} · не входит в итог</small></article>}
             </section>
 
@@ -509,7 +551,7 @@ function App() {
             <section className="drawer-section competitor-overview">
               <div className="section-heading"><div><h3>Источники конкурентов</h3><p>Нажмите на строку, чтобы увидеть доказательства и причину статуса</p></div><span className="count-badge">{selectedCompetitors.length}</span></div>
               {selectedCompetitors.length === 0 ? <p className="muted">Конкурентные предложения для этой модели пока не найдены.</p> : <div className="drawer-competitors">{selectedCompetitors.map((competitor, index) => competitorDetail(competitor, index))}</div>}
-              <p className="comparison-note">Итоговая разница рассчитывается только по подтверждённым ценам. Красный знак привлекает внимание, но такая цена не меняет итог до проверки.</p>
+              <p className="comparison-note">Итоговая разница рассчитывается только по точным подтверждённым ценам. Сопоставимый аналог показывает отдельный рыночный ориентир и явные отличия характеристик, но не меняет строгий итог.</p>
             </section>
 
             <section className="drawer-section">

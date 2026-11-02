@@ -14,17 +14,18 @@ export class CatalogService {
   constructor(private readonly prisma: PrismaService) {}
 
   async summary() {
-    const [total, required, additional, ownUrls, exactOffers, reviewOffers] =
+    const [total, required, additional, ownUrls, exactOffers, comparableOffers, reviewOffers] =
       await Promise.all([
         this.prisma.product.count({ where: { isActive: true } }),
         this.prisma.product.count({ where: { isActive: true, catalogScope: "required" } }),
         this.prisma.product.count({ where: { isActive: true, catalogScope: "additional" } }),
         this.prisma.product.count({ where: { isActive: true, ownUrl: { not: null } } }),
         this.prisma.offer.count({ where: { isActive: true, matchStatus: "exact" } }),
+        this.prisma.offer.count({ where: { isActive: true, matchStatus: "comparable" } }),
         this.prisma.offer.count({ where: { isActive: true, matchStatus: "review" } }),
       ]);
 
-    return { total, required, additional, ownUrls, exactOffers, reviewOffers };
+    return { total, required, additional, ownUrls, exactOffers, comparableOffers, reviewOffers };
   }
 
   async products(query: CatalogQuery) {
@@ -66,6 +67,7 @@ export class CatalogService {
               sellerArticle: true,
               matchStatus: true,
               matchReason: true,
+              comparisonProfile: true,
               seller: { select: { displayName: true } },
               source: {
                 select: {

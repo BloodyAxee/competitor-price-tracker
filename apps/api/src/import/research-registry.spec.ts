@@ -17,6 +17,20 @@ interface ResearchModel {
     reason: string;
     automated_collection_verified: boolean;
   }>;
+  comparable_sources?: Array<{
+    url: string;
+    level: "close" | "market";
+    trust_class: "A" | "B" | "C";
+    verified_on: string;
+    summary: string;
+    specs: Array<{
+      label: string;
+      own_value: string;
+      candidate_value: string;
+      result: "match" | "difference" | "unknown";
+      criticality: "critical" | "material" | "context";
+    }>;
+  }>;
   match_status: string;
   review_scope: string;
   current_price_verified: boolean;
@@ -62,6 +76,27 @@ test("required source registry keeps exact matches separate from unresolved conf
           model.current_price_verified &&
           model.automated_collection_verified,
       ),
+  );
+  const comparableModels = registry.models.filter(
+    (model) => (model.comparable_sources?.length ?? 0) > 0,
+  );
+  assert.deepEqual(
+    comparableModels.map((model) => model.id),
+    [2, 24, 26, 27],
+  );
+  assert.ok(
+    comparableModels.every(
+      (model) =>
+        model.match_status !== "точное совпадение" &&
+        model.comparable_sources?.every(
+          (source) =>
+            source.url === model.primary_url &&
+            source.summary.length > 40 &&
+            /^2026-\d{2}-\d{2}$/.test(source.verified_on) &&
+            source.specs.length >= 5 &&
+            source.specs.some((spec) => spec.result !== "match"),
+        ),
+    ),
   );
   assert.ok(
     registry.models

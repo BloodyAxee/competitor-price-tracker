@@ -117,6 +117,16 @@ class PriceRulesTest(unittest.TestCase):
         )
         self.assertEqual(result.exclusion_reason, "non_exact_product")
 
+    def test_comparable_product_keeps_normalized_market_reference(self) -> None:
+        result = evaluate_price(
+            PriceInput(Decimal("120000"), PriceType.RETAIL),
+            MatchStatus.COMPARABLE,
+        )
+        self.assertEqual(result.normalized_price, Decimal("120000"))
+        self.assertIs(result.reliability, Reliability.REVIEW)
+        self.assertEqual(result.exclusion_reason, "comparable_product")
+        self.assertFalse(result.eligible_for_comparison)
+
     def test_manual_input_is_always_marked_manual(self) -> None:
         result = evaluate_manual_price(
             PriceInput(Decimal("100"), PriceType.RETAIL, method=CollectionMethod.AUTO),

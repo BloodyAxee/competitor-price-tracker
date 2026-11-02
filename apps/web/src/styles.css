@@ -129,6 +129,9 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .other-competitors strong { max-width: 230px; font-size: 12px; line-height: 1.4; }
 .other-competitors small { margin-top: 5px; color: var(--muted); font-size: 10px; }
 .other-competitors.quiet { color: var(--muted); font-size: 12px; }
+.market-reference-result { padding-left: 12px; border-left: 3px solid #5e6fb2; }
+.comparable-label { width: fit-content; margin: 0 0 7px !important; padding: 4px 7px; border-radius: 999px; background: #e5e9f8; color: #41528f !important; font-size: 9px !important; font-weight: 850; text-transform: uppercase; letter-spacing: .04em; }
+:root[data-theme="dark"] .comparable-label { background: #333b5d; color: #b9c5f4 !important; }
 .competitor-stack { min-width: 390px; display: grid; gap: 9px; }
 .market-offer { padding: 12px 13px; border: 1px solid var(--line); border-left: 3px solid var(--success); border-radius: 11px; background: var(--surface-soft); }
 .market-offer.warning { border-left-color: var(--warning); background: color-mix(in srgb, var(--warning) 6%, var(--surface-soft)); }
@@ -138,9 +141,11 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .trust-badge { display: inline-flex; border-radius: 999px; padding: 4px 7px; font-size: 9px; font-weight: 800; white-space: nowrap; }
 .trust-badge.valid { color: #11603f; background: #d9f1e4; }
 .trust-badge.warning { color: #8a4b17; background: #f8e7d8; }
+.trust-badge.comparable { color: #41528f; background: #e5e9f8; }
 .trust-badge.missing { color: #69767d; background: #e8edef; }
 :root[data-theme="dark"] .trust-badge.valid { background: #21433b; color: #91dcc4; }
 :root[data-theme="dark"] .trust-badge.warning { background: #4c3526; color: #f1bd88; }
+:root[data-theme="dark"] .trust-badge.comparable { background: #333b5d; color: #b9c5f4; }
 :root[data-theme="dark"] .trust-badge.missing { background: #2a373a; color: #afbdc0; }
 .competitor-link { font-size: 13px; font-weight: 800; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .market-price-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 7px 10px; margin-top: 7px; }
@@ -198,6 +203,7 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .price-snapshot { margin-top: 22px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .price-snapshot article { min-height: 92px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
 .price-snapshot article.attention { border-color: color-mix(in srgb, var(--danger) 42%, var(--line)); background: color-mix(in srgb, var(--danger) 5%, var(--surface)); }
+.price-snapshot article.comparable { border-color: color-mix(in srgb, #5e6fb2 42%, var(--line)); background: color-mix(in srgb, #5e6fb2 7%, var(--surface)); }
 .price-snapshot span, .price-snapshot strong, .price-snapshot small { display: block; }
 .price-snapshot span { color: var(--muted); font-size: 10px; font-weight: 750; }
 .price-snapshot article.attention > span { display: flex; align-items: center; gap: 6px; color: var(--danger); }
@@ -234,6 +240,7 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .drawer-competitors { display: grid; gap: 7px; }
 .competitor-detail { border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); overflow: hidden; }
 .competitor-detail.warning { border-left: 3px solid var(--danger); }
+.competitor-detail.comparable { border-left: 3px solid #5e6fb2; }
 .competitor-detail.valid { border-left: 3px solid var(--success); }
 .competitor-detail > summary { min-height: 66px; padding: 11px 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; cursor: pointer; list-style: none; }
 .competitor-detail > summary::-webkit-details-marker { display: none; }
@@ -247,6 +254,18 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .competitor-detail-body { padding: 11px 12px 13px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; gap: 9px 12px; }
 .competitor-detail-body p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .competitor-detail.warning .competitor-detail-body p { color: var(--danger); }
+.competitor-detail.comparable .competitor-detail-body p { color: #52619a; }
+.comparison-specs { grid-column: 1 / -1; margin-top: 4px; border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 7px; }
+.comparison-specs-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.comparison-specs-heading strong { font-size: 11px; }
+.comparison-specs-heading small { color: var(--muted); font-size: 9px; }
+.comparison-spec { padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; display: grid; grid-template-columns: minmax(120px, .8fr) 1fr 1fr; gap: 8px; background: var(--surface); }
+.comparison-spec.difference { border-left: 3px solid var(--warning); }
+.comparison-spec.unknown { border-left: 3px solid var(--muted); }
+.comparison-spec.match { border-left: 3px solid var(--success); }
+.comparison-spec > strong { font-size: 10px; line-height: 1.35; }
+.comparison-spec span { display: grid; gap: 2px; color: var(--text); font-size: 10px; line-height: 1.35; }
+.comparison-spec span b { color: var(--muted); font-size: 8px; text-transform: uppercase; letter-spacing: .04em; }
 .comparison-note { margin: 12px 0 0; padding: 11px 13px; border-radius: 9px; background: color-mix(in srgb, var(--accent) 8%, var(--surface)); color: var(--muted); font-size: 11px; line-height: 1.5; }
 
 @media (max-width: 1080px) {
@@ -289,6 +308,7 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
   .price-snapshot { grid-template-columns: 1fr 1fr; }
   .competitor-detail > summary { grid-template-columns: minmax(0, 1fr) auto; }
   .competitor-detail > summary .trust-badge { grid-column: 1 / -1; width: fit-content; }
+  .comparison-spec { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
 }
 

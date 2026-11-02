@@ -66,6 +66,22 @@
       "own_url": "https://centr-to.ru/good-19530-gruzovoy-shinomontazhnyy-stanok-es-26d",
       "primary_url": "https://www.technosouz.ru/product/gruzovoy_shinomontazhnyy_stanok_es_26d_/",
       "reserve_url": "https://vsedlyasto.ru/catalog/shinomontazhnye-stanki/es-26d-shinomontazhnyy-stend-380-v-poluavtomat/",
+      "comparable_sources": [
+        {
+          "url": "https://www.technosouz.ru/product/gruzovoy_shinomontazhnyy_stanok_es_26d_/",
+          "level": "market",
+          "trust_class": "A",
+          "verified_on": "2026-11-02",
+          "summary": "Рыночный ориентир той же модели и назначения. Масса колеса и ширина расходятся, поэтому цена не является точной ценой той же конфигурации.",
+          "specs": [
+            { "label": "Модель и назначение", "own_value": "ES-26D, грузовой 14–26″", "candidate_value": "ES-26D, грузовой 14–26″", "result": "match", "criticality": "critical" },
+            { "label": "Питание", "own_value": "380 В", "candidate_value": "380 В", "result": "match", "criticality": "critical" },
+            { "label": "Максимальная масса колеса", "own_value": "500 или 1500 кг — конфликт карточки", "candidate_value": "500 кг", "result": "unknown", "criticality": "critical" },
+            { "label": "Максимальная ширина колеса", "own_value": "780 мм", "candidate_value": "800 мм", "result": "difference", "criticality": "material" },
+            { "label": "Гидравлика", "own_value": "версия не подтверждена", "candidate_value": "Bucher Hydraulics", "result": "unknown", "criticality": "material" }
+          ]
+        }
+      ],
       "match_status": "требует проверки",
       "review_scope": "Источник-кандидат; полное совпадение не подтверждено",
       "note": "У продавцов есть гидравлика Bucher и китайская. ЦТО: ширина 780 мм/масса колеса 1500 кг; Техносоюз: 800 мм/500 кг. Нужен паспорт и версия гидравлики.",
@@ -446,6 +462,23 @@
       "own_url": "https://centr-to.ru/good-19389-gl-2-okrasochno-sushilnaya-kamera",
       "primary_url": "https://www.garo.cc/katalog/pokrasochnye-kamery/okrasochnye/okrasochno_sushilnaya_kamera_guangli_gl2/",
       "reserve_url": "https://www.avto-master.ru/goods/okrasochno_sushilnaya_kamera_guangli_gl2.htm",
+      "comparable_sources": [
+        {
+          "url": "https://www.garo.cc/katalog/pokrasochnye-kamery/okrasochnye/okrasochno_sushilnaya_kamera_guangli_gl2/",
+          "level": "market",
+          "trust_class": "B",
+          "verified_on": "2026-11-02",
+          "summary": "Рыночный ориентир GL2 другой опубликованной комплектации. Ключевые расхождения — электрическая мощность и освещение.",
+          "specs": [
+            { "label": "Модель", "own_value": "Guangli GL2", "candidate_value": "Guangli GL2", "result": "match", "criticality": "critical" },
+            { "label": "Толщина стен", "own_value": "50 мм", "candidate_value": "50 мм", "result": "match", "criticality": "critical" },
+            { "label": "Суммарная электрическая мощность", "own_value": "13 кВт", "candidate_value": "11 кВт", "result": "difference", "criticality": "critical" },
+            { "label": "Освещение", "own_value": "40 верхних + 16 боковых ламп", "candidate_value": "8×3 верхних, боковые не подтверждены", "result": "difference", "criticality": "material" },
+            { "label": "Воздухообмен", "own_value": "17 000–20 000 м³/ч — требует паспорта", "candidate_value": "не подтверждён независимо", "result": "unknown", "criticality": "critical" },
+            { "label": "Монтаж и пусконаладка", "own_value": "неизвестно", "candidate_value": "неизвестно", "result": "unknown", "criticality": "context" }
+          ]
+        }
+      ],
       "match_status": "требует проверки",
       "review_scope": "Источник-кандидат; полное совпадение не подтверждено",
       "note": "Найдены отдельные карточки GL2; не GL2A. Досверить горелку, мощность, размеры, основание/решётки и включённые работы.",
@@ -474,6 +507,23 @@
       "own_url": "https://centr-to.ru/good-19560-okrasochno-sushilnaya-kamera-guangli-gl3-lux",
       "primary_url": "https://www.garo.cc/katalog/pokrasochnye-kamery/okrasochnye/okrasochno_sushilnaya_kamera_guangli_gl3_lux/",
       "reserve_url": "https://www.avto-master.ru/goods/okrasochno_sushilnaya_kamera_guangli_gl3_lux.htm",
+      "comparable_sources": [
+        {
+          "url": "https://www.garo.cc/katalog/pokrasochnye-kamery/okrasochnye/okrasochno_sushilnaya_kamera_guangli_gl3_lux/",
+          "level": "close",
+          "trust_class": "B",
+          "verified_on": "2026-11-02",
+          "summary": "Близкий аналог GL3 LUX. Основные агрегаты совпадают, но шесть задних ламп ЦТО не подтверждены в комплектации продавца.",
+          "specs": [
+            { "label": "Модель", "own_value": "Guangli GL3 LUX", "candidate_value": "Guangli GL3 LUX", "result": "match", "criticality": "critical" },
+            { "label": "Нагрев", "own_value": "Riello RG5D, 300 кВт", "candidate_value": "Riello RG5D, 300 кВт", "result": "match", "criticality": "critical" },
+            { "label": "Вентиляторы", "own_value": "7,5 + 7,5 кВт", "candidate_value": "7,5 + 7,5 кВт", "result": "match", "criticality": "critical" },
+            { "label": "Воздухообмен", "own_value": "24 000 м³/ч", "candidate_value": "24 000 м³/ч", "result": "match", "criticality": "critical" },
+            { "label": "Освещение", "own_value": "40 верхних + 16 боковых + 6 задних ламп", "candidate_value": "40 верхних + 16 боковых ламп", "result": "difference", "criticality": "material" },
+            { "label": "Монтаж и пусконаладка", "own_value": "неизвестно", "candidate_value": "неизвестно", "result": "unknown", "criticality": "context" }
+          ]
+        }
+      ],
       "match_status": "требует проверки",
       "review_scope": "Нужно подтвердить мощность 300 кВт, топливо, пол, решётки, вентиляторы и условия монтажа GL3 LUX",
       "note": "LUX найден, в резерве нет наличия. Сверить 300 кВт, топливо, пол/решётки, вентиляторы и монтаж. Обычная GL3 и теплообменник из выдачи исключены.",
@@ -488,6 +538,23 @@
       "own_url": "https://centr-to.ru/good-15736-okrasochno-sushilnaya-kamera-dlya-okraski-gruzovogo-transporta-guangli-gl10",
       "primary_url": "https://eqpro.ru/guangli-gl10/",
       "reserve_url": "https://guangli-rus.ru/",
+      "comparable_sources": [
+        {
+          "url": "https://eqpro.ru/guangli-gl10/",
+          "level": "market",
+          "trust_class": "B",
+          "verified_on": "2026-11-02",
+          "summary": "Рыночный ориентир грузовой GL10. Конфигурация стен, нагрева и воздухообмена не подтверждает точное совпадение.",
+          "specs": [
+            { "label": "Назначение", "own_value": "камера для грузового транспорта", "candidate_value": "камера для грузового транспорта", "result": "match", "criticality": "critical" },
+            { "label": "Внутренняя рабочая зона", "own_value": "15×5×4,5 м", "candidate_value": "сопоставимая, нужен чертёж", "result": "unknown", "criticality": "critical" },
+            { "label": "Толщина стен", "own_value": "50 или 75 мм — конфликт карточки", "candidate_value": "50 мм", "result": "unknown", "criticality": "critical" },
+            { "label": "Нагрев", "own_value": "2×300 кВт или 300 кВт суммарно — требует КП", "candidate_value": "не подтверждён для той же поставки", "result": "unknown", "criticality": "critical" },
+            { "label": "Воздухообмен", "own_value": "70 000 или 72 000 м³/ч", "candidate_value": "не подтверждён независимо", "result": "unknown", "criticality": "critical" },
+            { "label": "Основание, воздуховоды и подъёмники", "own_value": "состав поставки не подтверждён", "candidate_value": "состав поставки не подтверждён", "result": "unknown", "criticality": "material" }
+          ]
+        }
+      ],
       "match_status": "требует проверки",
       "review_scope": "Источник-кандидат; полное совпадение не подтверждено",
       "note": "EQPRO: стены 50 мм против 75 мм у ЦТО — совпадение не принято. У профильного сайта найден каталог GL10, но конфигурация и цена требуют проверки/КП.",

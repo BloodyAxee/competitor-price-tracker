@@ -571,9 +571,9 @@ class FetcherTest(unittest.TestCase):
         self.assertIn("FOR UPDATE SKIP LOCKED", normalized_sql)
         self.assertIn("COLLECTION_MODE", normalized_sql)
 
-    def test_job_collects_exact_and_review_offers(self) -> None:
+    def test_job_collects_exact_comparable_and_review_offers(self) -> None:
         normalized_sql = " ".join(COLLECT_TASKS_SQL.split()).upper()
-        self.assertIn("O.MATCH_STATUS IN ('EXACT', 'REVIEW')", normalized_sql)
+        self.assertIn("O.MATCH_STATUS IN ('EXACT', 'COMPARABLE', 'REVIEW')", normalized_sql)
 
     def test_fast_jobs_only_select_explicit_fast_offers(self) -> None:
         normalized_sql = " ".join(COLLECT_TASKS_SQL.split()).upper()

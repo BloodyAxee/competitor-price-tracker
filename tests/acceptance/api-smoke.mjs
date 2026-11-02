@@ -14,8 +14,15 @@ const apiOrigin = option("--api", process.env.ACCEPTANCE_API_ORIGIN ?? "http://l
 const webOrigin = option("--web", process.env.ACCEPTANCE_WEB_ORIGIN ?? "http://localhost:5173");
 const jobId = option("--job", process.env.ACCEPTANCE_JOB_ID);
 const expectedExactOffers = Number(option("--exact-offers", process.env.ACCEPTANCE_EXACT_OFFERS ?? "64"));
+const expectedComparableOffers = Number(
+  option("--comparable-offers", process.env.ACCEPTANCE_COMPARABLE_OFFERS ?? "4"),
+);
 
 assert.ok(Number.isInteger(expectedExactOffers) && expectedExactOffers > 0, "exact offer count must be positive");
+assert.ok(
+  Number.isInteger(expectedComparableOffers) && expectedComparableOffers > 0,
+  "comparable offer count must be positive",
+);
 
 async function response(path, origin = apiOrigin) {
   const result = await fetch(new URL(path, origin), { signal: AbortSignal.timeout(15_000) });
@@ -53,6 +60,7 @@ assert.deepEqual(
     additional: summary.additional,
     ownUrls: summary.ownUrls,
     exactOffers: summary.exactOffers,
+    comparableOffers: summary.comparableOffers,
     reviewOffers: summary.reviewOffers,
   },
   {
@@ -61,7 +69,8 @@ assert.deepEqual(
     additional: 236,
     ownUrls: 28,
     exactOffers: expectedExactOffers,
-    reviewOffers: 91 - expectedExactOffers,
+    comparableOffers: expectedComparableOffers,
+    reviewOffers: 91 - expectedExactOffers - expectedComparableOffers,
   },
 );
 
@@ -123,6 +132,7 @@ console.log(
       total: summary.total,
       required: summary.required,
       exactOffers: summary.exactOffers,
+      comparableOffers: summary.comparableOffers,
       reviewOffers: summary.reviewOffers,
     },
     job: checkedJob,
