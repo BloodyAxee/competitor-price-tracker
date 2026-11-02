@@ -22,6 +22,7 @@ import {
   offerStatusTone,
   otherCompetitorsSummary,
   reliabilityLabel,
+  requiresHumanVerification,
   sortedCompetitors,
   summarizeCollectionAttempts,
 } from "../src/view-model.ts";
@@ -254,6 +255,29 @@ test("collection retries are summarized by unique offer", () => {
       { key: "offer-1", status: "success", attempts: 3 },
       { key: "offer-2", status: "skipped", attempts: 1 },
     ],
+  );
+});
+
+test("human verification is requested only for protected collection results", () => {
+  const base = {
+    key: "offer-1",
+    status: "skipped",
+    source: { externalKey: "seller", name: "Продавец" },
+    offer: null,
+  };
+  assert.equal(
+    requiresHumanVerification({
+      ...base,
+      attempts: [{ errorCode: "human_verification_required" }],
+    }),
+    true,
+  );
+  assert.equal(
+    requiresHumanVerification({
+      ...base,
+      attempts: [{ errorCode: "browser_timeout" }],
+    }),
+    false,
   );
 });
 

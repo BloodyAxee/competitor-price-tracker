@@ -256,6 +256,18 @@ export interface CollectionOfferResult {
   attempts: CollectionAttempt[];
 }
 
+const humanVerificationErrorCodes = new Set([
+  "human_verification_required",
+  "protected_source",
+]);
+
+export function requiresHumanVerification(result: CollectionOfferResult) {
+  return result.attempts.some(
+    (attempt) =>
+      attempt.errorCode != null && humanVerificationErrorCodes.has(attempt.errorCode),
+  );
+}
+
 export function summarizeCollectionAttempts(
   attempts: CollectionAttempt[],
 ): CollectionOfferResult[] {

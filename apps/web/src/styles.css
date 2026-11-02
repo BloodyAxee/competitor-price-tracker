@@ -86,6 +86,14 @@ main { width: min(1460px, 92vw); margin: 0 auto; padding: 36px 0 70px; }
 .job-problem.skipped > summary b { color: var(--warning); }
 .job-problem > div { padding: 0 11px 9px; }
 .job-problem > div p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.human-verification-action { margin-top: 10px; padding: 10px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--line)); border-radius: 9px; background: color-mix(in srgb, var(--warning) 8%, var(--surface)); }
+.human-verification-action strong, .human-verification-action span { display: block; }
+.human-verification-action strong { color: var(--text); font-size: 11px; }
+.human-verification-action span { margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.human-verification-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.human-verification-buttons a, .human-verification-buttons button { min-height: 34px; display: inline-flex; align-items: center; justify-content: center; padding: 7px 10px; border: 1px solid var(--warning); border-radius: 8px; font-size: 10px; font-weight: 750; text-decoration: none; white-space: nowrap; }
+.human-verification-buttons a { background: var(--warning); color: white; }
+.human-verification-buttons button { background: var(--surface); color: var(--warning); }
 
 .region-panel { margin-bottom: 22px; padding: 20px 22px; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); box-shadow: var(--shadow); }
 .region-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
@@ -318,6 +326,8 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
   .schedule-card { min-width: 0; }
   .job-banner { align-items: flex-start; flex-wrap: wrap; gap: 10px; }
   .job-time { text-align: left; }
+  .human-verification-action { align-items: stretch; flex-direction: column; }
+  .human-verification-buttons { justify-content: flex-start; }
   .region-panel { padding: 17px 16px; }
   .region-panel-heading { flex-direction: column; gap: 10px; }
   .region-points { display: flex; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 4px; }

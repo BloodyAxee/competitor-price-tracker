@@ -40,6 +40,7 @@ import {
   offerStatusTone,
   observedPriceValue,
   otherCompetitorsSummary,
+  requiresHumanVerification,
   sortedCompetitors,
   summarizeCollectionAttempts,
 } from "./view-model";
@@ -509,15 +510,39 @@ function App() {
               <details className="job-problems">
                 <summary>Показать проблемные карточки · {collectionProblems.length}</summary>
                 <div className="job-problem-list">
-                  {collectionProblems.map((result) => (
-                    <details className={`job-problem ${result.status}`} key={result.key}>
-                      <summary>
-                        <span><strong>{result.offer?.product.name ?? result.source.name}</strong><small>{result.source.name} · {result.attempts.length} {result.attempts.length === 1 ? "попытка" : "попытки"}</small></span>
-                        <b>{result.status === "failed" ? "Проблема" : "Пропущено"}</b>
-                      </summary>
-                      <div>{result.attempts.map((attempt) => <p key={attempt.id}>Попытка {attempt.attemptNumber} · {collectionErrorLabel(attempt.errorCode, attempt.errorMessage)}</p>)}</div>
-                    </details>
-                  ))}
+                  {collectionProblems.map((result) => {
+                    const needsHumanVerification = requiresHumanVerification(result);
+                    const productForManualEntry = products.find(
+                      (product) => product.id === result.offer?.product.id,
+                    );
+                    return (
+                      <details className={`job-problem ${result.status}`} key={result.key}>
+                        <summary>
+                          <span><strong>{result.offer?.product.name ?? result.source.name}</strong><small>{result.source.name} · {result.attempts.length} {result.attempts.length === 1 ? "попытка" : "попытки"}</small></span>
+                          <b>{result.status === "failed" ? "Проблема" : "Пропущено"}</b>
+                        </summary>
+                        <div className="job-problem-body">
+                          {result.attempts.map((attempt) => <p key={attempt.id}>Попытка {attempt.attemptNumber} · {collectionErrorLabel(attempt.errorCode, attempt.errorMessage)}</p>)}
+                          {needsHumanVerification && result.offer && (
+                            <section className="human-verification-action">
+                              <div>
+                                <strong>Нужно подтверждение человеком</strong>
+                                <span>Откройте карточку продавца, пройдите проверку и внесите увиденную цену вручную.</span>
+                              </div>
+                              <div className="human-verification-buttons">
+                                <a href={result.offer.competitorUrl} target="_blank" rel="noreferrer">Пройти проверку на сайте</a>
+                                {productForManualEntry && (
+                                  <button type="button" onClick={() => setSelected(productForManualEntry)}>
+                                    Внести цену вручную
+                                  </button>
+                                )}
+                              </div>
+                            </section>
+                          )}
+                        </div>
+                      </details>
+                    );
+                  })}
                 </div>
               </details>
             )}
