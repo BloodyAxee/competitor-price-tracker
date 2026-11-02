@@ -198,7 +198,7 @@ class SiToolsT300Adapter:
                 currency=product.currency,
                 stock_status=stock_status,
             ),
-            MatchStatus.EXACT,
+            MatchStatus(task.match_status),
         )
         evidence = {
             "product_name": product.name,

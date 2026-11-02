@@ -30,6 +30,7 @@ import {
   observationStatus,
   offerStatusLabel,
   offerStatusTone,
+  observedPriceValue,
   otherCompetitorsSummary,
   sortedCompetitors,
 } from "./view-model";
@@ -336,7 +337,7 @@ function App() {
             </span>
           </span>
           <span className="competitor-summary-price">
-            <strong>{formatPrice(currentPrice?.normalizedPrice)}</strong>
+            <strong>{formatPrice(observedPriceValue(currentPrice))}</strong>
             {movement && <small className={`price-movement ${competitor.priceChange?.direction}`}>{movement}</small>}
           </span>
           <span className={`trust-badge ${tone}`}>{offerStatusLabel(competitor)}</span>
@@ -490,10 +491,10 @@ function App() {
             {selected.ownUrl ? <a className="external-link" href={selected.ownUrl} target="_blank" rel="noreferrer">Открыть карточку ЦТО</a> : <div className="notice">У комплекта нет отдельной карточки ЦТО. Это допустимо по условиям задания.</div>}
 
             <section className="price-snapshot" aria-label="Краткое сравнение цен">
-              <article><span>Наша цена</span><strong>{formatPrice(selectedComparison?.own?.price?.normalizedPrice)}</strong></article>
+              <article><span>Наша цена</span><strong>{formatPrice(observedPriceValue(selectedComparison?.own?.price))}</strong></article>
               <article><span>Итог конкурента</span><strong>{formatPrice(selectedConfirmed?.comparisonPrice?.normalizedPrice)}</strong><small>{selectedConfirmed?.seller ?? "Нет подтверждённой цены"}</small></article>
               <article><span>Разница</span><strong className={differenceTone(selectedConfirmed?.difference.amount)}>{formatDifference(selectedConfirmed?.difference.amount, selectedConfirmed?.difference.percent)}</strong></article>
-              {selectedAttention && <article className="attention"><span><span className="attention-icon small" aria-hidden="true">!</span>Проверить</span><strong>{formatPrice(selectedAttention.price?.normalizedPrice)}</strong><small>{selectedAttention.seller} · не входит в итог</small></article>}
+              {selectedAttention && <article className="attention"><span><span className="attention-icon small" aria-hidden="true">!</span>Проверить</span><strong>{formatPrice(observedPriceValue(selectedAttention.price))}</strong><small>{selectedAttention.seller} · не входит в итог</small></article>}
             </section>
 
             {selected.bundleParts.length > 0 && <section className="drawer-section"><h3>Состав комплекта</h3><p className="muted">Откройте оба компонента и внесите цены из одного предложения продавца. После второй цены сумма появится у комплекта автоматически.</p>{selected.bundleParts.map((part) => <button type="button" className="component" key={part.componentProduct.id} onClick={() => { const component = products.find((product) => product.id === part.componentProduct.id); if (component) setSelected(component); }}><strong>{part.componentProduct.name}</strong><span>{part.componentProduct.article ?? "Артикул не указан"} · {part.quantity} шт.</span></button>)}{comparisonMap.get(selected.id)?.bundleStatus?.ready ? <div className="notice success">Комплект рассчитан по двум ценам одного продавца</div> : <div className="notice">{bundleStatusLabel(comparisonMap.get(selected.id)?.bundleStatus?.exclusionReason ?? "incomplete_bundle")}</div>}</section>}

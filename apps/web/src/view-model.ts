@@ -18,6 +18,10 @@ export function formatPrice(value: string | null | undefined) {
   return Number.isFinite(numeric) ? moneyFormatter.format(numeric) : "Не указано";
 }
 
+export function observedPriceValue(price: PriceObservation | null | undefined) {
+  return price?.normalizedPrice ?? price?.rawPrice ?? null;
+}
+
 export function formatDate(value: string | null | undefined, includeTime = true) {
   if (!value) return "Не указано";
   const date = new Date(value);
@@ -37,8 +41,8 @@ export function attentionCompetitor(item: ComparisonItem): CompetitorComparison 
   return sortedCompetitors(item)
     .filter(
       (offer) =>
-        offer.price?.normalizedPrice != null &&
-        (offer.matchStatus === "review" || offer.price.reliability !== "valid"),
+        observedPriceValue(offer.price) != null &&
+        (offer.matchStatus === "review" || offer.price?.reliability !== "valid"),
     )[0] ?? null;
 }
 
@@ -54,7 +58,7 @@ export function otherCompetitorsSummary(item: ComparisonItem) {
   if (!Number.isFinite(ownPrice) || ownPrice <= 0) return { countLabel, priceNote: null };
 
   const differences = others
-    .map((offer) => Number(offer.comparisonPrice?.normalizedPrice ?? offer.price?.normalizedPrice) - ownPrice)
+    .map((offer) => Number(offer.comparisonPrice?.normalizedPrice ?? observedPriceValue(offer.price)) - ownPrice)
     .filter((difference) => Number.isFinite(difference));
   if (differences.length === 0) return { countLabel, priceNote: "Цены пока не собраны" };
   if (differences.every((difference) => difference === 0)) {
@@ -71,8 +75,8 @@ export function otherCompetitorsSummary(item: ComparisonItem) {
 
 export function sortedCompetitors(item: ComparisonItem): CompetitorComparison[] {
   return [...item.competitors].sort((left, right) => {
-    const leftPrice = left.comparisonPrice?.normalizedPrice ?? left.price?.normalizedPrice;
-    const rightPrice = right.comparisonPrice?.normalizedPrice ?? right.price?.normalizedPrice;
+    const leftPrice = left.comparisonPrice?.normalizedPrice ?? observedPriceValue(left.price);
+    const rightPrice = right.comparisonPrice?.normalizedPrice ?? observedPriceValue(right.price);
     if (leftPrice != null && rightPrice != null) return Number(leftPrice) - Number(rightPrice);
     if (leftPrice != null) return -1;
     if (rightPrice != null) return 1;

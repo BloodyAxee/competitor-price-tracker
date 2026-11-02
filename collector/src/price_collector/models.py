@@ -26,6 +26,7 @@ class SourceTask:
     rate_limit_per_host: float
     expected_product_name: str | None = None
     seller_article: str | None = None
+    match_status: str = "exact"
 
 
 @dataclass(frozen=True)

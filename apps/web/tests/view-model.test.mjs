@@ -11,6 +11,7 @@ import {
   formatPrice,
   formatPriceMovement,
   observationStatus,
+  observedPriceValue,
   offerStatusLabel,
   offerStatusTone,
   otherCompetitorsSummary,
@@ -22,6 +23,13 @@ test("missing prices are never displayed as zero", () => {
   assert.equal(formatPrice(null), "Не собрано");
   assert.equal(formatPrice(undefined), "Не собрано");
   assert.equal(formatPrice(""), "Не собрано");
+});
+
+test("an unverified observation displays its raw collected price", () => {
+  assert.equal(
+    observedPriceValue({ rawPrice: "149000", normalizedPrice: null, reliability: "unreliable" }),
+    "149000",
+  );
 });
 
 test("the cheapest priced competitor is selected", () => {

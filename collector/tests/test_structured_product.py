@@ -54,7 +54,11 @@ class RateLimitedFetcher:
         raise RetryableCollectionError("HTTP 429", code="temporary_http_error", http_status=429)
 
 
-def _task(url: str = "https://www.nordberg.ru/catalog/nordberg-4523/") -> SourceTask:
+def _task(
+    url: str = "https://www.nordberg.ru/catalog/nordberg-4523/",
+    *,
+    match_status: str = "exact",
+) -> SourceTask:
     return SourceTask(
         job_id="00000000-0000-0000-0000-000000000001",
         offer_id="00000000-0000-0000-0000-000000000002",
@@ -66,6 +70,7 @@ def _task(url: str = "https://www.nordberg.ru/catalog/nordberg-4523/") -> Source
         max_retries=2,
         rate_limit_per_host=1,
         expected_product_name="Балансировочный станок NORDBERG 4523 с автовводом",
+        match_status=match_status,
     )
 
 
@@ -101,6 +106,19 @@ class StructuredProductAdapterTest(unittest.TestCase):
         self.assertEqual(observation.price.stock_status, "in_stock")
         self.assertEqual(observation.observed_at, observed_at)
         self.assertEqual(observation.evidence["identity_tokens"], ("4523",))
+
+    def test_review_offer_keeps_raw_price_but_excludes_it_from_comparison(self) -> None:
+        adapter = StructuredProductAdapter(
+            StaticFetcher(FIXTURE.read_text(encoding="utf-8")),
+            "source:nordberg.ru",
+        )
+
+        observation = adapter.collect(_task(match_status="review"))
+
+        self.assertEqual(observation.price.raw_price, Decimal("189000.00"))
+        self.assertIsNone(observation.price.normalized_price)
+        self.assertEqual(observation.price.reliability, Reliability.UNRELIABLE)
+        self.assertEqual(observation.price.exclusion_reason, "non_exact_product")
 
     def test_rejects_url_from_another_domain_before_request(self) -> None:
         adapter = StructuredProductAdapter(StaticFetcher(""), "source:nordberg.ru")

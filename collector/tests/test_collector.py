@@ -1,3 +1,4 @@
+import inspect
 import unittest
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -304,6 +305,13 @@ class FetcherTest(unittest.TestCase):
     def test_job_claim_uses_skip_locked(self) -> None:
         normalized_sql = " ".join(CLAIM_JOB_SQL.split()).upper()
         self.assertIn("FOR UPDATE SKIP LOCKED", normalized_sql)
+
+    def test_job_collects_exact_and_review_offers(self) -> None:
+        from price_collector.repository import PostgresCollectorRepository
+
+        source = inspect.getsource(PostgresCollectorRepository.claim_next_job)
+        normalized_sql = " ".join(source.split()).upper()
+        self.assertIn("O.MATCH_STATUS IN ('EXACT', 'REVIEW')", normalized_sql)
 
     def test_prisma_schema_parameter_is_removed_for_psycopg(self) -> None:
         original = "postgresql://db:5432/database?schema=public&sslmode=require"

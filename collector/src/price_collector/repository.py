@@ -65,14 +65,15 @@ class PostgresCollectorRepository:
                     s.max_retries,
                     s.rate_limit_per_host,
                     p.name AS expected_product_name,
-                    o.seller_article
+                    o.seller_article,
+                    o.match_status
                 FROM offers o
                 JOIN sources s ON s.id = o.source_id
                 JOIN products p ON p.id = o.product_id
                 WHERE o.is_active
                   AND s.is_active
                   AND s.collection_method <> 'manual'
-                  AND o.match_status = 'exact'
+                  AND o.match_status IN ('exact', 'review')
                 ORDER BY s.external_key, o.id
                 """,
                 (job_id,),
@@ -95,6 +96,7 @@ class PostgresCollectorRepository:
             rate_limit_per_host=float(row["rate_limit_per_host"]),
             expected_product_name=row["expected_product_name"],
             seller_article=row["seller_article"],
+            match_status=row["match_status"],
         )
 
     def start_attempt(self, task: SourceTask, attempt_number: int, method: str) -> int:

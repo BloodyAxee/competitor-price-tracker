@@ -20,8 +20,15 @@ from .visible_product import (
 STRUCTURED_SOURCE_KEYS = (
     "source:aet-auto.ru",
     "source:atsgroup.su",
+    "source:autoholl.ru",
+    "source:avto-master.ru",
     "source:autoservice2.ru",
     "source:carmod.ru",
+    "source:eqfs.ru",
+    "source:eqpro.ru",
+    "source:garo.cc",
+    "source:guangli-rus.ru",
+    "source:guangli.ru",
     "source:master-instrument.ru",
     "source:mactak-m.ru",
     "source:nordberg-shop.ru",
@@ -115,7 +122,7 @@ class StructuredProductAdapter:
                 currency=product.currency,
                 stock_status=current_stock,
             ),
-            MatchStatus.EXACT,
+            MatchStatus(task.match_status),
         )
         return CollectedObservation(
             price=decision,
