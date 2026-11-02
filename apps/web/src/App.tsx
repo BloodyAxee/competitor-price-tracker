@@ -19,17 +19,20 @@ import type {
 } from "./types";
 import {
   attentionCompetitor,
+  attentionPriceSignal,
   bestCompetitor,
   collectionMethodLabel,
   differenceTone,
   formatDate,
   formatDifference,
+  formatAttentionDifference,
   formatPrice,
   formatPriceMovement,
   jobLabel,
   observationStatus,
   offerStatusLabel,
   offerStatusTone,
+  otherCompetitorsSummary,
   sortedCompetitors,
 } from "./view-model";
 
@@ -365,12 +368,10 @@ function App() {
   const productRow = (product: Product, mobile = false) => {
     const item = comparisonMap.get(product.id);
     const competitors = sortedCompetitors(item ?? ({ competitors: [] } as unknown as ComparisonItem));
-    const confirmedCompetitors = competitors.filter(
-      (competitor) => competitor.comparisonPrice?.normalizedPrice != null,
-    );
     const confirmed = bestCompetitor(item ?? ({ competitors: [] } as unknown as ComparisonItem));
-    const attention = attentionCompetitor(item ?? ({ competitors: [] } as unknown as ComparisonItem));
-    const reviewCandidate = attention;
+    const attention = attentionPriceSignal(item ?? ({ competitors: [] } as unknown as ComparisonItem));
+    const reviewCandidate = attention?.offer;
+    const otherCompetitors = item ? otherCompetitorsSummary(item) : null;
     const ownPrice = item?.own?.price;
     const modelCell = <div className="model-data"><strong>{product.name}</strong><span>{product.article ?? "Артикул не указан"}</span></div>;
     const ownCell = <div className="price-data own-price" data-label="Наша цена"><strong>{formatPrice(ownPrice?.normalizedPrice)}</strong>{item?.own?.url ? <a href={item.own.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>ЦТО</a> : <span>Карточка ЦТО не указана</span>}<small>{collectionMethodLabel(ownPrice)}{ownPrice ? ` · ${formatDate(ownPrice.observedAt ?? ownPrice.receivedAt)}` : ""}</small></div>;
@@ -384,11 +385,15 @@ function App() {
         {confirmed?.difference.amount != null && Number(confirmed.difference.amount) !== 0 && <small className={`result-difference ${differenceTone(confirmed.difference.amount)}`}>{formatDifference(confirmed.difference.amount, confirmed.difference.percent)}</small>}
         {confirmed?.difference.amount != null && Number(confirmed.difference.amount) === 0 && <small>Цена совпадает с нашей</small>}
         {confirmed && <small>{formatDate(confirmed.comparisonPrice?.observedAt ?? confirmed.comparisonPrice?.receivedAt)}</small>}
-        {confirmedCompetitors.length > 1 && <small>Ещё подтверждённых цен · {confirmedCompetitors.length - 1}</small>}
+      </div>
+    );
+    const otherCompetitorsCell = (
+      <div className={`other-competitors ${otherCompetitors ? "available" : "quiet"}`} data-label="Другие конкуренты">
+        {otherCompetitors ? <><strong>{otherCompetitors}</strong><small>Все источники в карточке</small></> : <span>—</span>}
       </div>
     );
     const attentionCell = (
-      <div className={`attention-price ${reviewCandidate ? "active" : "quiet"}`} data-label="Требует проверки">
+      <div className={`attention-price ${reviewCandidate ? "active" : "quiet"}`} data-label="Цена на проверке">
         {reviewCandidate ? (
           <>
             <span className="attention-icon" aria-label="Требует проверки">!</span>
@@ -396,20 +401,22 @@ function App() {
               <strong>{formatPrice(reviewCandidate.price?.normalizedPrice)}</strong>
               <a href={reviewCandidate.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{reviewCandidate.seller}</a>
               {reviewCandidate.priceChange && <span className={`price-movement ${reviewCandidate.priceChange.direction}`}>{formatPriceMovement(reviewCandidate.priceChange)}</span>}
-              <small>Не входит в итог</small>
+              <small className="attention-difference">{formatAttentionDifference(attention)}</small>
+              <small className="attention-note">Требует проверки · не входит в итог</small>
             </div>
           </>
-        ) : <span>Нет сигналов</span>}
+        ) : <span aria-label="Нет отличающейся цены">—</span>}
       </div>
     );
     if (mobile) {
-      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{attentionCell}</article>;
+      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{otherCompetitorsCell}{attentionCell}</article>;
     }
     return (
       <tr key={product.id} onClick={() => setSelected(product)} tabIndex={0} onKeyDown={(event) => event.key === "Enter" && setSelected(product)}>
         <td>{modelCell}</td>
         <td>{ownCell}</td>
         <td>{confirmedCell}</td>
+        <td>{otherCompetitorsCell}</td>
         <td>{attentionCell}</td>
       </tr>
     );
@@ -462,8 +469,6 @@ function App() {
           <article><span>Есть хотя бы одна цена</span><strong>{dashboardStats.withAnyPrice}</strong><small>из {summary.required}</small></article>
           <article><span>Можно сравнить</span><strong>{dashboardStats.compared}</strong><small>есть обе цены</small></article>
           <article><span>Наша цена ниже</span><strong>{dashboardStats.better}</strong><small>по валидным данным</small></article>
-          <article><span>Точные источники</span><strong>{summary.exactOffers}</strong><small>допущены к сбору</small></article>
-          <article><span>Нужно проверить</span><strong>{summary.reviewOffers}</strong><small>не влияют на сравнение</small></article>
         </section>
 
         <section className="catalog-panel">
@@ -489,7 +494,7 @@ function App() {
 
           {!loading && !error && visibleProducts.length > 0 && (
             <>
-              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th><span className="warning-heading"><span className="attention-icon small" aria-hidden="true">!</span>Цена требует проверки</span></th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
+              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th>Другие конкуренты</th><th>Цена на проверке</th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
               <div className="mobile-list">{visibleProducts.map((product) => productRow(product, true))}</div>
             </>
           )}

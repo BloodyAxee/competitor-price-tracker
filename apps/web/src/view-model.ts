@@ -42,6 +42,58 @@ export function attentionCompetitor(item: ComparisonItem): CompetitorComparison 
     )[0] ?? null;
 }
 
+export function attentionPriceSignal(item: ComparisonItem) {
+  const confirmed = bestCompetitor(item);
+  const confirmedPrice = Number(confirmed?.comparisonPrice?.normalizedPrice);
+  if (!confirmed || !Number.isFinite(confirmedPrice) || confirmedPrice <= 0) return null;
+
+  const candidates = sortedCompetitors(item)
+    .filter(
+      (offer) =>
+        offer.price?.normalizedPrice != null &&
+        (offer.matchStatus === "review" || offer.price.reliability !== "valid"),
+    )
+    .map((offer) => {
+      const price = Number(offer.price?.normalizedPrice);
+      const amount = price - confirmedPrice;
+      return {
+        offer,
+        amount,
+        percent: (amount / confirmedPrice) * 100,
+      };
+    })
+    .filter(
+      (candidate) =>
+        Number.isFinite(candidate.amount) &&
+        Number.isFinite(candidate.percent) &&
+        candidate.amount !== 0,
+    )
+    .sort((left, right) => Math.abs(right.percent) - Math.abs(left.percent));
+
+  return candidates[0] ?? null;
+}
+
+export function otherCompetitorsSummary(item: ComparisonItem) {
+  const confirmed = sortedCompetitors(item).filter(
+    (offer) => offer.comparisonPrice?.normalizedPrice != null,
+  );
+  if (confirmed.length <= 1) return null;
+
+  const bestPrice = Number(confirmed[0].comparisonPrice?.normalizedPrice);
+  const others = confirmed.slice(1);
+  const count = others.length;
+  const countLabel = count === 1 ? "Ещё 1 конкурент" : count <= 4 ? `Ещё ${count} конкурента` : `Ещё ${count} конкурентов`;
+  const allSamePrice = others.every(
+    (offer) => Number(offer.comparisonPrice?.normalizedPrice) === bestPrice,
+  );
+  if (allSamePrice) return `${countLabel} по той же цене`;
+
+  const lowestOtherPrice = Math.min(
+    ...others.map((offer) => Number(offer.comparisonPrice?.normalizedPrice)),
+  );
+  return `${countLabel} · цены от ${formatPrice(String(lowestOtherPrice))}`;
+}
+
 export function sortedCompetitors(item: ComparisonItem): CompetitorComparison[] {
   return [...item.competitors].sort((left, right) => {
     const leftPrice = left.comparisonPrice?.normalizedPrice ?? left.price?.normalizedPrice;
@@ -77,6 +129,13 @@ export function formatPriceMovement(
   if (!Number.isFinite(amount) || !Number.isFinite(percent)) return null;
   const direction = change.direction === "up" ? "Выросла" : "Снизилась";
   return `${direction} на ${moneyFormatter.format(amount)} · ${percent.toFixed(1)}%`;
+}
+
+export function formatAttentionDifference(
+  signal: NonNullable<ReturnType<typeof attentionPriceSignal>>,
+) {
+  const direction = signal.amount > 0 ? "Выше" : "Ниже";
+  return `${direction} подтверждённой на ${moneyFormatter.format(Math.abs(signal.amount))} · ${Math.abs(signal.percent).toFixed(1)}%`;
 }
 
 export function observationStatus(price: PriceObservation | null | undefined) {
