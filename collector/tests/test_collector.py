@@ -1,8 +1,11 @@
 import inspect
+import time
 import unittest
-from dataclasses import dataclass
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from decimal import Decimal
+from threading import Event, Lock
 
 from price_monitor_domain import MatchStatus, PriceInput, PriceType, evaluate_price
 from price_collector.adapters import AdapterRegistry
@@ -126,7 +129,240 @@ class SequenceAdapter:
         return outcome
 
 
+class SignalingAdapter:
+    method = "http"
+
+    def __init__(
+        self,
+        key: str,
+        *,
+        entered: Event | None = None,
+        release: Event | None = None,
+        finished: Event | None = None,
+    ) -> None:
+        self.key = key
+        self.entered = entered
+        self.release = release
+        self.finished = finished
+
+    def collect(self, task: SourceTask) -> CollectedObservation:
+        if self.entered is not None:
+            self.entered.set()
+        if self.release is not None and not self.release.wait(2):
+            raise AssertionError("Timed out waiting to release test adapter")
+        if self.finished is not None:
+            self.finished.set()
+        return _observation()
+
+
+class SameSourceBlockingAdapter:
+    method = "http"
+
+    def __init__(self, key: str) -> None:
+        self.key = key
+        self.first_started = Event()
+        self.second_started = Event()
+        self.release_first = Event()
+        self.calls = 0
+        self.max_active = 0
+        self._active = 0
+        self._lock = Lock()
+
+    def collect(self, task: SourceTask) -> CollectedObservation:
+        with self._lock:
+            self.calls += 1
+            call_number = self.calls
+            self._active += 1
+            self.max_active = max(self.max_active, self._active)
+        try:
+            if call_number == 1:
+                self.first_started.set()
+                if not self.release_first.wait(2):
+                    raise AssertionError("Timed out waiting to release first same-source task")
+            else:
+                self.second_started.set()
+            return _observation()
+        finally:
+            with self._lock:
+                self._active -= 1
+
+
+class ConcurrencyTracker:
+    def __init__(self, expected_initial: int) -> None:
+        self.expected_initial = expected_initial
+        self.started = 0
+        self.active = 0
+        self.max_active = 0
+        self.initial_batch_started = Event()
+        self.release = Event()
+        self.lock = Lock()
+
+
+class TrackedAdapter:
+    method = "http"
+
+    def __init__(self, key: str, tracker: ConcurrencyTracker) -> None:
+        self.key = key
+        self.tracker = tracker
+
+    def collect(self, task: SourceTask) -> CollectedObservation:
+        with self.tracker.lock:
+            self.tracker.started += 1
+            self.tracker.active += 1
+            self.tracker.max_active = max(self.tracker.max_active, self.tracker.active)
+            if self.tracker.started == self.tracker.expected_initial:
+                self.tracker.initial_batch_started.set()
+        try:
+            if not self.tracker.release.wait(2):
+                raise AssertionError("Timed out waiting to release concurrent adapters")
+            return _observation()
+        finally:
+            with self.tracker.lock:
+                self.tracker.active -= 1
+
+
+class RepositoryConcurrencyProbe(FakeRepository):
+    def __init__(self, job: CollectionJob) -> None:
+        super().__init__(job)
+        self.max_active_calls = 0
+        self._active_calls = 0
+        self._probe_lock = Lock()
+
+    def _call(self, callback: Callable[[], object]) -> object:
+        with self._probe_lock:
+            self._active_calls += 1
+            self.max_active_calls = max(self.max_active_calls, self._active_calls)
+        try:
+            time.sleep(0.003)
+            return callback()
+        finally:
+            with self._probe_lock:
+                self._active_calls -= 1
+
+    def start_attempt(self, task: SourceTask, attempt_number: int, method: str) -> int:
+        attempt_id = self._call(
+            lambda: FakeRepository.start_attempt(self, task, attempt_number, method)
+        )
+        if not isinstance(attempt_id, int):
+            raise AssertionError("Fake repository returned a non-integer attempt id")
+        return attempt_id
+
+    def finish_attempt(self, attempt_id: int, **values: object) -> None:
+        self._call(lambda: FakeRepository.finish_attempt(self, attempt_id, **values))
+
+    def save_observation(
+        self,
+        task: SourceTask,
+        attempt_id: int,
+        observation: CollectedObservation,
+    ) -> None:
+        self._call(
+            lambda: FakeRepository.save_observation(self, task, attempt_id, observation)
+        )
+
+    def finish_job(self, job_id: str, summary: object) -> None:
+        self._call(lambda: FakeRepository.finish_job(self, job_id, summary))
+
+
 class CollectorEngineTest(unittest.TestCase):
+    def test_slow_source_does_not_block_independent_source(self) -> None:
+        tasks = (_task("slow"), _task("fast"))
+        job = CollectionJob(tasks[0].job_id, tasks)
+        repository = FakeRepository(job)
+        slow_started = Event()
+        release_slow = Event()
+        fast_finished = Event()
+        engine = CollectorEngine(
+            repository,
+            AdapterRegistry(
+                (
+                    SignalingAdapter("slow", entered=slow_started, release=release_slow),
+                    SignalingAdapter("fast", finished=fast_finished),
+                )
+            ),
+            max_concurrency=2,
+        )
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(engine.process_job, job)
+            self.assertTrue(slow_started.wait(1))
+            self.assertTrue(fast_finished.wait(1))
+            release_slow.set()
+            summary = future.result(timeout=2)
+
+        self.assertEqual(summary.status, JobStatus.SUCCESS)
+        self.assertEqual(summary.succeeded, 2)
+
+    def test_tasks_from_same_source_are_never_concurrent(self) -> None:
+        tasks = (_task("same-host"), _task("same-host"))
+        job = CollectionJob(tasks[0].job_id, tasks)
+        repository = FakeRepository(job)
+        adapter = SameSourceBlockingAdapter("same-host")
+        engine = CollectorEngine(
+            repository,
+            AdapterRegistry((adapter,)),
+            max_concurrency=4,
+        )
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(engine.process_job, job)
+            self.assertTrue(adapter.first_started.wait(1))
+            self.assertFalse(adapter.second_started.wait(0.1))
+            adapter.release_first.set()
+            summary = future.result(timeout=2)
+
+        self.assertEqual(summary.succeeded, 2)
+        self.assertEqual(adapter.calls, 2)
+        self.assertEqual(adapter.max_active, 1)
+
+    def test_concurrency_is_bounded_by_configured_limit(self) -> None:
+        tasks = tuple(_task(f"source-{index}") for index in range(6))
+        job = CollectionJob(tasks[0].job_id, tasks)
+        repository = FakeRepository(job)
+        tracker = ConcurrencyTracker(expected_initial=4)
+        adapters = tuple(TrackedAdapter(task.source_key, tracker) for task in tasks)
+        engine = CollectorEngine(
+            repository,
+            AdapterRegistry(adapters),
+            max_concurrency=4,
+        )
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(engine.process_job, job)
+            self.assertTrue(tracker.initial_batch_started.wait(1))
+            with tracker.lock:
+                self.assertEqual(tracker.started, 4)
+                self.assertEqual(tracker.max_active, 4)
+            tracker.release.set()
+            summary = future.result(timeout=2)
+
+        self.assertEqual(summary.succeeded, 6)
+        self.assertEqual(tracker.max_active, 4)
+
+    def test_repository_writes_remain_serialized(self) -> None:
+        tasks = tuple(_task(f"source-{index}") for index in range(4))
+        job = CollectionJob(tasks[0].job_id, tasks)
+        repository = RepositoryConcurrencyProbe(job)
+        adapters = tuple(SignalingAdapter(task.source_key) for task in tasks)
+
+        summary = CollectorEngine(
+            repository,
+            AdapterRegistry(adapters),
+            max_concurrency=4,
+        ).process_job(job)
+
+        self.assertEqual(summary.succeeded, 4)
+        self.assertEqual(len(repository.attempts), 4)
+        self.assertEqual(len(repository.observations), 4)
+        self.assertEqual(repository.max_active_calls, 1)
+
+    def test_concurrency_must_be_positive(self) -> None:
+        task = _task("invalid-concurrency")
+        repository = FakeRepository(CollectionJob(task.job_id, (task,)))
+
+        with self.assertRaisesRegex(ValueError, "max_concurrency must be positive"):
+            CollectorEngine(repository, AdapterRegistry(), max_concurrency=0)
+
     def test_one_source_failure_does_not_abort_other_sources(self) -> None:
         tasks = (_task("good"), _task("bad"))
         repository = FakeRepository(CollectionJob(tasks[0].job_id, tasks))
@@ -284,6 +520,34 @@ class FetcherTest(unittest.TestCase):
         limiter.wait("https://example.com/b", 0.5)
 
         self.assertEqual(sleeps, [2.0])
+
+    def test_waiting_host_does_not_block_an_independent_host(self) -> None:
+        now = [0.0]
+        clock_lock = Lock()
+        sleep_started = Event()
+        release_sleep = Event()
+
+        def clock() -> float:
+            with clock_lock:
+                return now[0]
+
+        def sleep(seconds: float) -> None:
+            sleep_started.set()
+            if not release_sleep.wait(2):
+                raise AssertionError("Timed out waiting to release rate-limit sleep")
+            with clock_lock:
+                now[0] += seconds
+
+        limiter = HostRateLimiter(clock=clock, sleeper=sleep)
+        limiter.wait("https://slow.example/a", 0.5)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            slow_future = executor.submit(limiter.wait, "https://slow.example/b", 0.5)
+            self.assertTrue(sleep_started.wait(1))
+            fast_future = executor.submit(limiter.wait, "https://fast.example/a", 0.5)
+            fast_future.result(timeout=1)
+            release_sleep.set()
+            slow_future.result(timeout=2)
 
     def test_playwright_never_bypasses_human_verification(self) -> None:
         with self.assertRaises(ManualFallbackRequired):

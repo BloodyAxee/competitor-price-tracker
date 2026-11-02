@@ -45,7 +45,11 @@ def main() -> None:
     )
     repository = PostgresCollectorRepository(database_url)
     try:
-        engine = CollectorEngine(repository, adapters)
+        engine = CollectorEngine(
+            repository,
+            adapters,
+            max_concurrency=int(os.getenv("COLLECTOR_MAX_CONCURRENCY", "4")),
+        )
         worker = CollectorWorker(
             engine,
             os.getenv("COLLECTOR_WORKER_ID", socket.gethostname()),

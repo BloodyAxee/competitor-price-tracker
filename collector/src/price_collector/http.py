@@ -44,15 +44,20 @@ class HostRateLimiter:
         self._clock = clock
         self._sleeper = sleeper
         self._last_request: dict[str, float] = {}
-        self._lock = Lock()
+        self._host_locks: dict[str, Lock] = {}
+        self._host_locks_lock = Lock()
 
     def wait(self, url: str, requests_per_second: float) -> None:
         if requests_per_second <= 0:
             raise ValueError("requests_per_second must be positive")
-        host = urlparse(url).netloc.casefold()
+        parsed_url = urlparse(url)
+        host = (parsed_url.hostname or parsed_url.netloc).casefold()
         minimum_interval = 1 / requests_per_second
 
-        with self._lock:
+        with self._host_locks_lock:
+            host_lock = self._host_locks.setdefault(host, Lock())
+
+        with host_lock:
             now = self._clock()
             previous = self._last_request.get(host)
             if previous is not None:
