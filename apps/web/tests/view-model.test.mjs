@@ -4,11 +4,14 @@ import {
   bestCompetitor,
   bestComparable,
   attentionCompetitor,
+  collectionErrorLabel,
   collectionMethodLabel,
   collectionModeLabel,
+  competitorDescription,
   competitorCountLabel,
   confirmedPriceCountLabel,
   differenceTone,
+  exclusionReasonLabel,
   formatDifference,
   formatPrice,
   formatPriceMovement,
@@ -32,6 +35,38 @@ test("missing prices are never displayed as zero", () => {
 test("collection modes have distinct user-facing labels", () => {
   assert.equal(collectionModeLabel("fast"), "Быстрый сбор");
   assert.equal(collectionModeLabel("full"), "Полный сбор");
+});
+
+test("technical collection and exclusion codes have clear Russian labels", () => {
+  assert.equal(collectionErrorLabel("browser_timeout"), "Сайт не успел ответить через браузер");
+  assert.equal(
+    collectionErrorLabel("circuit_breaker_open"),
+    "Сбор с этого сайта остановлен после повторных одинаковых ошибок",
+  );
+  assert.equal(
+    exclusionReasonLabel("non_exact_product"),
+    "Модель или существенная комплектация не подтверждены как точное совпадение",
+  );
+  assert.equal(
+    exclusionReasonLabel("comparable_product"),
+    "Это сопоставимый рыночный ориентир, а не точное совпадение",
+  );
+});
+
+test("long research notes are split into understandable labelled parts", () => {
+  assert.deepEqual(
+    competitorDescription(
+      "Резервный источник. Совпадение подтверждено по модели и напряжению. AutoService2 добавлен после live-сбора. Карточка завершила browser timeout.",
+    ),
+    [
+      { label: "Роль источника", text: "Резервный источник" },
+      { label: "Почему карточка подходит", text: "Совпадение подтверждено по модели и напряжению" },
+      {
+        label: "Комментарий исследования",
+        text: "АВТОСЕРВИС2 добавлен после контрольного автоматического сбора. Карточка завершила ошибкой ожидания ответа сайта",
+      },
+    ],
+  );
 });
 
 test("an unverified observation displays its raw collected price", () => {

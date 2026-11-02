@@ -246,7 +246,8 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .method-badge { padding: 4px 7px; margin-left: auto; }
 .method-badge.manual { color: #5e557b; background: #ebe8f5; }
 .method-badge.automatic { color: #11603f; background: #d9f1e4; }
-.history-item p { grid-column: 1 / -1; margin: 0; color: var(--warning); font-size: 11px; }
+.history-item p { grid-column: 1 / -1; margin: 0; color: var(--warning); font-size: 11px; line-height: 1.45; }
+.history-item p strong { margin-bottom: 2px; color: var(--text); font-size: 10px; }
 .history-toggle { width: 100%; margin-top: 9px; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--accent); font-size: 12px; font-weight: 750; }
 .manual-section { padding: 0; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-soft); }
 .manual-section > summary { padding: 14px 16px; cursor: pointer; }
@@ -281,6 +282,11 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .competitor-detail-body p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .competitor-detail.warning .competitor-detail-body p { color: var(--danger); }
 .competitor-detail.comparable .competitor-detail-body p { color: #52619a; }
+.competitor-detail-body .price-exclusion, .competitor-notes p { padding: 9px 10px; border-radius: 8px; background: var(--surface); }
+.competitor-detail-body .price-exclusion { color: var(--warning) !important; }
+.competitor-detail-body .price-exclusion strong, .competitor-notes strong { display: block; margin-bottom: 3px; color: var(--text); font-size: 10px; }
+.competitor-notes { grid-column: 1 / -1; display: grid; gap: 6px; }
+.competitor-notes p { color: var(--muted) !important; }
 .comparison-specs { grid-column: 1 / -1; margin-top: 4px; border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 7px; }
 .comparison-specs-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .comparison-specs-heading strong { font-size: 11px; }

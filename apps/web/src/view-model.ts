@@ -136,6 +136,93 @@ export function formatPriceMovement(
   return `${direction} на ${moneyFormatter.format(amount)} · ${percent.toFixed(1)}%`;
 }
 
+const collectionErrorLabels: Record<string, string> = {
+  adapter_not_registered: "Для этого источника ещё не настроен автоматический сбор",
+  all_extractors_failed: "Не удалось распознать данные на странице",
+  ambiguous_price: "На странице найдено несколько цен, и нельзя безопасно выбрать одну",
+  ambiguous_product: "На странице найдено несколько товаров, и нельзя подтвердить нужную модель",
+  browser_error: "Браузер не смог обработать страницу",
+  browser_timeout: "Сайт не успел ответить через браузер",
+  circuit_breaker_open: "Сбор с этого сайта остановлен после повторных одинаковых ошибок",
+  collection_error: "Источник не удалось обработать",
+  conflicting_product_specification: "Характеристики на странице противоречат ожидаемой комплектации",
+  http_error: "Страница вернула постоянную ошибку",
+  human_verification_required: "Сайт запросил проверку человеком",
+  invalid_price: "На странице найдено некорректное значение цены",
+  missing_embedded_product: "На странице не найдены данные карточки товара",
+  missing_price: "На странице не найдена опубликованная цена",
+  missing_product_name: "На странице не найдено название товара",
+  missing_product_specification: "На странице недостаточно характеристик для подтверждения товара",
+  network_error: "Не удалось установить соединение с сайтом",
+  network_timeout: "Сайт не ответил вовремя",
+  parse_error: "Структура страницы изменилась, данные распознать не удалось",
+  product_mismatch: "Карточка относится к другой модели или комплектации",
+  protected_source: "Сайт ограничил автоматический доступ",
+  source_cooldown: "Нестабильный резервный источник временно пропущен",
+  source_mismatch: "Ответ получен не от ожидаемого источника",
+  temporary_http_error: "Сайт временно недоступен",
+  unexpected_error: "Во время сбора произошла техническая ошибка",
+  unsupported_currency: "Цена указана в неподдерживаемой валюте",
+  unsupported_offer: "Предложение не подходит для безопасного сравнения",
+};
+
+export function collectionErrorLabel(code: string | null | undefined, message?: string | null) {
+  if (code && collectionErrorLabels[code]) return collectionErrorLabels[code];
+  if (message && /[А-Яа-яЁё]/.test(message)) return message;
+  return "Источник недоступен по технической причине";
+}
+
+const exclusionReasonLabels: Record<string, string> = {
+  comparable_product: "Это сопоставимый рыночный ориентир, а не точное совпадение",
+  heterogeneous_package: "В комплект входят разные товары, поэтому цену нельзя делить на количество",
+  invalid_package_quantity: "Указано некорректное количество товара в упаковке",
+  invalid_price: "Получено некорректное значение цены",
+  missing_price: "Опубликованная цена не найдена",
+  non_exact_product: "Модель или существенная комплектация не подтверждены как точное совпадение",
+  price_from: "На странице указана цена «от», а не фиксированная стоимость",
+  quote_only: "Цена доступна только по запросу",
+  stale_page: "Цена опубликована на устаревшей странице",
+  unknown_package_quantity: "Не удалось подтвердить количество товара в упаковке",
+  unknown_price_type: "Не удалось определить тип опубликованной цены",
+};
+
+export function exclusionReasonLabel(reason: string | null | undefined) {
+  if (!reason) return null;
+  return exclusionReasonLabels[reason] ?? "Цена сохранена для истории, но не прошла правила итогового сравнения";
+}
+
+function humanizeResearchText(value: string) {
+  return value
+    .replaceAll("browser_timeout", "ошибкой ожидания ответа сайта")
+    .replaceAll("browser timeout", "ошибкой ожидания ответа сайта")
+    .replaceAll("AutoService2", "АВТОСЕРВИС2")
+    .replaceAll("live-сбора", "контрольного автоматического сбора")
+    .replaceAll("live-сбор", "контрольный автоматический сбор")
+    .replace(/\breview\b/gi, "требующий проверки")
+    .replace(/\bexact\b/gi, "точный");
+}
+
+export function competitorDescription(reason: string | null | undefined) {
+  if (!reason) return [];
+  const sentences = humanizeResearchText(reason)
+    .split(/(?<=\.)\s+/)
+    .map((sentence) => sentence.trim().replace(/\.$/, ""))
+    .filter(Boolean);
+  if (sentences.length === 1) return [{ label: "Описание", text: sentences[0] }];
+
+  const role = sentences.shift()!;
+  const basis = sentences.shift();
+  const result = [{ label: "Роль источника", text: role }];
+  if (basis) {
+    const limitation = /защищ|тайм-аут|не используется|не должна|не подтвержд/i.test(basis);
+    result.push({ label: limitation ? "Ограничение" : "Почему карточка подходит", text: basis });
+  }
+  if (sentences.length > 0) {
+    result.push({ label: "Комментарий исследования", text: sentences.join(". ") });
+  }
+  return result;
+}
+
 export function historyPriceMovement(items: HistoryItem[], index: number) {
   const current = items[index];
   if (!current?.normalizedPrice) return null;

@@ -23,9 +23,12 @@ import {
   attentionCompetitor,
   bestComparable,
   bestCompetitor,
+  collectionErrorLabel,
   collectionMethodLabel,
   collectionModeLabel,
+  competitorDescription,
   differenceTone,
+  exclusionReasonLabel,
   formatDate,
   formatDifference,
   formatPrice,
@@ -331,7 +334,10 @@ function App() {
   const competitorDetail = (competitor: CompetitorComparison, index: number) => {
     const tone = offerStatusTone(competitor);
     const currentPrice = competitor.referencePrice ?? competitor.price;
-    const reason = competitor.comparisonProfile?.summary ?? currentPrice?.exclusionReason ?? competitor.matchReason;
+    const description = competitorDescription(
+      competitor.comparisonProfile?.summary ?? competitor.matchReason,
+    );
+    const priceExclusion = exclusionReasonLabel(currentPrice?.exclusionReason);
     return (
       <details className={`competitor-detail ${tone}`} key={competitor.offerId}>
         <summary>
@@ -373,7 +379,8 @@ function App() {
           )}
           {tone === "warning" && <span className="excluded-label">Цена не входит в итоговое сравнение</span>}
           {tone === "comparable" && <span className="excluded-label">Ориентир не входит в точный итог</span>}
-          {reason && <p>{reason}</p>}
+          {priceExclusion && <p className="price-exclusion"><strong>Почему цена не участвует</strong>{priceExclusion}</p>}
+          {description.length > 0 && <div className="competitor-notes">{description.map((part) => <p key={part.label}><strong>{part.label}</strong>{part.text}</p>)}</div>}
           {competitor.comparisonProfile && (
             <div className="comparison-specs">
               <div className="comparison-specs-heading">
@@ -508,7 +515,7 @@ function App() {
                         <span><strong>{result.offer?.product.name ?? result.source.name}</strong><small>{result.source.name} · {result.attempts.length} {result.attempts.length === 1 ? "попытка" : "попытки"}</small></span>
                         <b>{result.status === "failed" ? "Проблема" : "Пропущено"}</b>
                       </summary>
-                      <div>{result.attempts.map((attempt) => <p key={attempt.id}>Попытка {attempt.attemptNumber} · {attempt.errorMessage ?? attempt.errorCode ?? "Источник недоступен"}</p>)}</div>
+                      <div>{result.attempts.map((attempt) => <p key={attempt.id}>Попытка {attempt.attemptNumber} · {collectionErrorLabel(attempt.errorCode, attempt.errorMessage)}</p>)}</div>
                     </details>
                   ))}
                 </div>
@@ -602,7 +609,7 @@ function App() {
               <div className="section-heading"><div><h3>История цен</h3><p>{historyExpanded ? "Показаны все сохранённые наблюдения" : "Три последних наблюдения"}</p></div><span className="count-badge">{history?.total ?? 0}</span></div>
               {historyLoading && <div className="inline-loading"><div className="spinner"></div>Загружаем историю</div>}
               {!historyLoading && history?.items.length === 0 && <p className="muted">Истории пока нет. Запустите сбор или внесите цену вручную.</p>}
-              <div className="history-list">{visibleHistory?.map((entry, index) => { const movement = historyPriceMovement(history?.items ?? [], index); return <article className={`history-item ${entry.reliability}`} key={entry.id}><div><strong>{formatPrice(entry.normalizedPrice ?? entry.rawPrice)}</strong><a href={entry.offer.competitorUrl} target="_blank" rel="noreferrer">{entry.offer.source.domain === "centr-to.ru" ? "Наша цена · ЦТО" : `Конкурент · ${entry.offer.seller.displayName}`}</a><span>{formatDate(entry.receivedAt)} · {entry.region ?? "регион не указан"}</span></div><div className="history-status"><span className={`method-badge ${entry.method}`}>{entry.method === "manual" ? "Вручную" : "Автоматически"}</span><small>{observationStatus(entry)}</small>{movement && <><span className={`price-movement history-movement ${movement.direction}`}>{formatPriceMovement(movement)}</span><small>к предыдущему наблюдению этого источника</small></>}</div>{entry.exclusionReason && <p>Причина исключения · {entry.exclusionReason}</p>}</article>; })}</div>
+              <div className="history-list">{visibleHistory?.map((entry, index) => { const movement = historyPriceMovement(history?.items ?? [], index); const exclusion = exclusionReasonLabel(entry.exclusionReason); return <article className={`history-item ${entry.reliability}`} key={entry.id}><div><strong>{formatPrice(entry.normalizedPrice ?? entry.rawPrice)}</strong><a href={entry.offer.competitorUrl} target="_blank" rel="noreferrer">{entry.offer.source.domain === "centr-to.ru" ? "Наша цена · ЦТО" : `Конкурент · ${entry.offer.seller.displayName}`}</a><span>{formatDate(entry.receivedAt)} · {entry.region ?? "регион не указан"}</span></div><div className="history-status"><span className={`method-badge ${entry.method}`}>{entry.method === "manual" ? "Вручную" : "Автоматически"}</span><small>{observationStatus(entry)}</small>{movement && <><span className={`price-movement history-movement ${movement.direction}`}>{formatPriceMovement(movement)}</span><small>к предыдущему наблюдению этого источника</small></>}</div>{exclusion && <p><strong>Почему цена не участвует</strong>{exclusion}</p>}</article>; })}</div>
               {(history?.items.length ?? 0) > 3 && <button type="button" className="history-toggle" onClick={() => setHistoryExpanded((value) => !value)}>{historyExpanded ? "Свернуть до трёх последних" : `Показать всю историю · ${history?.total ?? history?.items.length}`}</button>}
             </section>
 
