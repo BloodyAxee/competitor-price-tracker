@@ -7,6 +7,7 @@ import {
   collectionErrorLabel,
   collectionMethodLabel,
   collectionModeLabel,
+  competitorPriceDifferencePriority,
   competitorPriceDifferenceState,
   competitorDescription,
   competitorCountLabel,
@@ -146,10 +147,65 @@ test("price difference filter checks exact and comparable prices without treatin
   );
   assert.equal(
     competitorPriceDifferenceState({
+      own: { comparisonPrice: { normalizedPrice: "100000" } },
+      competitors: [
+        {
+          comparisonPrice: null,
+          referencePrice: null,
+          price: { rawPrice: "85000", normalizedPrice: null },
+          difference: { amount: null },
+          referenceDifference: null,
+        },
+      ],
+    }),
+    "different",
+  );
+  assert.equal(
+    competitorPriceDifferenceState({
       competitors: [{ difference: { amount: null }, referenceDifference: null }],
     }),
     "unknown",
   );
+});
+
+test("default price ordering prefers confirmed differences before indicative differences", () => {
+  const confirmedDifference = {
+    competitors: [
+      {
+        comparisonPrice: { normalizedPrice: "120000" },
+        difference: { amount: "20000" },
+        referenceDifference: null,
+      },
+    ],
+  };
+  const comparableDifference = {
+    competitors: [
+      {
+        comparisonPrice: null,
+        difference: { amount: null },
+        referenceDifference: { amount: "50000" },
+      },
+    ],
+  };
+  const samePrice = {
+    competitors: [
+      {
+        comparisonPrice: { normalizedPrice: "100000" },
+        difference: { amount: "0" },
+        referenceDifference: null,
+      },
+    ],
+  };
+  const noComparison = {
+    competitors: [
+      { comparisonPrice: null, difference: { amount: null }, referenceDifference: null },
+    ],
+  };
+
+  assert.equal(competitorPriceDifferencePriority(confirmedDifference), 0);
+  assert.equal(competitorPriceDifferencePriority(comparableDifference), 1);
+  assert.equal(competitorPriceDifferencePriority(samePrice), 2);
+  assert.equal(competitorPriceDifferencePriority(noComparison), 3);
 });
 
 test("the result price ignores a cheaper unverified offer", () => {
@@ -176,6 +232,27 @@ test("the result price ignores a cheaper unverified offer", () => {
 
   assert.equal(bestCompetitor(item).seller, "Подтверждено");
   assert.equal(attentionCompetitor(item).seller, "Проверить");
+});
+
+test("an unverified duplicate price does not create a separate warning card", () => {
+  const item = {
+    competitors: [
+      {
+        seller: "Подтверждено",
+        matchStatus: "exact",
+        price: { normalizedPrice: "72000", reliability: "valid" },
+        comparisonPrice: { normalizedPrice: "72000" },
+      },
+      {
+        seller: "Дополнительный источник",
+        matchStatus: "review",
+        price: { normalizedPrice: "72000", reliability: "unreliable" },
+        comparisonPrice: null,
+      },
+    ],
+  };
+
+  assert.equal(attentionCompetitor(item), null);
 });
 
 test("a comparable price is selected separately and never becomes the exact result", () => {

@@ -26,6 +26,7 @@ import {
   collectionErrorLabel,
   collectionMethodLabel,
   collectionModeLabel,
+  competitorPriceDifferencePriority,
   competitorPriceDifferenceState,
   competitorDescription,
   differenceTone,
@@ -234,8 +235,13 @@ function App() {
           .includes(normalizedQuery);
       })
       .sort(
-        (left, right) =>
-          left.priority - right.priority || left.name.localeCompare(right.name, "ru"),
+        (left, right) => {
+          const differencePriority =
+            competitorPriceDifferencePriority(comparisonMap.get(left.id)) -
+            competitorPriceDifferencePriority(comparisonMap.get(right.id));
+          if (differencePriority !== 0) return differencePriority;
+          return left.priority - right.priority || left.name.localeCompare(right.name, "ru");
+        },
       );
   }, [products, query, scope, confirmationFilter, priceDifferenceFilter, comparisonMap]);
 

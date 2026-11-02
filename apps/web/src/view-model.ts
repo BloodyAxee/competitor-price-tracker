@@ -44,18 +44,48 @@ export function hasConfirmedCompetitorPrice(item: ComparisonItem | undefined) {
   return item ? bestCompetitor(item) !== null : false;
 }
 
+function competitorPriceDifferences(item: ComparisonItem | undefined) {
+  const ownPriceValue =
+    item?.own?.comparisonPrice?.normalizedPrice ?? observedPriceValue(item?.own?.price);
+  const ownPrice = ownPriceValue == null ? null : Number(ownPriceValue);
+  return item?.competitors.flatMap((offer) => {
+    if (offer.difference.amount != null) {
+      const amount = Number(offer.difference.amount);
+      return Number.isFinite(amount) ? [{ amount, confirmed: true }] : [];
+    }
+
+    if (offer.referenceDifference?.amount != null) {
+      const amount = Number(offer.referenceDifference.amount);
+      return Number.isFinite(amount) ? [{ amount, confirmed: false }] : [];
+    }
+
+    const candidatePriceValue =
+      observedPriceValue(offer.referencePrice) ?? observedPriceValue(offer.price);
+    if (ownPrice == null || candidatePriceValue == null) return [];
+    const candidatePrice = Number(candidatePriceValue);
+    if (!Number.isFinite(ownPrice) || !Number.isFinite(candidatePrice)) return [];
+    return [{ amount: candidatePrice - ownPrice, confirmed: false }];
+  }) ?? [];
+}
+
 export function competitorPriceDifferenceState(
   item: ComparisonItem | undefined,
 ): "different" | "same" | "unknown" {
-  const differences = item?.competitors.flatMap((offer) => {
-    const amount = offer.difference.amount ?? offer.referenceDifference?.amount;
-    if (amount == null) return [];
-    const numeric = Number(amount);
-    return Number.isFinite(numeric) ? [numeric] : [];
-  }) ?? [];
-  if (differences.some((difference) => difference !== 0)) return "different";
+  const differences = competitorPriceDifferences(item);
+  if (differences.some((difference) => difference.amount !== 0)) return "different";
   if (differences.length > 0) return "same";
   return "unknown";
+}
+
+export function competitorPriceDifferencePriority(item: ComparisonItem | undefined) {
+  const differences = competitorPriceDifferences(item);
+  if (differences.some((difference) => difference.confirmed && difference.amount !== 0)) {
+    return 0;
+  }
+  if (differences.some((difference) => !difference.confirmed && difference.amount !== 0)) {
+    return 1;
+  }
+  return differences.length > 0 ? 2 : 3;
 }
 
 export function bestComparable(item: ComparisonItem): CompetitorComparison | null {
@@ -77,13 +107,22 @@ export function bestComparable(item: ComparisonItem): CompetitorComparison | nul
 }
 
 export function attentionCompetitor(item: ComparisonItem): CompetitorComparison | null {
-  return sortedCompetitors(item)
-    .filter(
-      (offer) =>
-        observedPriceValue(offer.price) != null &&
-        (offer.matchStatus === "review" ||
-          (offer.matchStatus !== "comparable" && offer.price?.reliability !== "valid")),
-    )[0] ?? null;
+  const candidates = sortedCompetitors(item).filter(
+    (offer) =>
+      observedPriceValue(offer.price) != null &&
+      (offer.matchStatus === "review" ||
+        (offer.matchStatus !== "comparable" && offer.price?.reliability !== "valid")),
+  );
+  const confirmedPriceValue = bestCompetitor(item)?.comparisonPrice?.normalizedPrice;
+  if (confirmedPriceValue == null) return candidates[0] ?? null;
+  const confirmedPrice = Number(confirmedPriceValue);
+  return candidates.find((offer) => {
+    const candidatePrice = Number(observedPriceValue(offer.price));
+    return (
+      Number.isFinite(candidatePrice) &&
+      (!Number.isFinite(confirmedPrice) || candidatePrice !== confirmedPrice)
+    );
+  }) ?? null;
 }
 
 export function otherCompetitorsSummary(item: ComparisonItem) {
