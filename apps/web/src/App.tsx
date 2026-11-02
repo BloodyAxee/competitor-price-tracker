@@ -26,7 +26,7 @@ import {
   collectionErrorLabel,
   collectionMethodLabel,
   collectionModeLabel,
-  competitorPriceMovementState,
+  competitorPriceDifferenceState,
   competitorDescription,
   differenceTone,
   exclusionReasonLabel,
@@ -49,7 +49,7 @@ import {
 
 type ScopeFilter = "all" | "required" | "additional" | "component";
 type ConfirmationFilter = "all" | "confirmed" | "unconfirmed";
-type PriceMovementFilter = "all" | "changed" | "unchanged";
+type PriceDifferenceFilter = "all" | "different" | "same";
 
 const initialRegions: RegionsResponse = {
   items: [],
@@ -96,7 +96,7 @@ function App() {
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<ScopeFilter>("required");
   const [confirmationFilter, setConfirmationFilter] = useState<ConfirmationFilter>("all");
-  const [priceMovementFilter, setPriceMovementFilter] = useState<PriceMovementFilter>("all");
+  const [priceDifferenceFilter, setPriceDifferenceFilter] = useState<PriceDifferenceFilter>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [job, setJob] = useState<CollectionJobDetails | null>(null);
@@ -221,9 +221,10 @@ function App() {
         return confirmationFilter === "confirmed" ? confirmed : !confirmed;
       })
       .filter((product) => {
-        if (priceMovementFilter === "all") return true;
+        if (priceDifferenceFilter === "all") return true;
         return (
-          competitorPriceMovementState(comparisonMap.get(product.id)) === priceMovementFilter
+          competitorPriceDifferenceState(comparisonMap.get(product.id)) ===
+          priceDifferenceFilter
         );
       })
       .filter((product) => {
@@ -236,7 +237,7 @@ function App() {
         (left, right) =>
           left.priority - right.priority || left.name.localeCompare(right.name, "ru"),
       );
-  }, [products, query, scope, confirmationFilter, priceMovementFilter, comparisonMap]);
+  }, [products, query, scope, confirmationFilter, priceDifferenceFilter, comparisonMap]);
 
   const handleStartCollection = async (mode: CollectionMode) => {
     setStartingMode(mode);
@@ -550,7 +551,7 @@ function App() {
             <label className="search-field"><span>Поиск</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Модель или артикул" /></label>
             <label><span>Каталог</span><select value={scope} onChange={(event) => setScope(event.target.value as ScopeFilter)}><option value="required">Основные модели</option><option value="component">Компоненты комплектов</option><option value="additional">Дополнительные модели</option><option value="all">Весь каталог</option></select></label>
             <label><span>Подтверждённая цена</span><select value={confirmationFilter} onChange={(event) => setConfirmationFilter(event.target.value as ConfirmationFilter)}><option value="all">Показать все</option><option value="confirmed">Цена есть</option><option value="unconfirmed">Цены нет</option></select></label>
-            <label><span>Изменение цены конкурента</span><select value={priceMovementFilter} onChange={(event) => setPriceMovementFilter(event.target.value as PriceMovementFilter)}><option value="all">Показать все</option><option value="changed">Цена изменилась</option><option value="unchanged">Цена не изменилась</option></select></label>
+            <label><span>Разница с нашей ценой</span><select value={priceDifferenceFilter} onChange={(event) => setPriceDifferenceFilter(event.target.value as PriceDifferenceFilter)}><option value="all">Показать все</option><option value="different">Есть разница</option><option value="same">Цены совпадают</option></select></label>
           </div>
 
           {error && <div className="error-state"><strong>Ошибка подключения</strong><p>{error}</p><button className="secondary-button" onClick={() => void refresh()}>Попробовать снова</button></div>}

@@ -7,7 +7,7 @@ import {
   collectionErrorLabel,
   collectionMethodLabel,
   collectionModeLabel,
-  competitorPriceMovementState,
+  competitorPriceDifferenceState,
   competitorDescription,
   competitorCountLabel,
   confirmedPriceCountLabel,
@@ -118,21 +118,36 @@ test("confirmed price filter only accepts exact usable competitor prices", () =>
   );
 });
 
-test("price movement filter separates unchanged prices from missing history", () => {
+test("price difference filter checks exact and comparable prices without treating missing data as equal", () => {
   assert.equal(
-    competitorPriceMovementState({
-      competitors: [{ priceChange: { direction: "up" } }],
+    competitorPriceDifferenceState({
+      competitors: [
+        { difference: { amount: "0" }, referenceDifference: null },
+        { difference: { amount: "-15000" }, referenceDifference: null },
+      ],
     }),
-    "changed",
+    "different",
   );
   assert.equal(
-    competitorPriceMovementState({
-      competitors: [{ priceChange: { direction: "unchanged" } }],
+    competitorPriceDifferenceState({
+      competitors: [
+        { difference: { amount: null }, referenceDifference: { amount: "0" } },
+      ],
     }),
-    "unchanged",
+    "same",
   );
   assert.equal(
-    competitorPriceMovementState({ competitors: [{ priceChange: null }] }),
+    competitorPriceDifferenceState({
+      competitors: [
+        { difference: { amount: null }, referenceDifference: { amount: "1836700" } },
+      ],
+    }),
+    "different",
+  );
+  assert.equal(
+    competitorPriceDifferenceState({
+      competitors: [{ difference: { amount: null }, referenceDifference: null }],
+    }),
     "unknown",
   );
 });

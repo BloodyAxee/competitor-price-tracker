@@ -44,14 +44,17 @@ export function hasConfirmedCompetitorPrice(item: ComparisonItem | undefined) {
   return item ? bestCompetitor(item) !== null : false;
 }
 
-export function competitorPriceMovementState(
+export function competitorPriceDifferenceState(
   item: ComparisonItem | undefined,
-): "changed" | "unchanged" | "unknown" {
-  const changes = item?.competitors.flatMap((offer) =>
-    offer.priceChange ? [offer.priceChange] : [],
-  ) ?? [];
-  if (changes.some((change) => change.direction !== "unchanged")) return "changed";
-  if (changes.length > 0) return "unchanged";
+): "different" | "same" | "unknown" {
+  const differences = item?.competitors.flatMap((offer) => {
+    const amount = offer.difference.amount ?? offer.referenceDifference?.amount;
+    if (amount == null) return [];
+    const numeric = Number(amount);
+    return Number.isFinite(numeric) ? [numeric] : [];
+  }) ?? [];
+  if (differences.some((difference) => difference !== 0)) return "different";
+  if (differences.length > 0) return "same";
   return "unknown";
 }
 
