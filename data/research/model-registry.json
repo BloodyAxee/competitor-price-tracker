@@ -8,6 +8,8 @@
       "seller_domain": "topmaster-shop.ru",
       "seller_name": "Топ Мастер",
       "verified_on": "2026-11-01",
+      "match_status": "review",
+      "status_reason": "Товарное совпадение подтверждено, но оба компонента два последовательных полных запуска завершили browser timeout; пара сохранена для аудита и не участвует в ежедневной очереди",
       "components": [
         {
           "article": "4641N",
@@ -26,6 +28,8 @@
       "seller_domain": "autoservice2.ru",
       "seller_name": "АВТОСЕРВИС2",
       "verified_on": "2026-11-02",
+      "match_status": "exact",
+      "status_reason": "Обе части комплекта имеют открытые цены, прошли проверку критичных характеристик и полный автоматический сбор",
       "components": [
         {
           "article": "4641N",

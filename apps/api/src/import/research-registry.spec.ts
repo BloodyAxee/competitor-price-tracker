@@ -26,6 +26,8 @@ interface ResearchModel {
 interface BundleOffer {
   bundle_model: string;
   seller_domain: string;
+  match_status: "exact" | "review";
+  status_reason: string;
   components: Array<{ article: string; url: string }>;
 }
 
@@ -95,10 +97,18 @@ test("required source registry keeps exact matches separate from unresolved conf
     ),
   );
   assert.equal(registry.bundle_offers.length, 2);
+  assert.deepEqual(
+    registry.bundle_offers.map((bundle) => [bundle.seller_domain, bundle.match_status]),
+    [
+      ["topmaster-shop.ru", "review"],
+      ["autoservice2.ru", "exact"],
+    ],
+  );
   assert.ok(
     registry.bundle_offers.every(
       (bundle) =>
         bundle.bundle_model === "Шиномонтажный комплект NORDBERG 4641N + VT-64" &&
+        bundle.status_reason.length > 40 &&
         bundle.components.map((component) => component.article).sort().join(",") ===
           "4641N,VT-64.5005" &&
         bundle.components.every(

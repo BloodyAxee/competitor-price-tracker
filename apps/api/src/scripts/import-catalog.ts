@@ -33,6 +33,8 @@ interface ResearchRegistry {
     seller_domain: string;
     seller_name: string;
     verified_on: string;
+    match_status: "exact" | "review";
+    status_reason: string;
     components: Array<{ article: string; url: string; match_reason: string }>;
   }>;
 }
@@ -287,6 +289,9 @@ try {
       if (bundleOffer.components.length !== components.length) {
         throw new Error("A researched bundle offer must contain every agreed component");
       }
+      if (!bundleOffer.status_reason.trim()) {
+        throw new Error("A researched bundle offer must explain its collection status");
+      }
       const profile = sourceProfile(bundleOffer.seller_domain);
       const seller = await tx.seller.upsert({
         where: { externalKey: `seller:${bundleOffer.seller_domain}` },
@@ -343,14 +348,14 @@ try {
             sourceId: source.id,
             competitorUrl: researchedComponent.url,
             sellerArticle: researchedComponent.article,
-            matchStatus: "exact",
-            matchReason: `${researchedComponent.match_reason}. Проверено ${bundleOffer.verified_on}.`,
+            matchStatus: bundleOffer.match_status,
+            matchReason: `${researchedComponent.match_reason}. ${bundleOffer.status_reason}. Проверено ${bundleOffer.verified_on}.`,
           },
           update: {
             sellerId: seller.id,
             sellerArticle: researchedComponent.article,
-            matchStatus: "exact",
-            matchReason: `${researchedComponent.match_reason}. Проверено ${bundleOffer.verified_on}.`,
+            matchStatus: bundleOffer.match_status,
+            matchReason: `${researchedComponent.match_reason}. ${bundleOffer.status_reason}. Проверено ${bundleOffer.verified_on}.`,
             isActive: true,
             updatedAt: new Date(),
           },
