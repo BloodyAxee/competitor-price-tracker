@@ -128,6 +128,46 @@ class VisibleProductParserTest(unittest.TestCase):
                 VISIBLE_SOURCE_PROFILES["source:nordberg-shop.ru"],
             )
 
+    def test_official_nordberg_card_uses_rendered_article_and_price(self) -> None:
+        html = """
+        <html><head><title>Станок балансировочный автоматический с дисплеем, синий</title></head>
+        <body>
+          <h1>Станок балансировочный автоматический с дисплеем, синий</h1>
+          <div class="product__article">4523PA1(B)</div>
+          <div>Напряжение, В 220, диаметр диска 10-28, ширина диска 38-508 мм</div>
+          <div>Максимальный вес колеса, кг 70</div>
+          <div>Изображения Все характеристики Комплектация О товаре</div>
+          <div class="product__price-new">222 000 ₽</div><button>В корзину</button>
+          <h2>Доступные варианты</h2><div>224 000 ₽ В корзину</div>
+        </body></html>
+        """
+
+        product = parse_visible_product(
+            html,
+            "Балансировочный станок 4523PA1(B) с автовводом",
+            VISIBLE_SOURCE_PROFILES["source:nordberg.ru"],
+        )
+
+        self.assertEqual(product.price, Decimal("222000"))
+
+    def test_official_nordberg_similar_article_is_rejected(self) -> None:
+        html = """
+        <html><body>
+          <h1>Станок балансировочный автоматический с дисплеем, синий</h1>
+          <div class="product__article">4523PA2(B)</div>
+          <div>Напряжение, В 220, диаметр диска 10-28, ширина диска 38-508 мм</div>
+          <div>Максимальный вес колеса, кг 70</div>
+          <div>222 000 ₽ В корзину</div>
+        </body></html>
+        """
+
+        with self.assertRaises(PermanentCollectionError):
+            parse_visible_product(
+                html,
+                "Балансировочный станок 4523PA1(B) с автовводом",
+                VISIBLE_SOURCE_PROFILES["source:nordberg.ru"],
+            )
+
     def test_navigation_stop_marker_before_product_does_not_hide_the_card(self) -> None:
         html = """
         <html><body>

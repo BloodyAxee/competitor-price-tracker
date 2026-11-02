@@ -46,6 +46,10 @@ VISIBLE_SOURCE_PROFILES = {
         price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*(?:RUB|₽)\s*(?:В корзину|Минимальный заказ)",),
         stop_markers=("Опции и аксессуары", "С этим товаром покупают"),
     ),
+    "source:nordberg.ru": VisibleProductProfile(
+        price_patterns=(rf"О товаре\s+(?P<price>{_PRICE_NUMBER})\s*₽\s*В корзину",),
+        stop_markers=("Похожие товары", "С этим товаром покупают"),
+    ),
     "source:rossvik.moscow": VisibleProductProfile(
         price_patterns=(rf"(?P<price>{_PRICE_NUMBER})\s*₽\s*(?:В корзину|Сравнить|Гарантия|Наличие)",),
         stop_markers=("Рекомендуем купить",),
@@ -190,6 +194,15 @@ _EXACT_QUALIFIER_RULES: dict[tuple[str, ...], tuple[tuple[str, str], ...]] = {
         (r"(?:65\s*кг|кг[^0-9]{0,10}65)", "65 kg wheel mass"),
         (r"(?:вал|диаметр вала)[^\n]{0,30}40\s*мм", "40 mm shaft"),
     ),
+    ("4523pa1b",): (
+        (r"(?:\b220\s*[вv]\b|напряжение[^\n]{0,20}[вv][^0-9]{0,10}220)", "220 V"),
+        (_diameter_range_pattern(10, 28), "10-28"),
+        (r"(?:1[,.]5\s*[\"″]?\s*-\s*20|38\s*-\s*508)", "1.5-20 or 38-508 mm"),
+        (
+            r"(?:70\s*кг|(?:максимальн\w* (?:вес|масса) колес\w*)[^\n]{0,30}(?:кг[^0-9]{0,10})?70)",
+            "70 kg wheel mass",
+        ),
+    ),
     ("4524cb",): (
         (r"\b220\s*[вv]\b", "220 V"),
         (_diameter_range_pattern(10, 24), "10-24"),
@@ -256,6 +269,9 @@ _VISIBLE_IDENTITY_ALIASES: dict[tuple[str, ...], tuple[str, ...]] = {
     # The live card heading is shortened to "ROSSVIK VT-64 (синий)". Voltage and
     # RAL are still mandatory below and are checked by _EXACT_QUALIFIER_RULES.
     ("vt64", "220в", "ral5005"): ("vt64",),
+    # The official NORDBERG heading describes the machine but omits the article.
+    # The same page renders the exact 4523PA1(B) article next to the heading.
+    ("4523pa1b",): ("4523pa1b",),
 }
 
 
@@ -399,7 +415,15 @@ def parse_visible_product(
                 name = candidate
                 break
     if name is None:
-        raise identity_errors[0]
+        expected_tokens = identity_tokens(expected_name)
+        required_alias_tokens = _VISIBLE_IDENTITY_ALIASES.get(expected_tokens)
+        page_tokens = identity_tokens(
+            _scoped_visible_text(parser, profile, stop_at_recommendations=False)
+        )
+        if required_alias_tokens and all(token in page_tokens for token in required_alias_tokens):
+            name = identity_candidates[0]
+        else:
+            raise identity_errors[0]
 
     visible_text = _scoped_visible_text(parser, profile)
     validate_visible_product_qualifiers(html, expected_name, profile)
