@@ -332,6 +332,25 @@ function App() {
   const collectionProblems = [...failedCollectionResults, ...skippedCollectionResults];
   const activeRegion = regions.items.find((region) => region.code === priceRegion) ?? null;
 
+  const comparisonSpecs = (competitor: CompetitorComparison) => {
+    if (!competitor.comparisonProfile) return null;
+    return (
+      <div className="comparison-specs">
+        <div className="comparison-specs-heading">
+          <strong>Сравнение характеристик</strong>
+          <small>Проверено {formatDate(competitor.comparisonProfile.verified_on, false)}</small>
+        </div>
+        {competitor.comparisonProfile.specs.map((spec) => (
+          <div className={`comparison-spec ${spec.result}`} key={spec.label}>
+            <strong>{spec.label}</strong>
+            <span><b>Наша модель</b>{spec.own_value}</span>
+            <span><b>Аналог</b>{spec.candidate_value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const competitorDetail = (competitor: CompetitorComparison, index: number) => {
     const tone = offerStatusTone(competitor);
     const currentPrice = competitor.referencePrice ?? competitor.price;
@@ -382,21 +401,7 @@ function App() {
           {tone === "comparable" && <span className="excluded-label">Ориентир не входит в точный итог</span>}
           {priceExclusion && <p className="price-exclusion"><strong>Почему цена не участвует</strong>{priceExclusion}</p>}
           {description.length > 0 && <div className="competitor-notes">{description.map((part) => <p key={part.label}><strong>{part.label}</strong>{part.text}</p>)}</div>}
-          {competitor.comparisonProfile && (
-            <div className="comparison-specs">
-              <div className="comparison-specs-heading">
-                <strong>Сопоставление характеристик</strong>
-                <small>Проверено {formatDate(competitor.comparisonProfile.verified_on, false)}</small>
-              </div>
-              {competitor.comparisonProfile.specs.map((spec) => (
-                <div className={`comparison-spec ${spec.result}`} key={spec.label}>
-                  <strong>{spec.label}</strong>
-                  <span><b>ЦТО</b>{spec.own_value}</span>
-                  <span><b>Аналог</b>{spec.candidate_value}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          {comparisonSpecs(competitor)}
         </div>
       </details>
     );
@@ -416,6 +421,14 @@ function App() {
         <strong>{formatPrice(confirmed?.comparisonPrice?.normalizedPrice)}</strong>
         {confirmed ? <a href={confirmed.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{confirmed.seller}</a> : <span>Нет цены для итога</span>}
         {confirmed && <small>{formatDate(confirmed.comparisonPrice?.observedAt ?? confirmed.comparisonPrice?.receivedAt)}{confirmed.comparisonPrice?.region ? ` · ${confirmed.comparisonPrice.region}` : ""}</small>}
+        {confirmed?.difference.amount != null && (
+          <>
+            <span className={`result-difference ${differenceTone(confirmed.difference.amount)}`}>
+              {formatDifference(confirmed.difference.amount, confirmed.difference.percent)}
+            </span>
+            <small>разница с нашей ценой</small>
+          </>
+        )}
       </div>
     );
     const marketReferenceCell = comparable ? (
@@ -423,35 +436,23 @@ function App() {
         <span className="comparable-label">{offerStatusLabel(comparable)}</span>
         <strong>{formatPrice(observedPriceValue(comparable.referencePrice))}</strong>
         <a href={comparable.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{comparable.seller}</a>
-        <small>Не входит в точный итог</small>
+        {comparable.referenceDifference?.amount != null && (
+          <span className={`result-difference ${differenceTone(comparable.referenceDifference.amount)}`}>
+            {formatDifference(
+              comparable.referenceDifference.amount,
+              comparable.referenceDifference.percent,
+            )}
+          </span>
+        )}
+        <small>Нужна дополнительная проверка характеристик</small>
       </div>
     ) : (
       <div className={`other-competitors ${otherCompetitors ? "available" : "quiet"}`} data-label="Цена требует проверки">
         {otherCompetitors ? <><strong>{otherCompetitors.countLabel}</strong><small>{otherCompetitors.priceNote ?? "Все источники в карточке"}</small></> : <span>—</span>}
       </div>
     );
-    const displayedDifference = confirmed?.difference.amount != null
-      ? confirmed.difference
-      : comparable?.referenceDifference ?? null;
-    const differenceCell = (
-      <div className="price-data comparison-difference-result" data-label="Разница в цене">
-        {displayedDifference?.amount != null ? (
-          <>
-            <strong className={differenceTone(displayedDifference.amount)}>
-              {formatDifference(displayedDifference.amount, displayedDifference.percent)}
-            </strong>
-            <small>{confirmed ? "между нашей и подтверждённой ценой" : "между нашей ценой и ориентиром"}</small>
-          </>
-        ) : (
-          <>
-            <strong className="no-price-difference">—</strong>
-            <small>Недостаточно данных для сравнения</small>
-          </>
-        )}
-      </div>
-    );
     if (mobile) {
-      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{marketReferenceCell}{differenceCell}</article>;
+      return <article className="product-card" key={product.id} role="button" tabIndex={0} onClick={() => setSelected(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(product); }}>{modelCell}{ownCell}{confirmedCell}{marketReferenceCell}</article>;
     }
     return (
       <tr key={product.id} onClick={() => setSelected(product)} tabIndex={0} onKeyDown={(event) => event.key === "Enter" && setSelected(product)}>
@@ -459,7 +460,6 @@ function App() {
         <td>{ownCell}</td>
         <td>{confirmedCell}</td>
         <td>{marketReferenceCell}</td>
-        <td>{differenceCell}</td>
       </tr>
     );
   };
@@ -584,7 +584,7 @@ function App() {
 
           <div className="filters">
             <label className="search-field"><span>Поиск</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Модель или артикул" /></label>
-            <label><span>Часть каталога</span><select value={scope} onChange={(event) => setScope(event.target.value as ScopeFilter)}><option value="required">29 обязательных</option><option value="component">Компоненты комплекта</option><option value="additional">Дополнительные</option><option value="all">Все товары</option></select></label>
+            <label><span>Часть каталога</span><select value={scope} onChange={(event) => setScope(event.target.value as ScopeFilter)}><option value="required">Основные модели</option><option value="component">Компоненты комплекта</option><option value="additional">Дополнительные</option><option value="all">Все товары</option></select></label>
             <label><span>Данные</span><select value={dataFilter} onChange={(event) => setDataFilter(event.target.value as DataFilter)}><option value="all">Все состояния</option><option value="compared">Есть сравнение</option><option value="partial">Только одна цена</option><option value="missing">Нет цен</option></select></label>
             <label><span>Сопоставление</span><select value={matchFilter} onChange={(event) => setMatchFilter(event.target.value as MatchFilter)}><option value="all">Все источники</option><option value="exact">Точное</option><option value="comparable">Сопоставимые модели</option><option value="review">Требует проверки</option><option value="without-offers">Без источников</option></select></label>
             <label><span>Сортировка</span><select value={sort} onChange={(event) => setSort(event.target.value as SortKey)}><option value="priority">По приоритету</option><option value="name">По названию</option><option value="own-price">По нашей цене</option><option value="competitor-price">По цене конкурента</option><option value="difference">По разнице цен</option><option value="freshness">Сначала свежие</option></select></label>
@@ -596,7 +596,7 @@ function App() {
 
           {!loading && !error && visibleProducts.length > 0 && (
             <>
-              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th>Цена требует проверки</th><th>Разница в цене</th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
+              <div className="table-wrap desktop-table"><table><thead><tr><th>Модель</th><th>Наша цена</th><th>Подтверждённая цена конкурента</th><th>Цена требует проверки</th></tr></thead><tbody>{visibleProducts.map((product) => productRow(product))}</tbody></table></div>
               <div className="mobile-list">{visibleProducts.map((product) => productRow(product, true))}</div>
             </>
           )}
@@ -610,15 +610,41 @@ function App() {
             <span className={`scope-badge ${selected.catalogScope}`}>{scopeLabel(selected.catalogScope)}</span>
             <h2>{selected.name}</h2>
             <p className="drawer-article">{selected.article ?? "Артикул не указан"}</p>
-            {selected.ownUrl ? <a className="external-link" href={selected.ownUrl} target="_blank" rel="noreferrer">Открыть карточку ЦТО</a> : <div className="notice">У комплекта нет отдельной карточки ЦТО. Это допустимо по условиям задания.</div>}
+            {selected.ownUrl ? <a className="external-link" href={selected.ownUrl} target="_blank" rel="noreferrer">Открыть карточку ЦТО</a> : <div className="notice">У комплекта нет отдельной карточки ЦТО. Его цена рассчитывается по компонентам.</div>}
 
             <section className="price-snapshot" aria-label="Краткое сравнение цен">
               <article><span>Наша цена</span><strong>{formatPrice(observedPriceValue(selectedComparison?.own?.price))}</strong></article>
-              <article><span>Итог конкурента</span><strong>{formatPrice(selectedConfirmed?.comparisonPrice?.normalizedPrice)}</strong><small>{selectedConfirmed?.seller ?? "Нет подтверждённой цены"}</small></article>
-              <article><span>Разница</span><strong className={differenceTone(selectedConfirmed?.difference.amount)}>{formatDifference(selectedConfirmed?.difference.amount, selectedConfirmed?.difference.percent)}</strong></article>
-              {selectedComparable && <article className="comparable"><span>{offerStatusLabel(selectedComparable)}</span><strong>{formatPrice(observedPriceValue(selectedComparable.referencePrice))}</strong><small>{selectedComparable.seller}{selectedComparable.referenceDifference ? ` · ${formatDifference(selectedComparable.referenceDifference.amount, selectedComparable.referenceDifference.percent)}` : ""}</small></article>}
+              <article><span>Цена конкурента</span><strong>{formatPrice(selectedConfirmed?.comparisonPrice?.normalizedPrice)}</strong><small>{selectedConfirmed?.seller ?? "Нет подтверждённой цены"}</small>{selectedConfirmed?.difference.amount != null && <><strong className={`snapshot-difference ${differenceTone(selectedConfirmed.difference.amount)}`}>{formatDifference(selectedConfirmed.difference.amount, selectedConfirmed.difference.percent)}</strong><small>разница с нашей ценой</small></>}</article>
               {selectedAttention && <article className="attention"><span><span className="attention-icon small" aria-hidden="true">!</span>Проверить</span><strong>{formatPrice(observedPriceValue(selectedAttention.price))}</strong><small>{selectedAttention.seller} · не входит в итог</small></article>}
             </section>
+
+            {selectedComparable && (
+              <details className="comparable-analysis">
+                <summary>
+                  <span>
+                    <b>{offerStatusLabel(selectedComparable)}</b>
+                    <strong>{formatPrice(observedPriceValue(selectedComparable.referencePrice))}</strong>
+                    <small>{selectedComparable.seller}</small>
+                  </span>
+                  <span className="comparable-analysis-result">
+                    <b>Нужна дополнительная проверка</b>
+                    {selectedComparable.referenceDifference && (
+                      <strong className={differenceTone(selectedComparable.referenceDifference.amount)}>
+                        {formatDifference(
+                          selectedComparable.referenceDifference.amount,
+                          selectedComparable.referenceDifference.percent,
+                        )}
+                      </strong>
+                    )}
+                    <small>Показать сравнение характеристик</small>
+                  </span>
+                </summary>
+                <div className="comparable-analysis-body">
+                  <p>Цена относится к похожей модели и не заменяет точное предложение конкурента. Проверьте различия перед выводами.</p>
+                  {comparisonSpecs(selectedComparable)}
+                </div>
+              </details>
+            )}
 
             {selected.bundleParts.length > 0 && <section className="drawer-section"><h3>Состав комплекта</h3><p className="muted">Откройте оба компонента и внесите цены из одного предложения продавца. После второй цены сумма появится у комплекта автоматически.</p>{selected.bundleParts.map((part) => <button type="button" className="component" key={part.componentProduct.id} onClick={() => { const component = products.find((product) => product.id === part.componentProduct.id); if (component) setSelected(component); }}><strong>{part.componentProduct.name}</strong><span>{part.componentProduct.article ?? "Артикул не указан"} · {part.quantity} шт.</span></button>)}{comparisonMap.get(selected.id)?.bundleStatus?.ready ? <div className="notice success">Комплект рассчитан по двум ценам одного продавца</div> : <div className="notice">{bundleStatusLabel(comparisonMap.get(selected.id)?.bundleStatus?.exclusionReason ?? "incomplete_bundle")}</div>}</section>}
 

@@ -128,13 +128,12 @@ main { width: min(1460px, 92vw); margin: 0 auto; padding: 36px 0 70px; }
 .filters input:focus, .filters select:focus, .manual-form input:focus, .manual-form select:focus, .manual-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
 
 .table-wrap { overflow: auto; border-top: 1px solid var(--line); }
-table { width: 100%; border-collapse: collapse; min-width: 1180px; }
+table { width: 100%; border-collapse: collapse; min-width: 980px; }
 th { padding: 12px 18px; text-align: left; background: var(--surface-soft); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .055em; position: sticky; top: 0; }
-th:first-child { width: 27%; }
-th:nth-child(2) { width: 16%; }
-th:nth-child(3) { width: 20%; }
-th:nth-child(4) { width: 17%; }
-th:nth-child(5) { width: 20%; }
+th:first-child { width: 30%; }
+th:nth-child(2) { width: 18%; }
+th:nth-child(3) { width: 26%; }
+th:nth-child(4) { width: 26%; }
 td { padding: 16px 18px; border-top: 1px solid var(--line); vertical-align: middle; font-size: 13px; }
 tbody tr { cursor: pointer; transition: background .15s ease; }
 tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); outline: none; }
@@ -145,16 +144,13 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .price-data strong { font-size: 15px; white-space: nowrap; }
 .price-data a { display: inline-block; margin-top: 5px; font-size: 12px; font-weight: 750; text-underline-offset: 2px; }
 .price-data small { line-height: 1.35; }
-.competitor-result .result-difference { margin-top: 7px; font-weight: 800; }
+.price-data .result-difference { margin-top: 8px; font-size: 12px; font-weight: 800; }
 .result-difference.positive { color: var(--success); }
 .result-difference.negative { color: var(--danger); }
 .price-movement { display: inline-flex !important; width: fit-content; margin-top: 6px !important; padding: 4px 7px; border-radius: 7px; font-size: 10px !important; font-weight: 800; line-height: 1.25; }
 .price-movement.up { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
 .price-movement.down { color: var(--success); background: color-mix(in srgb, var(--success) 12%, var(--surface)); }
 .price-movement.unchanged { color: var(--muted); background: color-mix(in srgb, var(--muted) 10%, var(--surface)); }
-.comparison-difference-result strong.positive { color: var(--success); }
-.comparison-difference-result strong.negative { color: var(--danger); }
-.comparison-difference-result .no-price-difference { color: var(--muted); font-size: 20px; }
 .attention-icon { width: 25px; height: 25px; flex: 0 0 25px; display: inline-grid; place-items: center; border: 2px solid var(--danger); border-radius: 50%; color: var(--danger); font-size: 15px; font-weight: 950; line-height: 1; }
 .attention-icon.small { width: 19px; height: 19px; flex-basis: 19px; font-size: 12px; }
 .other-competitors strong, .other-competitors small { display: block; }
@@ -232,7 +228,7 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .offer-card a { font-weight: 700; font-size: 12px; }
 .muted { color: var(--muted); }
 .inline-loading { min-height: 90px; color: var(--muted); display: grid; place-content: center; gap: 9px; text-align: center; font-size: 12px; }
-.price-snapshot { margin-top: 22px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.price-snapshot { margin-top: 22px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .price-snapshot article { min-height: 92px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
 .price-snapshot article.attention { border-color: color-mix(in srgb, var(--danger) 42%, var(--line)); background: color-mix(in srgb, var(--danger) 5%, var(--surface)); }
 .price-snapshot article.comparable { border-color: color-mix(in srgb, #5e6fb2 42%, var(--line)); background: color-mix(in srgb, #5e6fb2 7%, var(--surface)); }
@@ -243,6 +239,20 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .price-snapshot strong.positive { color: var(--success); }
 .price-snapshot strong.negative { color: var(--danger); }
 .price-snapshot small { margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.3; }
+.price-snapshot .snapshot-difference { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--line); font-size: 13px; }
+.comparable-analysis { margin-top: 9px; border: 1px solid color-mix(in srgb, #5e6fb2 42%, var(--line)); border-left: 3px solid #5e6fb2; border-radius: 11px; background: color-mix(in srgb, #5e6fb2 7%, var(--surface)); overflow: hidden; }
+.comparable-analysis > summary { padding: 13px 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; cursor: pointer; list-style: none; }
+.comparable-analysis > summary::-webkit-details-marker { display: none; }
+.comparable-analysis > summary span, .comparable-analysis > summary b, .comparable-analysis > summary strong, .comparable-analysis > summary small { display: block; }
+.comparable-analysis > summary b { color: #52619a; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
+.comparable-analysis > summary strong { margin-top: 5px; font-size: 15px; }
+.comparable-analysis > summary small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.comparable-analysis-result { text-align: right; }
+.comparable-analysis-result strong.positive { color: var(--success); }
+.comparable-analysis-result strong.negative { color: var(--danger); }
+.comparable-analysis-body { padding: 12px 14px 14px; border-top: 1px solid color-mix(in srgb, #5e6fb2 25%, var(--line)); }
+.comparable-analysis-body > p { margin: 0 0 11px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.comparable-analysis-body .comparison-specs { margin-top: 0; border-top: 0; padding-top: 0; }
 .history-list { display: grid; gap: 7px; }
 .history-item { padding: 11px 12px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 9px; background: var(--surface-soft); display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .history-item.unreliable { border-left-color: var(--warning); }
@@ -287,6 +297,7 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .competitor-summary-price strong { font-size: 14px; white-space: nowrap; }
 .competitor-summary-price .price-movement { margin-left: auto; }
 .competitor-detail-body { padding: 11px 12px 13px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; gap: 9px 12px; }
+.competitor-detail-body > div:first-child a, .competitor-detail-body > div:first-child small { display: block; }
 .competitor-detail-body p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .competitor-detail.warning .competitor-detail-body p { color: var(--danger); }
 .competitor-detail.comparable .competitor-detail-body p { color: #52619a; }
@@ -349,6 +360,8 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
   .drawer { width: 100%; max-width: 100%; padding: 24px 18px; }
   .drawer h2 { font-size: 24px; }
   .price-snapshot { grid-template-columns: 1fr 1fr; }
+  .comparable-analysis > summary { grid-template-columns: 1fr; }
+  .comparable-analysis-result { text-align: left; }
   .competitor-detail > summary { grid-template-columns: minmax(0, 1fr) auto; }
   .competitor-detail > summary .trust-badge { grid-column: 1 / -1; width: fit-content; }
   .comparison-spec { grid-template-columns: 1fr; }
