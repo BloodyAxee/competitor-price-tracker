@@ -2,6 +2,7 @@ import time
 import unittest
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from threading import Event, Lock
@@ -362,6 +363,115 @@ class CollectorEngineTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "max_concurrency must be positive"):
             CollectorEngine(repository, AdapterRegistry(), max_concurrency=0)
+
+    def test_circuit_breaker_threshold_must_be_positive(self) -> None:
+        task = _task("invalid-circuit-threshold")
+        repository = FakeRepository(CollectionJob(task.job_id, (task,)))
+
+        with self.assertRaisesRegex(ValueError, "circuit_breaker_threshold must be positive"):
+            CollectorEngine(
+                repository,
+                AdapterRegistry(),
+                circuit_breaker_threshold=0,
+            )
+
+    def test_repeated_retryable_host_failure_opens_circuit_for_remaining_tasks(self) -> None:
+        tasks = tuple(
+            replace(
+                _task(f"unstable-{index}"),
+                url=f"https://unstable.example/product-{index}",
+            )
+            for index in range(4)
+        )
+        repository = FakeRepository(CollectionJob(tasks[0].job_id, tasks))
+        adapters = tuple(
+            SequenceAdapter(
+                task.source_key,
+                [RetryableCollectionError("timeout", code="browser_timeout")],
+            )
+            for task in tasks
+        )
+
+        summary = CollectorEngine(
+            repository,
+            AdapterRegistry(adapters),
+            sleeper=lambda _: None,
+            circuit_breaker_threshold=2,
+        ).process_job(repository.job)
+
+        self.assertEqual(summary.failed, 2)
+        self.assertEqual(summary.skipped, 2)
+        self.assertEqual([adapter.calls for adapter in adapters], [1, 1, 0, 0])
+        self.assertEqual(
+            [attempt.get("error_code") for attempt in repository.attempts],
+            [
+                "browser_timeout",
+                "browser_timeout",
+                "circuit_breaker_open",
+                "circuit_breaker_open",
+            ],
+        )
+
+    def test_success_resets_repeated_failure_count_for_host(self) -> None:
+        tasks = tuple(
+            replace(
+                _task(f"recovering-{index}"),
+                url=f"https://recovering.example/product-{index}",
+            )
+            for index in range(4)
+        )
+        adapters = (
+            SequenceAdapter(
+                tasks[0].source_key,
+                [RetryableCollectionError("timeout", code="browser_timeout")],
+            ),
+            SequenceAdapter(tasks[1].source_key, [_observation()]),
+            SequenceAdapter(
+                tasks[2].source_key,
+                [RetryableCollectionError("timeout", code="browser_timeout")],
+            ),
+            SequenceAdapter(tasks[3].source_key, [_observation()]),
+        )
+        repository = FakeRepository(CollectionJob(tasks[0].job_id, tasks))
+
+        summary = CollectorEngine(
+            repository,
+            AdapterRegistry(adapters),
+            sleeper=lambda _: None,
+            circuit_breaker_threshold=2,
+        ).process_job(repository.job)
+
+        self.assertEqual(summary.succeeded, 2)
+        self.assertEqual(summary.failed, 2)
+        self.assertEqual(summary.skipped, 0)
+        self.assertEqual([adapter.calls for adapter in adapters], [1, 1, 1, 1])
+
+    def test_permanent_failures_do_not_open_host_circuit(self) -> None:
+        tasks = tuple(
+            replace(
+                _task(f"invalid-{index}"),
+                url=f"https://invalid.example/product-{index}",
+            )
+            for index in range(3)
+        )
+        adapters = tuple(
+            SequenceAdapter(
+                task.source_key,
+                [PermanentCollectionError("invalid", code="missing_price")],
+            )
+            for task in tasks
+        )
+        repository = FakeRepository(CollectionJob(tasks[0].job_id, tasks))
+
+        summary = CollectorEngine(
+            repository,
+            AdapterRegistry(adapters),
+            circuit_breaker_threshold=2,
+        ).process_job(repository.job)
+
+        self.assertEqual(summary.failed, 3)
+        self.assertEqual(summary.skipped, 0)
+        self.assertEqual([adapter.calls for adapter in adapters], [1, 1, 1])
 
     def test_one_source_failure_does_not_abort_other_sources(self) -> None:
         tasks = (_task("good"), _task("bad"))

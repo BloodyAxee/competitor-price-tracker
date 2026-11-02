@@ -49,6 +49,9 @@ def main() -> None:
             repository,
             adapters,
             max_concurrency=int(os.getenv("COLLECTOR_MAX_CONCURRENCY", "4")),
+            circuit_breaker_threshold=int(
+                os.getenv("COLLECTOR_CIRCUIT_BREAKER_THRESHOLD", "2")
+            ),
         )
         worker = CollectorWorker(
             engine,
