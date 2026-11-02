@@ -79,6 +79,7 @@ export class CollectionService {
             source: { select: { externalKey: true, name: true } },
             offer: {
               select: {
+                id: true,
                 competitorUrl: true,
                 product: { select: { id: true, name: true } },
               },

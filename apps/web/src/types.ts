@@ -197,11 +197,12 @@ export interface CollectionJob {
 
 export interface CollectionAttempt {
   id: string;
+  attemptNumber: number;
   status: string;
   errorCode: string | null;
   errorMessage: string | null;
   source: { externalKey: string; name: string };
-  offer: { competitorUrl: string; product: { id: string; name: string } } | null;
+  offer: { id: string; competitorUrl: string; product: { id: string; name: string } } | null;
   observations: Array<{ id: string; reliability: string }>;
 }
 

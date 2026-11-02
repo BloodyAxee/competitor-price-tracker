@@ -38,6 +38,7 @@ import {
   observedPriceValue,
   otherCompetitorsSummary,
   sortedCompetitors,
+  summarizeCollectionAttempts,
 } from "./view-model";
 
 type ScopeFilter = "all" | "required" | "additional" | "component";
@@ -343,7 +344,11 @@ function App() {
   };
 
   const jobActive = job ? ["pending", "running"].includes(job.status) : false;
-  const failedAttempts = job?.attempts.filter((attempt) => attempt.status === "failed") ?? [];
+  const collectionResults = summarizeCollectionAttempts(job?.attempts ?? []);
+  const successfulCollectionResults = collectionResults.filter((result) => result.status === "success");
+  const failedCollectionResults = collectionResults.filter((result) => result.status === "failed");
+  const skippedCollectionResults = collectionResults.filter((result) => result.status === "skipped");
+  const collectionProblems = [...failedCollectionResults, ...skippedCollectionResults];
   const activeRegion = regions.items.find((region) => region.code === priceRegion) ?? null;
 
   const competitorDetail = (competitor: CompetitorComparison, index: number) => {
@@ -505,9 +510,24 @@ function App() {
 
         {job && (
           <section className={`job-banner ${job.status}`} aria-live="polite">
-            <div><strong>{jobLabel(job)} · {collectionModeLabel(job.collectionMode)}</strong><span>{job.summary?.succeeded ?? job.observations ?? 0} цен получено · {job.summary?.failed ?? failedAttempts.length} ошибок</span></div>
+            <div><strong>{jobLabel(job)} · {collectionModeLabel(job.collectionMode)}</strong><span>{successfulCollectionResults.length} успешно · {failedCollectionResults.length} проблемно · {skippedCollectionResults.length} пропущено</span></div>
             <span className="job-time">{job.finishedAt ? formatDate(job.finishedAt) : "Обновляем состояние"}</span>
-            {failedAttempts.length > 0 && <details><summary>Показать ошибки источников</summary>{failedAttempts.slice(0, 5).map((attempt) => <p key={attempt.id}>{attempt.source.name} · {attempt.errorMessage ?? attempt.errorCode ?? "Источник недоступен"}</p>)}</details>}
+            {collectionProblems.length > 0 && (
+              <details className="job-problems">
+                <summary>Показать проблемные карточки · {collectionProblems.length}</summary>
+                <div className="job-problem-list">
+                  {collectionProblems.map((result) => (
+                    <details className={`job-problem ${result.status}`} key={result.key}>
+                      <summary>
+                        <span><strong>{result.offer?.product.name ?? result.source.name}</strong><small>{result.source.name} · {result.attempts.length} {result.attempts.length === 1 ? "попытка" : "попытки"}</small></span>
+                        <b>{result.status === "failed" ? "Проблема" : "Пропущено"}</b>
+                      </summary>
+                      <div>{result.attempts.map((attempt) => <p key={attempt.id}>Попытка {attempt.attemptNumber} · {attempt.errorMessage ?? attempt.errorCode ?? "Источник недоступен"}</p>)}</div>
+                    </details>
+                  ))}
+                </div>
+              </details>
+            )}
           </section>
         )}
 

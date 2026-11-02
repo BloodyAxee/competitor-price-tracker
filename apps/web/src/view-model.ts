@@ -1,4 +1,5 @@
 import type {
+  CollectionAttempt,
   CollectionJob,
   CollectionMode,
   ComparisonItem,
@@ -131,6 +132,42 @@ export function formatPriceMovement(
   if (!Number.isFinite(amount) || !Number.isFinite(percent)) return null;
   const direction = change.direction === "up" ? "Выросла" : "Снизилась";
   return `${direction} на ${moneyFormatter.format(amount)} · ${percent.toFixed(1)}%`;
+}
+
+export interface CollectionOfferResult {
+  key: string;
+  status: "success" | "failed" | "skipped";
+  source: CollectionAttempt["source"];
+  offer: CollectionAttempt["offer"];
+  attempts: CollectionAttempt[];
+}
+
+export function summarizeCollectionAttempts(
+  attempts: CollectionAttempt[],
+): CollectionOfferResult[] {
+  const groups = new Map<string, CollectionAttempt[]>();
+  for (const attempt of attempts) {
+    const key = attempt.offer?.id ?? `${attempt.source.externalKey}:${attempt.id}`;
+    const current = groups.get(key) ?? [];
+    current.push(attempt);
+    groups.set(key, current);
+  }
+
+  return [...groups].map(([key, groupedAttempts]) => {
+    const status = groupedAttempts.some((attempt) => attempt.status === "success")
+      ? "success"
+      : groupedAttempts.some((attempt) => attempt.status === "failed")
+        ? "failed"
+        : "skipped";
+    const lastAttempt = groupedAttempts.at(-1)!;
+    return {
+      key,
+      status,
+      source: lastAttempt.source,
+      offer: lastAttempt.offer,
+      attempts: groupedAttempts,
+    };
+  });
 }
 
 export function observationStatus(price: PriceObservation | null | undefined) {

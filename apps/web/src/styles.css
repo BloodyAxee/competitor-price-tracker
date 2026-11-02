@@ -71,10 +71,21 @@ main { width: min(1460px, 92vw); margin: 0 auto; padding: 36px 0 70px; }
 .job-banner strong, .job-banner span { display: block; }
 .job-banner span { color: var(--muted); font-size: 12px; margin-top: 4px; }
 .job-time { white-space: nowrap; text-align: right; }
-.job-banner details { width: 100%; flex-basis: 100%; border-top: 1px solid var(--line); padding-top: 10px; }
-.job-banner:has(details) { flex-wrap: wrap; }
-.job-banner summary { color: var(--warning); font-size: 12px; font-weight: 700; cursor: pointer; }
-.job-banner details p { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.job-banner > details { width: 100%; flex-basis: 100%; border-top: 1px solid var(--line); padding-top: 10px; }
+.job-banner:has(> details) { flex-wrap: wrap; }
+.job-banner > details > summary { color: var(--warning); font-size: 12px; font-weight: 700; cursor: pointer; }
+.job-problem-list { margin-top: 9px; display: grid; gap: 6px; }
+.job-problem { border: 1px solid var(--line); border-left: 3px solid var(--danger); border-radius: 9px; background: var(--surface-soft); }
+.job-problem.skipped { border-left-color: var(--warning); }
+.job-problem > summary { padding: 9px 11px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--text); cursor: pointer; list-style: none; }
+.job-problem > summary::-webkit-details-marker { display: none; }
+.job-problem > summary span, .job-problem > summary strong, .job-problem > summary small { display: block; }
+.job-problem > summary strong { font-size: 11px; }
+.job-problem > summary small { margin-top: 3px; color: var(--muted); font-size: 10px; font-weight: 500; }
+.job-problem > summary b { color: var(--danger); font-size: 10px; }
+.job-problem.skipped > summary b { color: var(--warning); }
+.job-problem > div { padding: 0 11px 9px; }
+.job-problem > div p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
 
 .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
 .metrics article { min-height: 118px; padding: 17px; background: var(--surface); border: 1px solid var(--line); border-radius: 15px; box-shadow: var(--shadow); display: flex; flex-direction: column; }

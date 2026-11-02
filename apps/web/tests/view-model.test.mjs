@@ -19,6 +19,7 @@ import {
   otherCompetitorsSummary,
   reliabilityLabel,
   sortedCompetitors,
+  summarizeCollectionAttempts,
 } from "../src/view-model.ts";
 
 test("missing prices are never displayed as zero", () => {
@@ -169,6 +170,33 @@ test("price movement is formatted as a separate market signal", () => {
     "Снизилась на 10 000 ₽ · 10.0%",
   );
   assert.equal(formatPriceMovement(null), null);
+});
+
+test("collection retries are summarized by unique offer", () => {
+  const source = { externalKey: "seller", name: "Продавец" };
+  const offer = {
+    id: "offer-1",
+    competitorUrl: "https://example.test/product",
+    product: { id: "product-1", name: "Модель" },
+  };
+  const attempts = [
+    { id: "1", attemptNumber: 1, status: "failed", errorCode: "browser_timeout", source, offer, observations: [] },
+    { id: "2", attemptNumber: 2, status: "failed", errorCode: "browser_timeout", source, offer, observations: [] },
+    { id: "3", attemptNumber: 3, status: "success", errorCode: null, source, offer, observations: [{ id: "9", reliability: "valid" }] },
+    { id: "4", attemptNumber: 1, status: "skipped", errorCode: "circuit_breaker_open", source, offer: { ...offer, id: "offer-2" }, observations: [] },
+  ];
+
+  assert.deepEqual(
+    summarizeCollectionAttempts(attempts).map((result) => ({
+      key: result.key,
+      status: result.status,
+      attempts: result.attempts.length,
+    })),
+    [
+      { key: "offer-1", status: "success", attempts: 3 },
+      { key: "offer-2", status: "skipped", attempts: 1 },
+    ],
+  );
 });
 
 test("all competitors are kept and priced offers are ordered before unavailable ones", () => {
