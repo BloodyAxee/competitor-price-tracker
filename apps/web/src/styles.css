@@ -121,7 +121,7 @@ main { width: min(1460px, 92vw); margin: 0 auto; padding: 36px 0 70px; }
 .column-picker label { padding: 7px; border-radius: 7px; display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 12px; cursor: pointer; }
 .column-picker label:hover { background: var(--surface-soft); }
 .column-picker input { accent-color: var(--accent); }
-.filters { display: grid; grid-template-columns: minmax(220px, 1.7fr) repeat(4, minmax(135px, 1fr)); gap: 12px; padding: 0 24px 20px; }
+.filters { display: grid; grid-template-columns: minmax(240px, 1.6fr) repeat(3, minmax(170px, 1fr)); gap: 12px; padding: 0 24px 20px; }
 .filters label, .manual-form label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 700; }
 .filters input, .filters select, .manual-form input, .manual-form select, .manual-form textarea { width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--text); padding: 0 12px; outline: none; }
 .filters input, .filters select, .manual-form input, .manual-form select { height: 42px; }

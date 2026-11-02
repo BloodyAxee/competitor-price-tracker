@@ -26,6 +26,7 @@ import {
   collectionErrorLabel,
   collectionMethodLabel,
   collectionModeLabel,
+  competitorPriceMovementState,
   competitorDescription,
   differenceTone,
   exclusionReasonLabel,
@@ -34,6 +35,7 @@ import {
   formatPrice,
   formatPriceMovement,
   historyPriceMovement,
+  hasConfirmedCompetitorPrice,
   jobLabel,
   observationStatus,
   offerStatusLabel,
@@ -46,9 +48,8 @@ import {
 } from "./view-model";
 
 type ScopeFilter = "all" | "required" | "additional" | "component";
-type DataFilter = "all" | "compared" | "partial" | "missing";
-type MatchFilter = "all" | "exact" | "comparable" | "review" | "without-offers";
-type SortKey = "priority" | "name" | "own-price" | "competitor-price" | "difference" | "freshness";
+type ConfirmationFilter = "all" | "confirmed" | "unconfirmed";
+type PriceMovementFilter = "all" | "changed" | "unchanged";
 
 const initialRegions: RegionsResponse = {
   items: [],
@@ -82,24 +83,6 @@ function bundleStatusLabel(
   return "Для расчёта нужны две подтверждённые цены одного продавца";
 }
 
-function comparisonState(item: ComparisonItem | undefined) {
-  const ownPrice = item?.own?.comparisonPrice?.normalizedPrice;
-  const competitorPrice = bestCompetitor(item ?? ({ competitors: [] } as unknown as ComparisonItem))?.comparisonPrice
-    ?.normalizedPrice;
-  if (ownPrice && competitorPrice) return "compared";
-  if (ownPrice || competitorPrice) return "partial";
-  return "missing";
-}
-
-function latestComparisonDate(item: ComparisonItem | undefined) {
-  if (!item) return 0;
-  const dates = [item.own?.price?.receivedAt, ...item.competitors.map((offer) => offer.price?.receivedAt)]
-    .filter((value): value is string => Boolean(value))
-    .map((value) => Date.parse(value))
-    .filter(Number.isFinite);
-  return dates.length > 0 ? Math.max(...dates) : 0;
-}
-
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [comparisons, setComparisons] = useState<ComparisonItem[]>([]);
@@ -112,9 +95,8 @@ function App() {
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<ScopeFilter>("required");
-  const [dataFilter, setDataFilter] = useState<DataFilter>("all");
-  const [matchFilter, setMatchFilter] = useState<MatchFilter>("all");
-  const [sort, setSort] = useState<SortKey>("priority");
+  const [confirmationFilter, setConfirmationFilter] = useState<ConfirmationFilter>("all");
+  const [priceMovementFilter, setPriceMovementFilter] = useState<PriceMovementFilter>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [job, setJob] = useState<CollectionJobDetails | null>(null);
@@ -233,14 +215,16 @@ function App() {
     const normalizedQuery = query.trim().toLocaleLowerCase("ru-RU");
     return products
       .filter((product) => scope === "all" || product.catalogScope === scope)
-      .filter((product) => dataFilter === "all" || comparisonState(comparisonMap.get(product.id)) === dataFilter)
       .filter((product) => {
-        if (matchFilter === "all") return true;
-        const competitorOffers = product.offers.filter(
-          (offer) => offer.competitorUrl !== product.ownUrl,
+        if (confirmationFilter === "all") return true;
+        const confirmed = hasConfirmedCompetitorPrice(comparisonMap.get(product.id));
+        return confirmationFilter === "confirmed" ? confirmed : !confirmed;
+      })
+      .filter((product) => {
+        if (priceMovementFilter === "all") return true;
+        return (
+          competitorPriceMovementState(comparisonMap.get(product.id)) === priceMovementFilter
         );
-        if (matchFilter === "without-offers") return competitorOffers.length === 0;
-        return competitorOffers.some((offer) => offer.matchStatus === matchFilter);
       })
       .filter((product) => {
         if (!normalizedQuery) return true;
@@ -248,31 +232,11 @@ function App() {
           .toLocaleLowerCase("ru-RU")
           .includes(normalizedQuery);
       })
-      .sort((left, right) => {
-        if (sort === "name") return left.name.localeCompare(right.name, "ru");
-        if (sort === "own-price") {
-          const leftPrice = Number(comparisonMap.get(left.id)?.own?.comparisonPrice?.normalizedPrice ?? Infinity);
-          const rightPrice = Number(comparisonMap.get(right.id)?.own?.comparisonPrice?.normalizedPrice ?? Infinity);
-          return leftPrice - rightPrice;
-        }
-        if (sort === "competitor-price") {
-          const leftPrice = Number(bestCompetitor(comparisonMap.get(left.id) ?? ({ competitors: [] } as unknown as ComparisonItem))?.comparisonPrice?.normalizedPrice ?? Infinity);
-          const rightPrice = Number(bestCompetitor(comparisonMap.get(right.id) ?? ({ competitors: [] } as unknown as ComparisonItem))?.comparisonPrice?.normalizedPrice ?? Infinity);
-          return leftPrice - rightPrice;
-        }
-        if (sort === "difference") {
-          const leftDelta = Number(bestCompetitor(comparisonMap.get(left.id) ?? ({ competitors: [] } as unknown as ComparisonItem))?.difference.amount ?? -Infinity);
-          const rightDelta = Number(bestCompetitor(comparisonMap.get(right.id) ?? ({ competitors: [] } as unknown as ComparisonItem))?.difference.amount ?? -Infinity);
-          return rightDelta - leftDelta;
-        }
-        if (sort === "freshness") {
-          const leftDate = latestComparisonDate(comparisonMap.get(left.id));
-          const rightDate = latestComparisonDate(comparisonMap.get(right.id));
-          return rightDate - leftDate;
-        }
-        return left.priority - right.priority || left.name.localeCompare(right.name, "ru");
-      });
-  }, [products, query, scope, dataFilter, matchFilter, sort, comparisonMap]);
+      .sort(
+        (left, right) =>
+          left.priority - right.priority || left.name.localeCompare(right.name, "ru"),
+      );
+  }, [products, query, scope, confirmationFilter, priceMovementFilter, comparisonMap]);
 
   const handleStartCollection = async (mode: CollectionMode) => {
     setStartingMode(mode);
@@ -584,10 +548,9 @@ function App() {
 
           <div className="filters">
             <label className="search-field"><span>Поиск</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Модель или артикул" /></label>
-            <label><span>Часть каталога</span><select value={scope} onChange={(event) => setScope(event.target.value as ScopeFilter)}><option value="required">Основные модели</option><option value="component">Компоненты комплекта</option><option value="additional">Дополнительные</option><option value="all">Все товары</option></select></label>
-            <label><span>Данные</span><select value={dataFilter} onChange={(event) => setDataFilter(event.target.value as DataFilter)}><option value="all">Все состояния</option><option value="compared">Есть сравнение</option><option value="partial">Только одна цена</option><option value="missing">Нет цен</option></select></label>
-            <label><span>Сопоставление</span><select value={matchFilter} onChange={(event) => setMatchFilter(event.target.value as MatchFilter)}><option value="all">Все источники</option><option value="exact">Точное</option><option value="comparable">Сопоставимые модели</option><option value="review">Требует проверки</option><option value="without-offers">Без источников</option></select></label>
-            <label><span>Сортировка</span><select value={sort} onChange={(event) => setSort(event.target.value as SortKey)}><option value="priority">По приоритету</option><option value="name">По названию</option><option value="own-price">По нашей цене</option><option value="competitor-price">По цене конкурента</option><option value="difference">По разнице цен</option><option value="freshness">Сначала свежие</option></select></label>
+            <label><span>Каталог</span><select value={scope} onChange={(event) => setScope(event.target.value as ScopeFilter)}><option value="required">Основные модели</option><option value="component">Компоненты комплектов</option><option value="additional">Дополнительные модели</option><option value="all">Весь каталог</option></select></label>
+            <label><span>Подтверждённая цена</span><select value={confirmationFilter} onChange={(event) => setConfirmationFilter(event.target.value as ConfirmationFilter)}><option value="all">Показать все</option><option value="confirmed">Цена есть</option><option value="unconfirmed">Цены нет</option></select></label>
+            <label><span>Изменение цены конкурента</span><select value={priceMovementFilter} onChange={(event) => setPriceMovementFilter(event.target.value as PriceMovementFilter)}><option value="all">Показать все</option><option value="changed">Цена изменилась</option><option value="unchanged">Цена не изменилась</option></select></label>
           </div>
 
           {error && <div className="error-state"><strong>Ошибка подключения</strong><p>{error}</p><button className="secondary-button" onClick={() => void refresh()}>Попробовать снова</button></div>}

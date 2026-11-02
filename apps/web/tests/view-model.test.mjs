@@ -7,6 +7,7 @@ import {
   collectionErrorLabel,
   collectionMethodLabel,
   collectionModeLabel,
+  competitorPriceMovementState,
   competitorDescription,
   competitorCountLabel,
   confirmedPriceCountLabel,
@@ -16,6 +17,7 @@ import {
   formatPrice,
   formatPriceMovement,
   historyPriceMovement,
+  hasConfirmedCompetitorPrice,
   observationStatus,
   observedPriceValue,
   offerStatusLabel,
@@ -86,6 +88,53 @@ test("the cheapest priced competitor is selected", () => {
     ],
   };
   assert.equal(bestCompetitor(item).comparisonPrice.normalizedPrice, "95000");
+});
+
+test("confirmed price filter only accepts exact usable competitor prices", () => {
+  assert.equal(
+    hasConfirmedCompetitorPrice({
+      competitors: [
+        {
+          seller: "Точный источник",
+          comparisonPrice: { normalizedPrice: "100000" },
+          price: { normalizedPrice: "100000" },
+        },
+      ],
+    }),
+    true,
+  );
+  assert.equal(
+    hasConfirmedCompetitorPrice({
+      competitors: [
+        {
+          seller: "Только ориентир",
+          comparisonPrice: null,
+          referencePrice: { normalizedPrice: "90000" },
+          price: { normalizedPrice: "90000" },
+        },
+      ],
+    }),
+    false,
+  );
+});
+
+test("price movement filter separates unchanged prices from missing history", () => {
+  assert.equal(
+    competitorPriceMovementState({
+      competitors: [{ priceChange: { direction: "up" } }],
+    }),
+    "changed",
+  );
+  assert.equal(
+    competitorPriceMovementState({
+      competitors: [{ priceChange: { direction: "unchanged" } }],
+    }),
+    "unchanged",
+  );
+  assert.equal(
+    competitorPriceMovementState({ competitors: [{ priceChange: null }] }),
+    "unknown",
+  );
 });
 
 test("the result price ignores a cheaper unverified offer", () => {

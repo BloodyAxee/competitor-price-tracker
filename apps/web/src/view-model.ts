@@ -40,6 +40,21 @@ export function bestCompetitor(item: ComparisonItem): CompetitorComparison | nul
   return sortedCompetitors(item).find((offer) => offer.comparisonPrice?.normalizedPrice != null) ?? null;
 }
 
+export function hasConfirmedCompetitorPrice(item: ComparisonItem | undefined) {
+  return item ? bestCompetitor(item) !== null : false;
+}
+
+export function competitorPriceMovementState(
+  item: ComparisonItem | undefined,
+): "changed" | "unchanged" | "unknown" {
+  const changes = item?.competitors.flatMap((offer) =>
+    offer.priceChange ? [offer.priceChange] : [],
+  ) ?? [];
+  if (changes.some((change) => change.direction !== "unchanged")) return "changed";
+  if (changes.length > 0) return "unchanged";
+  return "unknown";
+}
+
 export function bestComparable(item: ComparisonItem): CompetitorComparison | null {
   return [...item.competitors]
     .filter(
