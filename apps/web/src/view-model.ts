@@ -57,9 +57,12 @@ export function otherCompetitorsSummary(item: ComparisonItem) {
   const ownPrice = Number(item.own?.comparisonPrice?.normalizedPrice ?? item.own?.price?.normalizedPrice);
   if (!Number.isFinite(ownPrice) || ownPrice <= 0) return { countLabel, priceNote: null };
 
-  const differences = others
-    .map((offer) => Number(offer.comparisonPrice?.normalizedPrice ?? observedPriceValue(offer.price)) - ownPrice)
-    .filter((difference) => Number.isFinite(difference));
+  const differences = others.flatMap((offer) => {
+    const price = offer.comparisonPrice?.normalizedPrice ?? observedPriceValue(offer.price);
+    if (price == null || price.trim() === "") return [];
+    const numericPrice = Number(price);
+    return Number.isFinite(numericPrice) && numericPrice > 0 ? [numericPrice - ownPrice] : [];
+  });
   if (differences.length === 0) return { countLabel, priceNote: "Цены пока не собраны" };
   if (differences.every((difference) => difference === 0)) {
     return { countLabel, priceNote: "Доступные цены совпадают с ЦТО" };

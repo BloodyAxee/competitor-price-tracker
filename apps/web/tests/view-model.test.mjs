@@ -106,6 +106,34 @@ test("the table counts unverified competitors and compares their prices with CTO
   });
 });
 
+test("a missing review price is never interpreted as zero", () => {
+  const item = {
+    own: {
+      price: { normalizedPrice: "461250", reliability: "valid" },
+      comparisonPrice: { normalizedPrice: "461250" },
+    },
+    competitors: [
+      {
+        seller: "Подтверждено",
+        matchStatus: "exact",
+        price: { normalizedPrice: "688900", reliability: "valid" },
+        comparisonPrice: { normalizedPrice: "688900" },
+      },
+      {
+        seller: "Без цены",
+        matchStatus: "review",
+        price: null,
+        comparisonPrice: null,
+      },
+    ],
+  };
+
+  assert.deepEqual(otherCompetitorsSummary(item), {
+    countLabel: "Ещё 1 конкурент",
+    priceNote: "Цены пока не собраны",
+  });
+});
+
 test("price movement is formatted as a separate market signal", () => {
   assert.equal(
     formatPriceMovement({ amount: "-10000", percent: "-10", direction: "down" }),
