@@ -294,14 +294,17 @@
       "model": "Балансировочный станок 4523PA1(B) с автовводом",
       "label": "NORDBERG 4523PA1(B)",
       "own_url": "https://centr-to.ru/good-21885-stanok-balansirovochnyy-avtomat-s-displeem-siniy-4523pa1-b",
-      "primary_url": "https://www.nordberg.ru/catalog/oborudovanie_shinomontazhnoe/balansirovochnye_stanki/stanok_balansirovochnyy_avtomaticheskiy_s_displeem_siniy/",
-      "reserve_url": null,
-      "match_status": "требует проверки",
-      "review_scope": "Нужно подтвердить поколение и паспорт из-за расхождения рабочего диапазона 10–24 и 10–28",
-      "note": "Официальная карточка: 10–28; ЦТО: 10–24. Не принять автоматически; выяснить поколение и паспорт.",
-      "current_price_verified": false,
-      "automated_collection_verified": false,
-      "review_date": "2026-10-30"
+      "primary_url": "https://msk.vsedlyasto.ru/catalog/balansirovochnye-stanki/stanok-balansirovochnyy-avtomat-s-displeem-siniy-nordberg-4523pa1-b/",
+      "reserve_url": "https://www.nordberg.ru/catalog/oborudovanie_shinomontazhnoe/balansirovochnye_stanki/stanok_balansirovochnyy_avtomaticheskiy_s_displeem_siniy/",
+      "verified_exact_urls": [
+        "https://www.nordberg.ru/catalog/oborudovanie_shinomontazhnoe/balansirovochnye_stanki/stanok_balansirovochnyy_avtomaticheskiy_s_displeem_siniy/"
+      ],
+      "match_status": "точное совпадение",
+      "review_scope": "Совпадение подтверждено по 4523PA1(B), 220 В, диапазону 10–28, ширине 1,5–20, массе 70 кг и валу 40 мм",
+      "note": "ЦТО обновил карточку до диапазона 10–28. Всё для СТО и официальный NORDBERG подтверждают ту же актуальную конфигурацию. Живой HTTP-сбор цены Всё для СТО успешно проверен 02.11.2026.",
+      "current_price_verified": true,
+      "automated_collection_verified": true,
+      "review_date": "2026-11-02"
     },
     {
       "id": 16,

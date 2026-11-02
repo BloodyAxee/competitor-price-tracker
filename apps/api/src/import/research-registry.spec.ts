@@ -38,8 +38,8 @@ test("required source registry keeps exact matches separate from unresolved conf
     bundle_offers: BundleOffer[];
   };
   const exact = registry.models.filter((model) => model.match_status === "точное совпадение");
-  const unresolvedIds = new Set([2, 15, 18, 24, 26, 27]);
-  const newlyVerifiedIds = new Set([3, 10, 13, 20, 21, 25]);
+  const unresolvedIds = new Set([2, 18, 24, 26, 27]);
+  const newlyVerifiedIds = new Set([3, 10, 13, 15, 20, 21, 25]);
   const recoveredNordbergDomains = new Map([
     [6, "autoservice2.ru"],
     [7, "autoservice2.ru"],
@@ -49,7 +49,7 @@ test("required source registry keeps exact matches separate from unresolved conf
 
   assert.equal(registry.models.length, 29);
   assert.equal(registry.models.filter((model) => model.own_url).length, 28);
-  assert.equal(exact.length, 23);
+  assert.equal(exact.length, 24);
   assert.ok(exact.every((model) => model.primary_url));
   assert.ok(exact.every((model) => !model.review_scope.includes("полное совпадение не подтверждено")));
   assert.ok(registry.models.filter((model) => unresolvedIds.has(model.id)).every((model) => model.match_status !== "точное совпадение"));
