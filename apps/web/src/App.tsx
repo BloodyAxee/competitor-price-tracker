@@ -19,13 +19,11 @@ import type {
 } from "./types";
 import {
   attentionCompetitor,
-  attentionPriceSignal,
   bestCompetitor,
   collectionMethodLabel,
   differenceTone,
   formatDate,
   formatDifference,
-  formatAttentionDifference,
   formatPrice,
   formatPriceMovement,
   jobLabel,
@@ -369,8 +367,6 @@ function App() {
     const item = comparisonMap.get(product.id);
     const competitors = sortedCompetitors(item ?? ({ competitors: [] } as unknown as ComparisonItem));
     const confirmed = bestCompetitor(item ?? ({ competitors: [] } as unknown as ComparisonItem));
-    const attention = attentionPriceSignal(item ?? ({ competitors: [] } as unknown as ComparisonItem));
-    const reviewCandidate = attention?.offer;
     const otherCompetitors = item ? otherCompetitorsSummary(item) : null;
     const ownPrice = item?.own?.price;
     const modelCell = <div className="model-data"><strong>{product.name}</strong><span>{product.article ?? "Артикул не указан"}</span></div>;
@@ -389,19 +385,7 @@ function App() {
     );
     const otherCompetitorsCell = (
       <div className={`other-competitors ${otherCompetitors ? "available" : "quiet"}`} data-label="Другие конкуренты">
-        {otherCompetitors && <><strong>{otherCompetitors}</strong><small>Все подтверждённые источники в карточке</small></>}
-        {reviewCandidate && (
-          <div className="review-price-signal">
-            <span className="attention-icon" aria-label="Требует проверки">!</span>
-            <div>
-              <strong>{formatPrice(reviewCandidate.price?.normalizedPrice)}</strong>
-              <a href={reviewCandidate.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{reviewCandidate.seller}</a>
-              <small>{formatAttentionDifference(attention)}</small>
-              <small className="review-note">Проверить · не входит в итог</small>
-            </div>
-          </div>
-        )}
-        {!otherCompetitors && !reviewCandidate && <span>—</span>}
+        {otherCompetitors ? <><strong>{otherCompetitors.countLabel}</strong><small>{otherCompetitors.priceNote ?? "Все источники в карточке"}</small></> : <span>—</span>}
       </div>
     );
     if (mobile) {

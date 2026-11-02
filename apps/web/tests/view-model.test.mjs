@@ -3,13 +3,11 @@ import test from "node:test";
 import {
   bestCompetitor,
   attentionCompetitor,
-  attentionPriceSignal,
   collectionMethodLabel,
   competitorCountLabel,
   confirmedPriceCountLabel,
   differenceTone,
   formatDifference,
-  formatAttentionDifference,
   formatPrice,
   formatPriceMovement,
   observationStatus,
@@ -61,14 +59,9 @@ test("the result price ignores a cheaper unverified offer", () => {
 
   assert.equal(bestCompetitor(item).seller, "Подтверждено");
   assert.equal(attentionCompetitor(item).seller, "Проверить");
-  assert.equal(attentionPriceSignal(item).offer.seller, "Проверить");
-  assert.equal(
-    formatAttentionDifference(attentionPriceSignal(item)),
-    "Ниже ЦТО на 20 000 ₽ · 20.0%",
-  );
 });
 
-test("the table compares an unverified price with CTO instead of another competitor", () => {
+test("the table counts unverified competitors and compares their prices with CTO", () => {
   const item = {
     own: {
       price: { normalizedPrice: "149000", reliability: "valid" },
@@ -76,12 +69,21 @@ test("the table compares an unverified price with CTO instead of another competi
     },
     competitors: [
       {
-        seller: "Проверить",
+        offerId: "review-equal",
+        seller: "Проверить 1",
         matchStatus: "review",
         price: { normalizedPrice: "149000", reliability: "unreliable" },
         comparisonPrice: null,
       },
       {
+        offerId: "review-different",
+        seller: "Проверить 2",
+        matchStatus: "review",
+        price: { normalizedPrice: "160000", reliability: "unreliable" },
+        comparisonPrice: null,
+      },
+      {
+        offerId: "exact",
         seller: "Подтверждено",
         matchStatus: "exact",
         price: { normalizedPrice: "132500", reliability: "valid" },
@@ -90,8 +92,10 @@ test("the table compares an unverified price with CTO instead of another competi
     ],
   };
 
-  assert.equal(attentionCompetitor(item).seller, "Проверить");
-  assert.equal(attentionPriceSignal(item), null);
+  assert.deepEqual(otherCompetitorsSummary(item), {
+    countLabel: "Ещё 2 конкурента",
+    priceNote: "Есть цены выше и ниже ЦТО",
+  });
 });
 
 test("price movement is formatted as a separate market signal", () => {
@@ -135,8 +139,14 @@ test("other competitor summary explains equal and different prices", () => {
     ],
   };
 
-  assert.equal(otherCompetitorsSummary(equalPrices), "Ещё 2 конкурента по цене ЦТО");
-  assert.equal(otherCompetitorsSummary(differentPrices), "Ещё 2 конкурента · до 18 000 ₽ выше ЦТО");
+  assert.deepEqual(otherCompetitorsSummary(equalPrices), {
+    countLabel: "Ещё 2 конкурента",
+    priceNote: "Доступные цены совпадают с ЦТО",
+  });
+  assert.deepEqual(otherCompetitorsSummary(differentPrices), {
+    countLabel: "Ещё 2 конкурента",
+    priceNote: "Есть цена выше ЦТО на 18 000 ₽",
+  });
   assert.equal(otherCompetitorsSummary({ own: equalPrices.own, competitors: equalPrices.competitors.slice(0, 1) }), null);
 });
 

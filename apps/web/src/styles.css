@@ -129,12 +129,6 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
 .other-competitors strong { max-width: 230px; font-size: 12px; line-height: 1.4; }
 .other-competitors small { margin-top: 5px; color: var(--muted); font-size: 10px; }
 .other-competitors.quiet { color: var(--muted); font-size: 12px; }
-.review-price-signal { display: flex; align-items: flex-start; gap: 8px; margin-top: 9px; padding: 7px 0 0; border-top: 1px solid var(--line); }
-.review-price-signal .attention-icon { width: 18px; height: 18px; flex-basis: 18px; border-width: 1.5px; border-color: var(--warning); color: var(--warning); font-size: 11px; }
-.review-price-signal strong, .review-price-signal a, .review-price-signal small { display: block; }
-.review-price-signal a { margin-top: 3px; font-size: 11px; font-weight: 750; }
-.review-price-signal small { color: var(--warning); }
-.review-price-signal .review-note { color: var(--muted); }
 .competitor-stack { min-width: 390px; display: grid; gap: 9px; }
 .market-offer { padding: 12px 13px; border: 1px solid var(--line); border-left: 3px solid var(--success); border-radius: 11px; background: var(--surface-soft); }
 .market-offer.warning { border-left-color: var(--warning); background: color-mix(in srgb, var(--warning) 6%, var(--surface-soft)); }

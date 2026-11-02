@@ -42,59 +42,31 @@ export function attentionCompetitor(item: ComparisonItem): CompetitorComparison 
     )[0] ?? null;
 }
 
-export function attentionPriceSignal(item: ComparisonItem) {
-  const ownPrice = Number(item.own?.comparisonPrice?.normalizedPrice ?? item.own?.price?.normalizedPrice);
-  if (!Number.isFinite(ownPrice) || ownPrice <= 0) return null;
-
-  const candidates = sortedCompetitors(item)
-    .filter(
-      (offer) =>
-        offer.price?.normalizedPrice != null &&
-        (offer.matchStatus === "review" || offer.price.reliability !== "valid"),
-    )
-    .map((offer) => {
-      const price = Number(offer.price?.normalizedPrice);
-      const amount = price - ownPrice;
-      return {
-        offer,
-        amount,
-        percent: (amount / ownPrice) * 100,
-      };
-    })
-    .filter(
-      (candidate) =>
-        Number.isFinite(candidate.amount) &&
-        Number.isFinite(candidate.percent) &&
-        candidate.amount !== 0,
-    )
-    .sort((left, right) => Math.abs(right.percent) - Math.abs(left.percent));
-
-  return candidates[0] ?? null;
-}
-
 export function otherCompetitorsSummary(item: ComparisonItem) {
-  const confirmed = sortedCompetitors(item).filter(
-    (offer) => offer.comparisonPrice?.normalizedPrice != null,
-  );
-  if (confirmed.length <= 1) return null;
+  const best = bestCompetitor(item);
+  const others = item.competitors.filter((offer) => offer !== best);
+  if (others.length === 0) return null;
 
+  const countLabel = best
+    ? `Ещё ${competitorCountLabel(others.length)}`
+    : competitorCountLabel(others.length);
   const ownPrice = Number(item.own?.comparisonPrice?.normalizedPrice ?? item.own?.price?.normalizedPrice);
-  const others = confirmed.slice(1);
-  const count = others.length;
-  const countLabel = count === 1 ? "Ещё 1 конкурент" : count <= 4 ? `Ещё ${count} конкурента` : `Ещё ${count} конкурентов`;
-  if (!Number.isFinite(ownPrice) || ownPrice <= 0) return countLabel;
+  if (!Number.isFinite(ownPrice) || ownPrice <= 0) return { countLabel, priceNote: null };
 
-  const differences = others.map(
-    (offer) => Number(offer.comparisonPrice?.normalizedPrice) - ownPrice,
-  );
-  if (differences.every((difference) => difference === 0)) return `${countLabel} по цене ЦТО`;
+  const differences = others
+    .map((offer) => Number(offer.comparisonPrice?.normalizedPrice ?? offer.price?.normalizedPrice) - ownPrice)
+    .filter((difference) => Number.isFinite(difference));
+  if (differences.length === 0) return { countLabel, priceNote: "Цены пока не собраны" };
+  if (differences.every((difference) => difference === 0)) {
+    return { countLabel, priceNote: "Доступные цены совпадают с ЦТО" };
+  }
 
   const allLower = differences.every((difference) => difference < 0);
   const allHigher = differences.every((difference) => difference > 0);
   const largestDifference = Math.max(...differences.map((difference) => Math.abs(difference)));
-  if (allLower) return `${countLabel} · до ${moneyFormatter.format(largestDifference)} ниже ЦТО`;
-  if (allHigher) return `${countLabel} · до ${moneyFormatter.format(largestDifference)} выше ЦТО`;
-  return `${countLabel} · есть цены выше и ниже ЦТО`;
+  if (allLower) return { countLabel, priceNote: `Есть цена ниже ЦТО на ${moneyFormatter.format(largestDifference)}` };
+  if (allHigher) return { countLabel, priceNote: `Есть цена выше ЦТО на ${moneyFormatter.format(largestDifference)}` };
+  return { countLabel, priceNote: "Есть цены выше и ниже ЦТО" };
 }
 
 export function sortedCompetitors(item: ComparisonItem): CompetitorComparison[] {
@@ -132,13 +104,6 @@ export function formatPriceMovement(
   if (!Number.isFinite(amount) || !Number.isFinite(percent)) return null;
   const direction = change.direction === "up" ? "Выросла" : "Снизилась";
   return `${direction} на ${moneyFormatter.format(amount)} · ${percent.toFixed(1)}%`;
-}
-
-export function formatAttentionDifference(
-  signal: NonNullable<ReturnType<typeof attentionPriceSignal>>,
-) {
-  const direction = signal.amount > 0 ? "Выше" : "Ниже";
-  return `${direction} ЦТО на ${moneyFormatter.format(Math.abs(signal.amount))} · ${Math.abs(signal.percent).toFixed(1)}%`;
 }
 
 export function observationStatus(price: PriceObservation | null | undefined) {
