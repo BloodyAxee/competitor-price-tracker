@@ -31,7 +31,7 @@ export class CollectionSchedulerService implements OnModuleInit, OnModuleDestroy
   }
 
   configuration() {
-    return { cron: this.cron, timeZone: this.timeZone };
+    return { cron: this.cron, timeZone: this.timeZone, mode: "full" as const };
   }
 
   async tick(now = new Date()): Promise<void> {
@@ -53,6 +53,7 @@ export class CollectionSchedulerService implements OnModuleInit, OnModuleDestroy
           data: {
             jobKey,
             triggerType: "scheduled",
+            collectionMode: "full",
             status: "pending",
             scheduledFor: now,
           },

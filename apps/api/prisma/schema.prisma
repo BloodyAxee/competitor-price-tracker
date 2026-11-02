@@ -110,6 +110,7 @@ model Offer {
   sellerArticle String?            @map("seller_article")
   matchStatus   String             @default("review") @map("match_status")
   matchReason   String?            @map("match_reason")
+  collectInFastMode Boolean         @default(false) @map("collect_in_fast_mode")
   isActive      Boolean            @default(true) @map("is_active")
   createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
@@ -130,6 +131,7 @@ model CollectionJob {
   id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   jobKey       String?             @unique @map("job_key")
   triggerType  String              @map("trigger_type")
+  collectionMode String            @default("full") @map("collection_mode")
   status       String              @default("pending")
   scheduledFor DateTime?           @map("scheduled_for") @db.Timestamptz(6)
   startedAt    DateTime?           @map("started_at") @db.Timestamptz(6)

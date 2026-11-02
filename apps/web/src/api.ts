@@ -3,6 +3,7 @@ import type {
   CatalogSummary,
   CollectionJob,
   CollectionJobDetails,
+  CollectionMode,
   CollectionSchedule,
   ComparisonResponse,
   HistoryResponse,
@@ -34,8 +35,11 @@ export function loadDashboard() {
   ]);
 }
 
-export function startCollection() {
-  return request<CollectionJob>("/collection-jobs", { method: "POST" });
+export function startCollection(mode: CollectionMode = "fast") {
+  return request<CollectionJob>("/collection-jobs", {
+    method: "POST",
+    body: JSON.stringify({ mode }),
+  });
 }
 
 export function loadCollectionJob(id: string) {

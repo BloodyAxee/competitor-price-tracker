@@ -350,12 +350,14 @@ try {
             sellerArticle: researchedComponent.article,
             matchStatus: bundleOffer.match_status,
             matchReason: `${researchedComponent.match_reason}. ${bundleOffer.status_reason}. Проверено ${bundleOffer.verified_on}.`,
+            collectInFastMode: bundleOffer.match_status === "exact",
           },
           update: {
             sellerId: seller.id,
             sellerArticle: researchedComponent.article,
             matchStatus: bundleOffer.match_status,
             matchReason: `${researchedComponent.match_reason}. ${bundleOffer.status_reason}. Проверено ${bundleOffer.verified_on}.`,
+            collectInFastMode: bundleOffer.match_status === "exact",
             isActive: true,
             updatedAt: new Date(),
           },
@@ -467,6 +469,11 @@ try {
         const matchReason = `${sourceLabel}. ${candidate.reason ?? research.review_scope}. ${research.note}`;
         const sellerArticle =
           candidate.kind === "own" ? candidate.url.match(/\/good-(\d+)-/)?.[1] : undefined;
+        const collectInFastMode =
+          candidate.kind === "own" ||
+          (candidate.kind === "primary" &&
+            isExactOffer &&
+            domain !== "topmaster-shop.ru");
         await tx.offer.upsert({
           where: {
             productId_sourceId_competitorUrl: {
@@ -487,6 +494,7 @@ try {
                 ? "rejected"
                 : "review",
             matchReason,
+            collectInFastMode,
           },
           update: {
             sellerId: seller.id,
@@ -497,6 +505,7 @@ try {
                 ? "rejected"
                 : "review",
             matchReason,
+            collectInFastMode,
             isActive: true,
             updatedAt: new Date(),
           },

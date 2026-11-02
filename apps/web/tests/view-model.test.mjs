@@ -4,6 +4,7 @@ import {
   bestCompetitor,
   attentionCompetitor,
   collectionMethodLabel,
+  collectionModeLabel,
   competitorCountLabel,
   confirmedPriceCountLabel,
   differenceTone,
@@ -23,6 +24,11 @@ test("missing prices are never displayed as zero", () => {
   assert.equal(formatPrice(null), "Не собрано");
   assert.equal(formatPrice(undefined), "Не собрано");
   assert.equal(formatPrice(""), "Не собрано");
+});
+
+test("collection modes have distinct user-facing labels", () => {
+  assert.equal(collectionModeLabel("fast"), "Быстрый сбор");
+  assert.equal(collectionModeLabel("full"), "Полный сбор");
 });
 
 test("an unverified observation displays its raw collected price", () => {

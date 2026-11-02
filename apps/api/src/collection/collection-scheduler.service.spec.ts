@@ -5,12 +5,14 @@ import { CollectionSchedulerService } from "./collection-scheduler.service.ts";
 test("daily scheduler does not duplicate a job after an API restart", async () => {
   const jobs = new Map<string, { id: string; jobKey: string }>();
   let createCalls = 0;
+  let createdMode: string | undefined;
   const prisma = {
     collectionJob: {
       findUnique: async ({ where }: { where: { jobKey: string } }) =>
         jobs.get(where.jobKey) ?? null,
-      create: async ({ data }: { data: { jobKey: string } }) => {
+      create: async ({ data }: { data: { jobKey: string; collectionMode: string } }) => {
         createCalls += 1;
+        createdMode = data.collectionMode;
         const job = { id: `job-${createCalls}`, jobKey: data.jobKey };
         jobs.set(data.jobKey, job);
         return job;
@@ -24,4 +26,5 @@ test("daily scheduler does not duplicate a job after an API restart", async () =
 
   assert.equal(createCalls, 1);
   assert.equal(jobs.size, 1);
+  assert.equal(createdMode, "full");
 });

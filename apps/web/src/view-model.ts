@@ -1,5 +1,6 @@
 import type {
   CollectionJob,
+  CollectionMode,
   ComparisonItem,
   ComparisonOffer,
   CompetitorComparison,
@@ -164,4 +165,8 @@ export function jobLabel(job: Pick<CollectionJob, "status"> | null) {
   if (job.status === "success") return "Сбор завершён";
   if (job.status === "partial_success") return "Сбор завершён частично";
   return "Сбор завершился с ошибкой";
+}
+
+export function collectionModeLabel(mode: CollectionMode) {
+  return mode === "fast" ? "Быстрый сбор" : "Полный сбор";
 }

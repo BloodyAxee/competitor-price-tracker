@@ -13,6 +13,11 @@ class JobStatus(StrEnum):
     FAILED = "failed"
 
 
+class CollectionMode(StrEnum):
+    FAST = "fast"
+    FULL = "full"
+
+
 @dataclass(frozen=True)
 class SourceTask:
     job_id: str
@@ -33,6 +38,7 @@ class SourceTask:
 class CollectionJob:
     id: str
     tasks: tuple[SourceTask, ...]
+    mode: CollectionMode = CollectionMode.FULL
 
 
 @dataclass(frozen=True)

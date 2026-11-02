@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../database/prisma.service.ts";
+import type { CollectionMode } from "./collection-mode.ts";
 
 export interface JobQuery {
   limit: number;
@@ -11,6 +12,7 @@ function jobSummary(job: {
   id: string;
   jobKey: string | null;
   triggerType: string;
+  collectionMode: string;
   status: string;
   scheduledFor: Date | null;
   startedAt: Date | null;
@@ -23,6 +25,7 @@ function jobSummary(job: {
     id: job.id,
     jobKey: job.jobKey,
     triggerType: job.triggerType,
+    collectionMode: job.collectionMode,
     status: job.status,
     scheduledFor: job.scheduledFor,
     startedAt: job.startedAt,
@@ -38,10 +41,11 @@ function jobSummary(job: {
 export class CollectionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createManualJob() {
+  async createManualJob(mode: CollectionMode = "fast") {
     const job = await this.prisma.collectionJob.create({
       data: {
         triggerType: "manual",
+        collectionMode: mode,
         status: "pending",
         scheduledFor: new Date(),
       },

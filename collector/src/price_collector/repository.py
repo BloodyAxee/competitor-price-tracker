@@ -4,17 +4,42 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from price_monitor_domain import Reliability
 
-from .models import CollectionJob, CollectedObservation, JobSummary, SourceTask
+from .models import CollectionJob, CollectionMode, CollectedObservation, JobSummary, SourceTask
 
 
 CLAIM_JOB_SQL = """
-SELECT id::text
+SELECT id::text, collection_mode
 FROM collection_jobs
 WHERE status = 'pending'
   AND (scheduled_for IS NULL OR scheduled_for <= clock_timestamp())
 ORDER BY created_at, id
 FOR UPDATE SKIP LOCKED
 LIMIT 1
+"""
+
+COLLECT_TASKS_SQL = """
+SELECT
+    %s::text AS job_id,
+    o.id::text AS offer_id,
+    s.id::text AS source_id,
+    s.external_key AS source_key,
+    o.competitor_url AS url,
+    s.collection_method,
+    s.request_timeout_seconds,
+    s.max_retries,
+    s.rate_limit_per_host,
+    p.name AS expected_product_name,
+    o.seller_article,
+    o.match_status
+FROM offers o
+JOIN sources s ON s.id = o.source_id
+JOIN products p ON p.id = o.product_id
+WHERE o.is_active
+  AND s.is_active
+  AND s.collection_method <> 'manual'
+  AND o.match_status IN ('exact', 'review')
+  AND (%s = 'full' OR o.collect_in_fast_mode)
+ORDER BY s.external_key, o.id
 """
 
 
@@ -41,6 +66,7 @@ class PostgresCollectorRepository:
                 return None
 
             job_id = job_row["id"]
+            collection_mode = CollectionMode(job_row["collection_mode"])
             self._connection.execute(
                 """
                 UPDATE collection_jobs
@@ -53,34 +79,12 @@ class PostgresCollectorRepository:
                 (worker_id, job_id),
             )
             rows = self._connection.execute(
-                """
-                SELECT
-                    %s::text AS job_id,
-                    o.id::text AS offer_id,
-                    s.id::text AS source_id,
-                    s.external_key AS source_key,
-                    o.competitor_url AS url,
-                    s.collection_method,
-                    s.request_timeout_seconds,
-                    s.max_retries,
-                    s.rate_limit_per_host,
-                    p.name AS expected_product_name,
-                    o.seller_article,
-                    o.match_status
-                FROM offers o
-                JOIN sources s ON s.id = o.source_id
-                JOIN products p ON p.id = o.product_id
-                WHERE o.is_active
-                  AND s.is_active
-                  AND s.collection_method <> 'manual'
-                  AND o.match_status IN ('exact', 'review')
-                ORDER BY s.external_key, o.id
-                """,
-                (job_id,),
+                COLLECT_TASKS_SQL,
+                (job_id, collection_mode.value),
             ).fetchall()
 
         tasks = tuple(self._task_from_row(row) for row in rows)
-        return CollectionJob(job_id, tasks)
+        return CollectionJob(job_id, tasks, collection_mode)
 
     @staticmethod
     def _task_from_row(row: dict[str, Any]) -> SourceTask:

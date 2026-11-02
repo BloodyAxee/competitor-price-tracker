@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -9,6 +10,7 @@ import {
 } from "@nestjs/common";
 import { z } from "zod";
 import { CollectionSchedulerService } from "./collection-scheduler.service.ts";
+import { createCollectionJobSchema } from "./collection-mode.ts";
 import { CollectionService } from "./collection.service.ts";
 
 const jobQuerySchema = z.object({
@@ -27,8 +29,10 @@ export class CollectionController {
 
   @Post("collection-jobs")
   @HttpCode(202)
-  createJob() {
-    return this.collection.createManualJob();
+  createJob(@Body() rawBody: unknown) {
+    const parsed = createCollectionJobSchema.safeParse(rawBody ?? {});
+    if (!parsed.success) throw new BadRequestException(parsed.error.flatten());
+    return this.collection.createManualJob(parsed.data.mode);
   }
 
   @Get("collection-jobs")

@@ -10,6 +10,7 @@ import {
 import type {
   CatalogSummary,
   CollectionJobDetails,
+  CollectionMode,
   CollectionSchedule,
   CompetitorComparison,
   ComparisonItem,
@@ -21,6 +22,7 @@ import {
   attentionCompetitor,
   bestCompetitor,
   collectionMethodLabel,
+  collectionModeLabel,
   differenceTone,
   formatDate,
   formatDifference,
@@ -110,7 +112,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [job, setJob] = useState<CollectionJobDetails | null>(null);
-  const [startingJob, setStartingJob] = useState(false);
+  const [startingMode, setStartingMode] = useState<CollectionMode | null>(null);
   const [manual, setManual] = useState<ManualObservationInput>({
     offerId: "",
     rawPrice: "",
@@ -274,17 +276,17 @@ function App() {
     return { compared, withAnyPrice, better };
   }, [products, comparisonMap]);
 
-  const handleStartCollection = async () => {
-    setStartingJob(true);
+  const handleStartCollection = async (mode: CollectionMode) => {
+    setStartingMode(mode);
     setError(null);
     try {
-      const created = await startCollection();
+      const created = await startCollection(mode);
       const details = await loadCollectionJob(created.id);
       setJob(details);
     } catch {
       setError("Сбор не удалось запустить. Проверьте сервис сборщика.");
     } finally {
-      setStartingJob(false);
+      setStartingMode(null);
     }
   };
 
@@ -419,9 +421,12 @@ function App() {
           <h1>Цены конкурентов</h1>
         </div>
         <div className="header-actions">
-          <button className="secondary-button" onClick={() => setDark((value) => !value)}>{dark ? "Светлая тема" : "Тёмная тема"}</button>
-          <button className="primary-button" onClick={() => void handleStartCollection()} disabled={startingJob || jobActive}>
-            {startingJob ? "Запускаем" : jobActive ? jobLabel(job) : "Запустить сбор"}
+          <button className="secondary-button theme-button" onClick={() => setDark((value) => !value)}>{dark ? "Светлая тема" : "Тёмная тема"}</button>
+          <button className="secondary-button" title="Все активные точные и требующие проверки источники" onClick={() => void handleStartCollection("full")} disabled={startingMode !== null || jobActive}>
+            {startingMode === "full" ? "Запускаем полный" : "Полный сбор"}
+          </button>
+          <button className="primary-button" title="Основные рабочие источники" onClick={() => void handleStartCollection("fast")} disabled={startingMode !== null || jobActive}>
+            {startingMode === "fast" ? "Запускаем" : jobActive ? jobLabel(job) : "Быстрый сбор"}
           </button>
         </div>
       </header>
@@ -433,12 +438,12 @@ function App() {
             <h2>Сравнение цен по точным моделям</h2>
             <p>Система собирает цены из доступных источников, хранит историю и не подменяет отсутствующие данные нулями.</p>
           </div>
-          <div className="schedule-card"><span>Автоматический сбор</span><strong>{scheduleLabel(schedule)}</strong></div>
+          <div className="schedule-card"><span>Автоматический полный сбор</span><strong>{scheduleLabel(schedule)}</strong></div>
         </section>
 
         {job && (
           <section className={`job-banner ${job.status}`} aria-live="polite">
-            <div><strong>{jobLabel(job)}</strong><span>{job.summary?.succeeded ?? job.observations ?? 0} цен получено · {job.summary?.failed ?? failedAttempts.length} ошибок</span></div>
+            <div><strong>{jobLabel(job)} · {collectionModeLabel(job.collectionMode)}</strong><span>{job.summary?.succeeded ?? job.observations ?? 0} цен получено · {job.summary?.failed ?? failedAttempts.length} ошибок</span></div>
             <span className="job-time">{job.finishedAt ? formatDate(job.finishedAt) : "Обновляем состояние"}</span>
             {failedAttempts.length > 0 && <details><summary>Показать ошибки источников</summary>{failedAttempts.slice(0, 5).map((attempt) => <p key={attempt.id}>{attempt.source.name} · {attempt.errorMessage ?? attempt.errorCode ?? "Источник недоступен"}</p>)}</details>}
           </section>

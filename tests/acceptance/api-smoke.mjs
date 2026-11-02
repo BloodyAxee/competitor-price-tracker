@@ -86,7 +86,7 @@ assert.equal(
 if (jobId) assert.ok(csv.split(/\r?\n/).length > 29, "CSV must contain collected observations");
 
 const schedule = await json("/api/collection-schedule");
-assert.deepEqual(schedule, { cron: "0 3 * * *", timeZone: "Europe/Moscow" });
+assert.deepEqual(schedule, { cron: "0 3 * * *", timeZone: "Europe/Moscow", mode: "full" });
 
 const webResponse = await response("/", webOrigin);
 const html = await webResponse.text();

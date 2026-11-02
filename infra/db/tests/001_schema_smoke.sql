@@ -30,6 +30,40 @@ DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'collection_jobs'
+          AND column_name = 'collection_mode'
+          AND column_default = '''full''::text'
+    ) THEN
+        RAISE EXCEPTION 'Missing full-default collection mode';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'offers'
+          AND column_name = 'collect_in_fast_mode'
+    ) THEN
+        RAISE EXCEPTION 'Missing fast collection offer flag';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'collection_jobs'::regclass
+          AND conname = 'collection_jobs_collection_mode_check'
+    ) THEN
+        RAISE EXCEPTION 'Missing collection mode constraint';
+    END IF;
+END;
+$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
         FROM pg_constraint
         WHERE conrelid = 'collection_attempts'::regclass
           AND conname = 'collection_attempts_job_source_offer_number_unique'
@@ -127,6 +161,19 @@ VALUES (
     'running',
     clock_timestamp()
 );
+
+DO $$
+DECLARE
+    stored_mode text;
+BEGIN
+    SELECT collection_mode INTO stored_mode
+    FROM collection_jobs
+    WHERE job_key = 'test-job';
+    IF stored_mode <> 'full' THEN
+        RAISE EXCEPTION 'Existing job path must default to full, got %', stored_mode;
+    END IF;
+END;
+$$;
 
 INSERT INTO collection_attempts (
     job_id,

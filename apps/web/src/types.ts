@@ -132,10 +132,13 @@ export interface JobSummaryData {
   [key: string]: unknown;
 }
 
+export type CollectionMode = "fast" | "full";
+
 export interface CollectionJob {
   id: string;
   jobKey: string | null;
   triggerType: string;
+  collectionMode: CollectionMode;
   status: "pending" | "running" | "partial_success" | "success" | "failed";
   scheduledFor: string | null;
   startedAt: string | null;
@@ -163,6 +166,7 @@ export interface CollectionJobDetails extends Omit<CollectionJob, "attempts"> {
 export interface CollectionSchedule {
   cron: string;
   timeZone: string;
+  mode: "full";
 }
 
 export interface ManualObservationInput {

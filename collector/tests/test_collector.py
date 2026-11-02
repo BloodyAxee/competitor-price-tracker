@@ -1,4 +1,3 @@
-import inspect
 import time
 import unittest
 from collections.abc import Callable
@@ -20,10 +19,11 @@ from price_collector.http import HostRateLimiter, HttpFetcher, HttpResponse
 from price_collector.models import (
     CollectedObservation,
     CollectionJob,
+    CollectionMode,
     JobStatus,
     SourceTask,
 )
-from price_collector.repository import CLAIM_JOB_SQL, psycopg_database_url
+from price_collector.repository import CLAIM_JOB_SQL, COLLECT_TASKS_SQL, psycopg_database_url
 
 
 def _task(source_key: str, *, retries: int = 0) -> SourceTask:
@@ -569,13 +569,16 @@ class FetcherTest(unittest.TestCase):
     def test_job_claim_uses_skip_locked(self) -> None:
         normalized_sql = " ".join(CLAIM_JOB_SQL.split()).upper()
         self.assertIn("FOR UPDATE SKIP LOCKED", normalized_sql)
+        self.assertIn("COLLECTION_MODE", normalized_sql)
 
     def test_job_collects_exact_and_review_offers(self) -> None:
-        from price_collector.repository import PostgresCollectorRepository
-
-        source = inspect.getsource(PostgresCollectorRepository.claim_next_job)
-        normalized_sql = " ".join(source.split()).upper()
+        normalized_sql = " ".join(COLLECT_TASKS_SQL.split()).upper()
         self.assertIn("O.MATCH_STATUS IN ('EXACT', 'REVIEW')", normalized_sql)
+
+    def test_fast_jobs_only_select_explicit_fast_offers(self) -> None:
+        normalized_sql = " ".join(COLLECT_TASKS_SQL.split()).upper()
+        self.assertIn("%S = 'FULL' OR O.COLLECT_IN_FAST_MODE", normalized_sql)
+        self.assertEqual(CollectionJob("job", (), CollectionMode.FAST).mode, CollectionMode.FAST)
 
     def test_prisma_schema_parameter_is_removed_for_psycopg(self) -> None:
         original = "postgresql://db:5432/database?schema=public&sslmode=require"

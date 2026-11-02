@@ -260,6 +260,7 @@ tbody tr:hover, tbody tr:focus { background: color-mix(in srgb, var(--accent) 7%
   .header-copy h1 { font-size: 17px; }
   .header-actions { width: 100%; }
   .header-actions button { flex: 1; font-size: 12px; padding-inline: 9px; }
+  .header-actions .theme-button { flex: 0 0 auto; }
   main { width: min(100% - 24px, 1460px); padding-top: 24px; }
   .intro-row { align-items: stretch; flex-direction: column; }
   .intro-row h2 { font-size: 29px; }
