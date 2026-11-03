@@ -10,7 +10,7 @@
 
 Фактические результаты полного автоматического сбора, ограничения и список проверок: [docs/COLLECTION_RESULTS.md](docs/COLLECTION_RESULTS.md). Итог финальной приёмки: [docs/FINAL_ACCEPTANCE.md](docs/FINAL_ACCEPTANCE.md).
 
-Пакет передачи: [сценарий демонстрации](docs/DEMO.md), [таблица покрытия](docs/COVERAGE.md), [записка](docs/HANDOFF_NOTE.md) и [журнал использования ИИ](docs/AI_USAGE.md).
+Пакет передачи: [сценарий демонстрации](docs/DEMO.md), [таблица покрытия](docs/COVERAGE.md), [краткая записка](docs/HANDOFF_NOTE.md), [подробный итоговый отчёт](docs/FINAL_PROJECT_REPORT.md) и [журнал использования ИИ](docs/AI_USAGE.md).
 
 ## Быстрый запуск
 
